@@ -155,3 +155,12 @@ view.addEventListener('submit', (event) => {
 store.subscribe(() => render());
 window.addEventListener('hashchange', handleRoute);
 handleRoute();
+
+// Installable app (PWA): offline shell + home-screen install. Production only.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* the app works without it */
+    });
+  });
+}

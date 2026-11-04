@@ -45,6 +45,19 @@ npm test
 npm run build && npm run preview
 ```
 
+## Install on a phone (PWA)
+
+The deployed site (https://johnyang0323.github.io/named_nothing/) can be installed like an app:
+
+- **iPhone (Safari):** Share → **홈 화면에 추가**.
+- **Android (Chrome):** the **앱 설치** prompt, or menu → **홈 화면에 추가**.
+
+It opens full-screen with its own icon. The app shell works offline after the first visit, and today's progress is kept on the device. Real-place search and the Kakao map still need a connection.
+
+The service worker (`sw.js`) is generated at build time by a small plugin in `vite.config.js`. It holds the exact list of hashed files, so every deploy installs a fresh worker and drops the old cache. Page loads go to the network first, so updates appear on the next open. It is registered only in production builds.
+
+On iPhone, the installed app keeps its own storage, separate from Safari. A day started in Safari doesn't carry over to the home-screen app.
+
 ## Real places with Kakao Map (optional)
 
 Without a key, the app runs entirely on illustrative sample data. With a Kakao **JavaScript key**:
@@ -80,8 +93,9 @@ If the SDK can't load (wrong key, unregistered domain, offline), neighborhood se
 
 ```
 index.html                 App shell: masthead, nav, <main id="view">, toast, live region
-public/favicon.svg
+public/                    favicon.svg, manifest.webmanifest, icons/ (PWA icons)
 src/
+  sw-template.js           Service worker template (filled in at build time)
   main.js                  Hash router, delegated events, focus preservation, toast/announcer
   style.css                Design system (tokens, typography, components, responsive, reduced motion)
   data/places.js           ILLUSTRATIVE sample places, moods, mood weights, category transitions
@@ -144,4 +158,4 @@ tests/                     recommender.test.js, store.test.js, kakao.test.js
 - **Walking routes:** real walking times would need a directions API, which needs a server-side key.
 - **AI recommendations:** keep the signatures of `pickInitial`, `pickAlternative` and `suggestNearby` (they could become async) and call a service instead.
 - **Supabase:** put a remote adapter behind the `storage` parameter of `createStore`, or sync the date-keyed day objects.
-- **PWA:** add a manifest and service worker. The app is already static and works offline once loaded.
+- **Store apps:** Android can be packaged from the PWA with PWABuilder (Trusted Web Activity) for Google Play. An iOS App Store build needs a Mac with Xcode, plus app-specific features to pass review.
