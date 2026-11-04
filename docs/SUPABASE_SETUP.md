@@ -78,12 +78,15 @@
 사진은 카카오 이미지 검색을 사용합니다. REST API 키가 브라우저에 노출되지 않도록, Supabase 서버 함수가 대신 검색합니다.
 
 1. **Edge Functions → Deploy a new function → Via Editor**를 엽니다.
-2. 함수 이름은 `place-photo`로 정합니다. 이름이 정확히 같아야 해요.
-3. 저장소의 [`supabase/functions/place-photo/index.ts`](../supabase/functions/place-photo/index.ts) 내용을 전부 붙여넣고 **Deploy**를 누릅니다.
-4. **Edge Functions → Secrets**에 아래 두 값을 추가합니다.
+2. 에디터에 예시 코드(`withSupabase`, `Hello ${name}` 등)가 들어 있어요. **전부 지웁니다.**
+3. 저장소의 [`supabase/functions/place-photo/index.ts`](../supabase/functions/place-photo/index.ts) 내용을 전부 붙여넣습니다.
+4. 함수 이름은 `place-photo`로 정합니다. 이름이 정확히 같아야 하고, 예시 이름(예: `hello-world`)이 들어 있다면 바꿔주세요. 이름을 정한 뒤 **Deploy**를 누릅니다.
+5. **Edge Functions → Secrets**에 아래 두 값을 추가합니다.
    - `KAKAO_REST_API_KEY` = 카카오 **REST API 키**
    - `ALLOWED_ORIGINS` = `https://johnyang0323.github.io`
-5. 함수 설정의 **Verify JWT**는 켜진 상태 그대로 둡니다. 앱이 공개 키를 함께 보내기 때문에 켜져 있어도 동작해요.
+6. `place-photo` 함수의 **Details**(또는 Settings) 탭에서 **Verify JWT with legacy secret**(또는 *Enforce JWT verification*)을 **끄고** 저장합니다.
+   새 방식 키(`sb_publishable_…`)는 JWT 형식이 아니라서, 이 설정이 켜져 있으면 로그인하지 않은 사용자의 사진 요청이 거절돼요.
+   대신 함수 코드가 `ALLOWED_ORIGINS`에 등록한 사이트에서 온 요청만 받도록 막고 있어요.
 
 ## 7. 앱에 Supabase 연결하기
 

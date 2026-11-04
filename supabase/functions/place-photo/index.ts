@@ -5,6 +5,9 @@
 // Secrets (Supabase dashboard → Edge Functions → Secrets):
 //   KAKAO_REST_API_KEY  = Kakao Developers → 앱 키 → REST API 키
 //   ALLOWED_ORIGINS     = https://johnyang0323.github.io   (comma-separated, optional)
+//
+// Function settings: turn OFF "Verify JWT" (projects with sb_publishable_ keys
+// send a non-JWT key). Access is limited to the site's origin below instead.
 
 const KAKAO_KEY = Deno.env.get('KAKAO_REST_API_KEY') ?? '';
 const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') ?? 'https://johnyang0323.github.io')
@@ -45,8 +48,9 @@ type KakaoImage = {
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin');
   const headers = cors(origin);
+  // Browsers always send Origin on these cross-site requests; require ours.
+  if (!origin || !ALLOWED.includes(origin)) return json({ error: 'origin not allowed' }, 403, headers);
   if (req.method === 'OPTIONS') return new Response('ok', { headers });
-  if (origin && !ALLOWED.includes(origin)) return json({ error: 'origin not allowed' }, 403, headers);
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405, headers);
   if (!KAKAO_KEY) return json({ error: 'KAKAO_REST_API_KEY is not set' }, 500, headers);
 
