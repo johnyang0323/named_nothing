@@ -2,7 +2,7 @@ import { getAllPlaces, getPlaceById } from '../services/placeRepository.js';
 import { suggestReplacements } from '../services/recommender.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, emptyState } from './common.js';
-import { placeVisual } from './placeVisual.js';
+import { placeVisual, photoSlot } from './placeVisual.js';
 
 function replacementPanel(stop, ui) {
   if (ui.replacingId !== stop.id) return '';
@@ -34,7 +34,7 @@ function stopItem(stop, index, total, state, ui) {
     <li class="stop ${stop.visited ? 'is-visited' : ''}" data-focus-key="item-${stop.id}" tabindex="-1">
       <div class="stop-main">
         <span class="stop-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
-        <div class="stop-visual">${placeVisual(place)}</div>
+        <div class="stop-visual"${photoSlot(place)}>${placeVisual(place)}</div>
         <div class="stop-text">
           <p class="kicker">${categoryLabel(place)}${isCurrent ? ' · 지금 여기' : ''}</p>
           <h3 class="stop-name">${name}</h3>

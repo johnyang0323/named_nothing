@@ -34,6 +34,7 @@ export function createEmptyDay(date) {
     route: [],
     journal: { note: '', feeling: null, savedAt: null },
     area: null,
+    updatedAt: null,
   };
 }
 
@@ -75,6 +76,7 @@ export function sanitizeDay(input, date) {
       savedAt: typeof journal.savedAt === 'string' ? journal.savedAt : null,
     };
   }
+  if (typeof input.updatedAt === 'string' && !Number.isNaN(Date.parse(input.updatedAt))) day.updatedAt = input.updatedAt;
   return day;
 }
 
@@ -121,8 +123,9 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
   const visitedIds = () => state.route.filter((s) => s.visited).map((s) => s.id);
   const routeIds = () => state.route.map((s) => s.id);
 
-  function commit(next) {
-    state = next;
+  /** Every user change stamps updatedAt so devices can tell which copy is newer. */
+  function commit(next, { stamp = true } = {}) {
+    state = stamp ? { ...next, updatedAt: now().toISOString() } : next;
     persist.write(key, state);
     listeners.forEach((fn) => fn(state));
   }
@@ -302,6 +305,15 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
       return true;
     },
 
+    /** Apply a copy of today pulled from the account (already newer than ours). */
+    replaceDay(remote) {
+      if (!remote || remote.date !== date) return false;
+      const area = sanitizeArea(remote.area);
+      activateArea(area);
+      commit({ ...sanitizeDay(remote, date), area }, { stamp: false });
+      return true;
+    },
+
     resetDay() {
       persist.remove(key);
       activateArea(null);
@@ -311,6 +323,22 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
 
   return {
     getState: () => state,
+    dateKey: date,
+    /** Earlier days still kept in this browser, newest first (for history and first-login upload). */
+    listLocalDays() {
+      const days = [];
+      try {
+        for (let i = 0; i < storage.length; i += 1) {
+          const k = storage.key(i);
+          if (!k?.startsWith(STORAGE_PREFIX) || k === key) continue;
+          const value = persist.read(k);
+          if (value && typeof value.date === 'string' && k === STORAGE_PREFIX + value.date) days.push(value);
+        }
+      } catch {
+        /* storage unavailable */
+      }
+      return days.sort((a, b) => b.date.localeCompare(a.date));
+    },
     subscribe(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);

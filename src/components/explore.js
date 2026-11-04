@@ -2,7 +2,7 @@ import { getPlaceById } from '../services/placeRepository.js';
 import { explainNext, describeProximity, schematicDistance } from '../services/recommender.js';
 import { html, raw } from '../utils/dom.js';
 import { categoryLabel, emptyState } from './common.js';
-import { placeVisual } from './placeVisual.js';
+import { placeVisual, photoSlot } from './placeVisual.js';
 import { isKakaoConfigured } from '../services/kakao/config.js';
 import { mountKakaoMap } from '../services/kakao/map.js';
 import { metersBetween, walkMinutes } from '../services/kakao/mapper.js';
@@ -123,7 +123,7 @@ export function render(state) {
                 const proximity = distanceHint(current, place);
                 return html`
                   <li class="discovery">
-                    <div class="discovery-visual">${placeVisual(place)}<span class="discovery-num" aria-hidden="true">${i + 1}</span></div>
+                    <div class="discovery-visual"${photoSlot(place)}>${placeVisual(place)}<span class="discovery-num" aria-hidden="true">${i + 1}</span></div>
                     <div class="discovery-body">
                       <p class="kicker">${categoryLabel(place)} · ${proximity}</p>
                       <h3 class="discovery-name">${place.name}</h3>

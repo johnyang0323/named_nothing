@@ -32,6 +32,12 @@ jobs:
           # Developers. A repository variable KAKAO_MAP_KEY overrides it.
           # Never put a REST API or Admin key here.
           VITE_KAKAO_MAP_KEY: ${{ vars.KAKAO_MAP_KEY || '620acc4efbe83de826d11c5d0efe947d' }}
+          # Supabase project URL and anon (public) key, for accounts and photos.
+          # Also public by design; Row Level Security protects the data.
+          # Set them as repository Variables SUPABASE_URL / SUPABASE_ANON_KEY.
+          # Never use the service_role key here.
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

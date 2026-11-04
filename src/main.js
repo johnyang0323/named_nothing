@@ -5,6 +5,10 @@ import * as discover from './components/discover.js';
 import * as explore from './components/explore.js';
 import * as route from './components/route.js';
 import * as myday from './components/myday.js';
+import { isBackendConfigured } from './services/backend/config.js';
+import { initAuth, onAuthChange } from './services/backend/auth.js';
+import { createSync } from './services/backend/sync.js';
+import { hydratePhotos } from './services/photos.js';
 
 const SCREENS = { home, discover, explore, route, day: myday };
 const DEFAULT_SCREEN = 'home';
@@ -20,9 +24,13 @@ const ui = { replacingId: null, replacementOptions: [], journalDraft: null, conf
 let currentName = null;
 let toastTimer = null;
 
+const sync = createSync(store);
+
 const ctx = {
   store,
+  sync,
   ui,
+  getScreen: () => currentName,
   navigate,
   rerender: render,
   announce,
@@ -85,6 +93,7 @@ function render() {
 
   view.innerHTML = String(screen.render(store.getState(), ctx));
   screen.afterRender?.(store.getState(), ctx);
+  hydratePhotos(view);
 
   if (focusKey || itemKey) {
     const target = view.querySelector(`[data-focus-key="${CSS.escape(focusKey || '')}"]`);
@@ -155,6 +164,24 @@ view.addEventListener('submit', (event) => {
 store.subscribe(() => render());
 window.addEventListener('hashchange', handleRoute);
 handleRoute();
+
+// Optional accounts (Supabase). Without configuration none of this runs.
+if (isBackendConfigured()) {
+  onAuthChange(() => {
+    if (currentName === 'day') {
+      ui.history = null;
+      SCREENS.day.onEnter?.(ctx);
+    }
+    render();
+  });
+  sync.onStatus(() => currentName === 'day' && render());
+  initAuth()
+    .catch((error) => toast(error.message || '로그인하지 못했어요.'))
+    .finally(() => {
+      sync.start();
+      if (window.location.hash !== `#${currentName}`) handleRoute();
+    });
+}
 
 // Installable app (PWA): offline shell + home-screen install. Production only.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

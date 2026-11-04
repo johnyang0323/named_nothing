@@ -89,6 +89,16 @@ The JavaScript key is public by design; the registered-domain list protects it. 
 
 If the SDK can't load (wrong key, unregistered domain, offline), neighborhood search shows a clear message. Exploration falls back to the illustrative diagram, and the rest of the app keeps working.
 
+## Accounts and place photos (optional, Supabase)
+
+Step-by-step setup (Korean, browser-only): [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md).
+
+- **Sign-in:** Kakao login (OAuth with PKCE, so the `?code=` doesn't clash with the `#screen` router) or a 6-digit email code. The email code works inside the iPhone home-screen app, where magic links would open in Safari. Signing in is optional.
+- **Sync:** local-first. The app always uses localStorage. When signed in, today's day is upserted to `days` (one row per user and date, JSON payload) about 1.2 s after each change. On sign-in, the copy with the newer `updatedAt` wins, and earlier days that only exist in this browser are uploaded once. **지난 날들** on My Day lists earlier days from both sources.
+- **Security:** Row Level Security on `days` (`supabase/schema.sql`) limits each user to their own rows. The frontend only gets the project URL and anon/publishable key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, set as GitHub Actions Variables).
+- **Photos:** the `place-photo` Edge Function (`supabase/functions/place-photo/index.ts`) keeps the Kakao **REST** key server-side and returns the best Kakao image-search hit for "<place name> <district>". Photos load over the illustration with `referrerpolicy="no-referrer"`, falling back to the thumbnail and then to the illustration. They are cached for 14 days and always credited with the note that search results may differ from the real place.
+- `@supabase/supabase-js` is loaded only when the backend is configured, as a separate chunk.
+
 ## Structure
 
 ```
@@ -108,6 +118,9 @@ src/
       areaSearch.js        Neighborhood → center → real places via the SDK `services` library
       mapper.js            Pure: Kakao results → app places, filtering, distances, validation
       map.js               Real map with markers for the exploration screen
+    backend/               Optional Supabase: config, lazy client, auth (Kakao + email code), sync
+    photos.js              Place photos via the Edge Function, with cache and fallbacks
+    geolocation.js         One-shot, user-initiated location lookup
     recommender.js         Pure recommendation engine (mood weighting, alternatives, diverse nearby picks)
     store.js               Date-keyed state, actions, localStorage persistence with validation
   components/
@@ -116,6 +129,8 @@ src/
     common.js              Shared fragments (facts, empty state, labels)
   utils/                   date.js (local date key, Korean date), dom.js (escaping html`` template)
 tests/                     recommender.test.js, store.test.js, kakao.test.js
+supabase/                  schema.sql (table + RLS), functions/place-photo (Edge Function)
+docs/SUPABASE_SETUP.md     Browser-only setup guide for accounts and photos
 ```
 
 ### How recommendations work
@@ -147,6 +162,8 @@ tests/                     recommender.test.js, store.test.js, kakao.test.js
 - With Kakao, walking times are straight-line estimates, there are no opening hours, and there is no turn-by-turn navigation.
 - The Kakao integration was tested against a stand-in SDK (unit tests plus a scripted browser run), not yet against the live Kakao service.
 - The claude.ai artifact preview can't load the Kakao SDK, because its security policy blocks the script. There it always uses sample data.
+- Accounts, sync and photos were tested against a stand-in Supabase (scripted browser runs), not yet against a live project.
+- No account deletion UI yet. Two devices editing the same day resolve as last-write-wins.
 - Illustrations are generated SVG, not photographs.
 - Only today is kept in the UI. Past days remain in `localStorage` under their own keys, but there is no history view or automatic cleanup.
 - If the app stays open past midnight, it keeps using the date it loaded with until it is refreshed.
@@ -157,5 +174,4 @@ tests/                     recommender.test.js, store.test.js, kakao.test.js
 - **Curated editorial layer:** store hand-written `whyVisit` text and photos for real Kakao place ids, and merge them in `kakao/mapper.js`. Setting `place.image` makes `placeVisual` show the photo.
 - **Walking routes:** real walking times would need a directions API, which needs a server-side key.
 - **AI recommendations:** keep the signatures of `pickInitial`, `pickAlternative` and `suggestNearby` (they could become async) and call a service instead.
-- **Supabase:** put a remote adapter behind the `storage` parameter of `createStore`, or sync the date-keyed day objects.
 - **Store apps:** Android can be packaged from the PWA with PWABuilder (Trusted Web Activity) for Google Play. An iOS App Store build needs a Mac with Xcode, plus app-specific features to pass review.

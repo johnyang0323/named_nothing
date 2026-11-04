@@ -1,7 +1,7 @@
 import { getPlaceById } from '../services/placeRepository.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, moodLabel, placeFacts } from './common.js';
-import { placeVisual } from './placeVisual.js';
+import { placeVisual, photoSlot } from './placeVisual.js';
 
 export function onEnter({ store }) {
   if (!getPlaceById(store.getState().recommendationId)) store.actions.startDay();
@@ -16,7 +16,8 @@ export function render(state) {
     <section class="screen discover" aria-labelledby="discover-title">
       <p class="eyebrow">오늘의 첫 목적지 · ${moodLabel(state.mood)}${state.area ? ` · ${state.area.label} 근처` : ''}</p>
       <article class="destination">
-        <div class="destination-visual">${placeVisual(place)}</div>
+        <div class="destination-visual"${photoSlot(place)}>${placeVisual(place)}</div>
+        <p class="photo-credit fine-print" data-photo-credit-for="${place.id}" hidden></p>
         <div class="destination-body">
           <p class="kicker">${categoryLabel(place)}</p>
           <h1 id="discover-title" class="title" tabindex="-1">${place.name}</h1>

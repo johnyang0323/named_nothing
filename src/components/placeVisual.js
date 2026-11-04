@@ -5,6 +5,12 @@
  */
 import { hashString } from '../utils/date.js';
 import { escapeHtml, raw } from '../utils/dom.js';
+import { photosEnabled } from '../services/photos.js';
+
+/** Attribute that lets hydratePhotos() upgrade this slot with a real photo. */
+export function photoSlot(place) {
+  return photosEnabled(place) ? raw(` data-photo-for="${escapeHtml(place.id)}"`) : '';
+}
 
 const C = {
   ivory: '#F7F5F0',
