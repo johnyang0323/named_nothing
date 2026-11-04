@@ -4,11 +4,11 @@ import { formatKoreanDate } from '../utils/date.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, moodLabel } from './common.js';
 import { isBackendConfigured } from '../services/backend/config.js';
-import { getUser, isAuthReady, displayName, signInWithKakao, sendEmailCode, verifyEmailCode, signOut } from '../services/backend/auth.js';
+import { getUser, isAuthReady, displayName, signInWithKakao, signInWithEmail, signUpWithEmail, signOut, PASSWORD_MIN } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
 
 function authUi(ui) {
-  if (!ui.auth) ui.auth = { step: 'email', email: '', code: '', busy: false, error: '', info: '' };
+  if (!ui.auth) ui.auth = { mode: 'signin', email: '', password: '', busy: false, error: '', info: '' };
   return ui.auth;
 }
 
@@ -44,22 +44,21 @@ function accountSection(ui, sync) {
         <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18"><path fill="currentColor" d="M12 3C6.48 3 2 6.48 2 10.78c0 2.77 1.86 5.2 4.65 6.58l-.95 3.5c-.08.3.26.54.52.37l4.17-2.76c.53.06 1.07.09 1.61.09 5.52 0 10-3.48 10-7.78S17.52 3 12 3z"/></svg>
         카카오 로그인
       </button>
-      ${a.step === 'email'
-        ? html`<form class="email-form" data-form="email-code" novalidate>
-            <label class="note-label" for="auth-email">또는 이메일로 받은 코드로 로그인</label>
-            <div class="area-form">
-              <input id="auth-email" class="area-input" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" value="${a.email}" data-input="auth-email" data-focus-key="auth-email">
-              <button type="submit" class="button button-secondary button-small" ${a.busy ? 'disabled' : ''}>${a.busy ? '보내는 중…' : '코드 받기'}</button>
-            </div>
-          </form>`
-        : html`<form class="email-form" data-form="email-verify" novalidate>
-            <label class="note-label" for="auth-code">${a.email}(으)로 보낸 숫자 코드를 입력해 주세요</label>
-            <div class="area-form">
-              <input id="auth-code" class="area-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" value="${a.code}" data-input="auth-code" data-focus-key="auth-code">
-              <button type="submit" class="button button-primary button-small" ${a.busy ? 'disabled' : ''}>${a.busy ? '확인 중…' : '로그인'}</button>
-            </div>
-            <button type="button" class="text-button text-button-muted" data-action="auth-restart">다른 이메일로 하기</button>
-          </form>`}
+      <form class="email-form" data-form="email-auth" novalidate>
+        <p class="note-label">${a.mode === 'signin' ? '또는 이메일로 로그인' : '이메일로 가입하기'}</p>
+        <div class="auth-fields">
+          <label class="visually-hidden" for="auth-email">이메일</label>
+          <input id="auth-email" class="area-input" type="email" inputmode="email" autocomplete="${a.mode === 'signin' ? 'username' : 'email'}" placeholder="이메일" value="${a.email}" data-input="auth-email" data-focus-key="auth-email">
+          <label class="visually-hidden" for="auth-password">비밀번호</label>
+          <input id="auth-password" class="area-input" type="password" autocomplete="${a.mode === 'signin' ? 'current-password' : 'new-password'}" placeholder="${a.mode === 'signin' ? '비밀번호' : `비밀번호 (${PASSWORD_MIN}자 이상)`}" minlength="${PASSWORD_MIN}" value="${a.password}" data-input="auth-password" data-focus-key="auth-password">
+          <button type="submit" class="button button-primary button-small" ${a.busy ? 'disabled' : ''}>
+            ${a.busy ? '잠시만요…' : a.mode === 'signin' ? '로그인' : '가입하고 시작하기'}
+          </button>
+        </div>
+        <button type="button" class="text-button text-button-muted" data-action="auth-mode" data-focus-key="auth-mode">
+          ${a.mode === 'signin' ? '처음이에요 (가입하기)' : '이미 계정이 있어요 (로그인)'}
+        </button>
+      </form>
       ${a.info ? html`<p class="save-status">${a.info}</p>` : ''}
       ${a.error ? html`<p class="area-error">${a.error}</p>` : ''}`;
   }
@@ -246,8 +245,9 @@ actions['sign-out'] = async (ctx) => {
   ctx.announce('로그아웃했어요. 오늘 기록은 이 기기에 그대로 있어요.');
   ctx.rerender();
 };
-actions['auth-restart'] = ({ ui, rerender }) => {
-  ui.auth = { ...authUi(ui), step: 'email', code: '', error: '', info: '' };
+actions['auth-mode'] = ({ ui, rerender }) => {
+  const a = authUi(ui);
+  ui.auth = { ...a, mode: a.mode === 'signin' ? 'signup' : 'signin', error: '', info: '' };
   rerender();
 };
 actions['sync-retry'] = ({ sync }) => sync.retry();
@@ -256,8 +256,8 @@ export const inputs = {
   'auth-email': ({ ui }, el) => {
     authUi(ui).email = el.value;
   },
-  'auth-code': ({ ui }, el) => {
-    authUi(ui).code = el.value;
+  'auth-password': ({ ui }, el) => {
+    authUi(ui).password = el.value;
   },
   note: ({ ui }, el) => {
     ui.journalDraft.note = el.value;
@@ -269,16 +269,20 @@ export const inputs = {
 };
 
 export const forms = {
-  'email-code': (ctx) =>
+  'email-auth': (ctx) =>
     authStep(ctx, async (a) => {
-      a.email = await sendEmailCode(a.email);
-      a.step = 'code';
-      a.info = '메일을 보냈어요. 받은편지함과 스팸함을 확인해 주세요.';
-      ctx.announce(a.info);
-    }),
-  'email-verify': (ctx) =>
-    authStep(ctx, async (a) => {
-      await verifyEmailCode(a.email, a.code);
+      if (a.mode === 'signin') {
+        await signInWithEmail(a.email, a.password);
+      } else {
+        const { needsConfirmation } = await signUpWithEmail(a.email, a.password);
+        if (needsConfirmation) {
+          a.password = '';
+          a.mode = 'signin';
+          a.info = '확인 메일을 보냈어요. 메일의 링크를 이 브라우저에서 연 뒤 로그인해 주세요.';
+          ctx.announce(a.info);
+          return;
+        }
+      }
       ctx.ui.auth = null;
       ctx.announce('로그인했어요. 오늘 기록을 계정에 저장할게요.');
     }),

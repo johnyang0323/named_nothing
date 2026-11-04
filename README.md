@@ -93,7 +93,7 @@ If the SDK can't load (wrong key, unregistered domain, offline), neighborhood se
 
 Step-by-step setup (Korean, browser-only): [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md).
 
-- **Sign-in:** Kakao login (OAuth with PKCE, so the `?code=` doesn't clash with the `#screen` router) or a 6-digit email code. The email code works inside the iPhone home-screen app, where magic links would open in Safari. Signing in is optional.
+- **Sign-in:** Kakao login (OAuth with PKCE, so the `?code=` doesn't clash with the `#screen` router) or email + password. Email + password sends no email, so it works on Supabase's free plan, where email templates can't be edited, and inside the iPhone home-screen app, where emailed links would open in Safari. It expects "Confirm email" to be off. Signing in is optional.
 - **Sync:** local-first. The app always uses localStorage. When signed in, today's day is upserted to `days` (one row per user and date, JSON payload) about 1.2 s after each change. On sign-in, the copy with the newer `updatedAt` wins, and earlier days that only exist in this browser are uploaded once. **지난 날들** on My Day lists earlier days from both sources.
 - **Security:** Row Level Security on `days` (`supabase/schema.sql`) limits each user to their own rows. The frontend only gets the project URL and anon/publishable key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, set as GitHub Actions Variables).
 - **Photos:** the `place-photo` Edge Function (`supabase/functions/place-photo/index.ts`) keeps the Kakao **REST** key server-side and returns the best Kakao image-search hit for "<place name> <district>". Photos load over the illustration with `referrerpolicy="no-referrer"`, falling back to the thumbnail and then to the illustration. They are cached for 14 days and always credited with the note that search results may differ from the real place.
@@ -118,7 +118,7 @@ src/
       areaSearch.js        Neighborhood → center → real places via the SDK `services` library
       mapper.js            Pure: Kakao results → app places, filtering, distances, validation
       map.js               Real map with markers for the exploration screen
-    backend/               Optional Supabase: config, lazy client, auth (Kakao + email code), sync
+    backend/               Optional Supabase: config, lazy client, auth (Kakao + email/password), sync
     photos.js              Place photos via the Edge Function, with cache and fallbacks
     geolocation.js         One-shot, user-initiated location lookup
     recommender.js         Pure recommendation engine (mood weighting, alternatives, diverse nearby picks)

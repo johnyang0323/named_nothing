@@ -77,28 +77,53 @@ export async function signInWithKakao(returnScreen = 'day') {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const PASSWORD_MIN = 8;
 
-export async function sendEmailCode(email) {
+function checkCredentials(email, password) {
   const address = String(email || '').trim();
   if (!EMAIL_RE.test(address)) throw new AuthError('이메일 주소를 확인해 주세요.');
-  const supabase = await getSupabase();
-  if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
-  const { error } = await supabase.auth.signInWithOtp({ email: address, options: { shouldCreateUser: true } });
-  if (error) {
-    if (error.status === 429) throw new AuthError('메일을 너무 자주 요청했어요. 잠시 후 다시 시도해 주세요.');
-    throw new AuthError('인증 메일을 보내지 못했어요. 주소를 확인하고 다시 시도해 주세요.');
-  }
+  if (String(password || '').length < PASSWORD_MIN) throw new AuthError(`비밀번호는 ${PASSWORD_MIN}자 이상이어야 해요.`);
   return address;
 }
 
-export async function verifyEmailCode(email, code) {
-  const token = String(code || '').replace(/\s/g, '');
-  if (!/^\d{6,10}$/.test(token)) throw new AuthError('메일로 받은 숫자 코드를 입력해 주세요.');
+/** Email + password sign-in. No email is sent, so it works on the free plan and inside the iPhone app. */
+export async function signInWithEmail(email, password) {
+  const address = checkCredentials(email, password);
   const supabase = await getSupabase();
-  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
-  if (error) throw new AuthError('코드가 맞지 않거나 시간이 지났어요. 새 코드를 받아 다시 시도해 주세요.');
-  setUser(data?.user || data?.session?.user || null);
+  if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
+  const { data, error } = await supabase.auth.signInWithPassword({ email: address, password });
+  if (error) {
+    if (/confirm/i.test(error.message)) throw new AuthError('아직 이메일 확인이 끝나지 않은 계정이에요. 메일의 확인 링크를 누르거나 관리자에게 문의해 주세요.');
+    if (error.status === 429) throw new AuthError('시도가 너무 많았어요. 잠시 후 다시 해주세요.');
+    throw new AuthError('이메일이나 비밀번호가 맞지 않아요. 처음이라면 ‘처음이에요’를 눌러 가입해 주세요.');
+  }
+  setUser(data?.user || null);
   return currentUser;
+}
+
+/**
+ * Create an account. With "Confirm email" turned off in Supabase the person
+ * is signed in immediately; otherwise they get a confirmation link that
+ * returns to this page.
+ */
+export async function signUpWithEmail(email, password) {
+  const address = checkCredentials(email, password);
+  const supabase = await getSupabase();
+  if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
+  const { data, error } = await supabase.auth.signUp({ email: address, password, options: { emailRedirectTo: redirectUrl() } });
+  if (error) {
+    if (/already registered|already exists/i.test(error.message)) throw new AuthError('이미 가입된 이메일이에요. ‘로그인’으로 들어와 주세요.');
+    if (/password/i.test(error.message)) throw new AuthError('비밀번호가 너무 쉬워요. 더 길거나 다른 비밀번호를 써주세요.');
+    if (error.status === 429) throw new AuthError('시도가 너무 많았어요. 잠시 후 다시 해주세요.');
+    throw new AuthError('가입하지 못했어요. 잠시 후 다시 시도해 주세요.');
+  }
+  // Supabase returns a user with no identities when the address is already taken
+  if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    throw new AuthError('이미 가입된 이메일이에요. ‘로그인’으로 들어와 주세요.');
+  }
+  if (!data?.session) return { needsConfirmation: true };
+  setUser(data.user);
+  return { needsConfirmation: false };
 }
 
 export async function signOut() {
