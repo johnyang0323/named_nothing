@@ -9,7 +9,8 @@
  * - Storage and the clock are injectable for tests.
  */
 import { toDateKey } from '../utils/date.js';
-import { getAllPlaces, getPlaceById, placeExists } from './placeRepository.js';
+import { getAllPlaces, getPlaceById, placeExists, usePlaces, useSamplePlaces } from './placeRepository.js';
+import { sanitizeArea } from './kakao/mapper.js';
 import { pickInitial, pickAlternative, suggestNearby } from './recommender.js';
 import { moods } from '../data/places.js';
 
@@ -32,7 +33,14 @@ export function createEmptyDay(date) {
     discoveryIds: [],
     route: [],
     journal: { note: '', feeling: null, savedAt: null },
+    area: null,
   };
+}
+
+/** Point the place repository at the area's real places, or back at the sample. */
+function activateArea(area) {
+  if (area) usePlaces(area.places);
+  else useSamplePlaces();
 }
 
 const uniqueValidIds = (value) =>
@@ -102,7 +110,11 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
   const persist = safeStorage(storage);
   const date = toDateKey(now());
   const key = STORAGE_PREFIX + date;
-  let state = sanitizeDay(persist.read(key), date);
+  const stored = persist.read(key);
+  // the area decides which places exist, so restore it before validating ids
+  const storedArea = stored?.date === date ? sanitizeArea(stored.area) : null;
+  activateArea(storedArea);
+  let state = { ...sanitizeDay(stored, date), area: storedArea };
   const listeners = new Set();
   const places = () => getAllPlaces();
 
@@ -271,8 +283,28 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
       });
     },
 
+    /**
+     * Switch to real places around a neighborhood (or back to the sample
+     * with null). The route and suggestions start over because place ids
+     * differ between sources; mood and the journal are kept.
+     */
+    setArea(area) {
+      const clean = area ? sanitizeArea(area) : null;
+      if (area && !clean) return false;
+      activateArea(clean);
+      commit({
+        ...createEmptyDay(date),
+        mood: state.mood,
+        suggestionOffset: state.suggestionOffset,
+        journal: state.journal,
+        area: clean,
+      });
+      return true;
+    },
+
     resetDay() {
       persist.remove(key);
+      activateArea(null);
       commit(createEmptyDay(date));
     },
   };

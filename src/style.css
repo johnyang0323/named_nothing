@@ -664,6 +664,10 @@ a {
   margin-top: var(--space-6);
 }
 
+.schematic[hidden] {
+  display: none;
+}
+
 .schematic-svg {
   display: block;
   width: min(100%, 360px);
@@ -1056,6 +1060,93 @@ a {
 
 .toast-action:focus-visible {
   outline-color: var(--bg);
+}
+
+/* ---- Neighborhood search (real places) ---------------------------------- */
+
+.area-help {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.area-help strong {
+  color: var(--text);
+}
+
+.area-form {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.area-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+}
+
+.area-input::placeholder {
+  color: var(--muted);
+}
+
+.area-form .button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.area-error {
+  margin-top: var(--space-3);
+  font-size: 0.88rem;
+  color: #8a4b2f;
+}
+
+/* ---- Real map (Kakao) --------------------------------------------------- */
+
+.kakao-map {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.km-marker {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--font-sans);
+}
+
+.km-current {
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.km-num {
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--text);
+  background: var(--bg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.km-route {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--text-secondary);
+  background: var(--bg);
 }
 
 /* ---- Larger screens ------------------------------------------------------ */

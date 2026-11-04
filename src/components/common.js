@@ -7,7 +7,10 @@ export const moodLabel = (moodId) => moods.find((m) => m.id === moodId)?.label |
 /** Practical facts for a place, always marked as illustrative. */
 export function placeFacts(place) {
   const rows = [];
-  if (Number.isFinite(place.walkingTime)) rows.push(['걸어서', `약 ${place.walkingTime}분`]);
+  const isReal = place.source === 'kakao';
+  if (Number.isFinite(place.walkingTime)) {
+    rows.push(isReal ? ['동네 중심에서', `걸어서 약 ${place.walkingTime}분`] : ['걸어서', `약 ${place.walkingTime}분`]);
+  }
   if (place.estimatedStay) rows.push(['머무는 시간', place.estimatedStay]);
   if (place.estimatedCost) rows.push(['비용', place.estimatedCost]);
   if (!rows.length) return '';
@@ -15,7 +18,10 @@ export function placeFacts(place) {
     <dl class="facts">
       ${rows.map(([term, value]) => html`<div class="fact"><dt>${term}</dt><dd>${value}</dd></div>`)}
     </dl>
-    <p class="fine-print">예시 데이터예요. 실제 장소·시간·비용 정보가 아니에요.</p>`;
+    ${isReal
+      ? html`<p class="fine-print">장소 정보: 카카오. 걷는 시간은 직선거리로 어림한 값이고, 영업시간과 비용은 방문 전에 확인해 주세요.
+          ${place.placeUrl ? html`<a href="${place.placeUrl}" target="_blank" rel="noopener noreferrer">카카오맵에서 보기</a>` : ''}</p>`
+      : html`<p class="fine-print">예시 데이터예요. 실제 장소·시간·비용 정보가 아니에요.</p>`}`;
 }
 
 export function emptyState({ title, body, actionLabel, action, href }) {

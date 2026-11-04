@@ -103,6 +103,7 @@ const NEXT_PHRASES = {
   garden: '초록 속에서 숨을 고르기 좋아요',
   recordshop: '귀로 하는 산책을 해보기 좋아요',
   museum: '이 동네의 다른 시간을 엿보기 좋아요',
+  trail: '발길 닿는 대로 조금 더 걸어보기 좋아요',
 };
 
 /** Why `to` is worth considering after `from`. */

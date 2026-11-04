@@ -2,13 +2,36 @@ import { moods, smallSuggestions } from '../data/places.js';
 import { formatKoreanDate, hashString } from '../utils/date.js';
 import { html } from '../utils/dom.js';
 import { horizonVisual } from './placeVisual.js';
+import { isKakaoConfigured } from '../services/kakao/config.js';
+import { searchArea } from '../services/kakao/areaSearch.js';
+
+function areaSection(state, ui) {
+  if (!isKakaoConfigured()) return '';
+  const loading = ui.areaStatus === 'loading';
+  const error = ui.areaStatus && ui.areaStatus.error;
+  return html`
+    <section class="block area" aria-labelledby="area-title">
+      <h2 class="section-label" id="area-title">어디서 시작할까요? <span class="optional">(선택)</span></h2>
+      ${state.area
+        ? html`<p class="area-help"><strong>${state.area.label}</strong> 근처의 실제 장소로 추천하고 있어요.
+            <button type="button" class="text-button" data-action="clear-area" data-focus-key="clear-area">예시 장소로 돌아가기</button></p>`
+        : html`<p class="area-help">동네 이름을 적으면 그 근처의 실제 장소로 추천해요. 비워두면 예시 장소로 시작해요.</p>`}
+      <form class="area-form" data-form="area" novalidate>
+        <label class="visually-hidden" for="area-query">동네 이름</label>
+        <input id="area-query" class="area-input" type="text" inputmode="search" placeholder="예: 망원동, 성수역" autocomplete="off" maxlength="40" value="${ui.areaQuery || ''}" data-input="area-query" data-focus-key="area-query">
+        <button type="submit" class="button button-secondary button-small" data-focus-key="area-submit" ${loading ? 'disabled' : ''}>${loading ? '찾는 중…' : '동네 찾기'}</button>
+      </form>
+      ${state.route.length ? html`<p class="fine-print">동네를 바꾸면 오늘 담은 경로는 새로 시작돼요.</p>` : ''}
+      ${error ? html`<p class="area-error">${error}</p>` : ''}
+    </section>`;
+}
 
 function todaysSuggestion(state) {
   const base = hashString(state.date);
   return smallSuggestions[(base + state.suggestionOffset) % smallSuggestions.length];
 }
 
-export function render(state) {
+export function render(state, { ui }) {
   const suggestion = todaysSuggestion(state);
   const stops = state.route.length;
   return html`
@@ -43,6 +66,8 @@ export function render(state) {
         </div>
       </fieldset>
 
+      ${areaSection(state, ui)}
+
       <div class="cta-area">
         <button type="button" class="button button-primary button-wide" data-action="start">오늘 시작하기</button>
         ${stops
@@ -60,6 +85,33 @@ export const actions = {
   },
 };
 
+actions['clear-area'] = ({ store, ui, announce }) => {
+  ui.areaStatus = null;
+  store.actions.setArea(null);
+  announce('예시 장소로 돌아왔어요.');
+};
+
 export const inputs = {
   mood: ({ store }, el) => store.actions.setMood(el.value),
+  'area-query': ({ ui }, el) => {
+    ui.areaQuery = el.value;
+  },
+};
+
+export const forms = {
+  area: async ({ store, ui, rerender, announce }) => {
+    if (ui.areaStatus === 'loading') return;
+    ui.areaStatus = 'loading';
+    rerender();
+    try {
+      const area = await searchArea(ui.areaQuery);
+      ui.areaStatus = null;
+      store.actions.setArea(area);
+      announce(`${area.label} 근처에서 ${area.places.length}곳을 찾았어요.`);
+    } catch (error) {
+      ui.areaStatus = { error: error.message || '동네를 찾지 못했어요.' };
+      rerender();
+      announce(ui.areaStatus.error);
+    }
+  },
 };

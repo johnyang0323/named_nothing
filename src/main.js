@@ -84,6 +84,7 @@ function render() {
   const scrollY = window.scrollY;
 
   view.innerHTML = String(screen.render(store.getState(), ctx));
+  screen.afterRender?.(store.getState(), ctx);
 
   if (focusKey || itemKey) {
     const target = view.querySelector(`[data-focus-key="${CSS.escape(focusKey || '')}"]`);

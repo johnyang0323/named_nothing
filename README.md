@@ -45,6 +45,37 @@ npm test
 npm run build && npm run preview
 ```
 
+## Real places with Kakao Map (optional)
+
+Without a key, the app runs entirely on illustrative sample data. With a Kakao **JavaScript key**:
+
+- Home shows an optional "어디서 시작할까요?" field. Type a neighborhood (e.g. `망원동`, `성수역`) and the app gathers real places within about 1.5 km: independent cafés (big chains are skipped), bookstores, parks, libraries, galleries, culture spaces, workshops, record shops, markets and walking trails.
+- Recommendations, discoveries and the route then use those places. Exploration shows a real Kakao map with the same markers as the diagram.
+- Walking times are straight-line estimates (about 4 km/h), shown as such. Opening hours and prices are not shown; each place links to Kakao Map instead.
+- The "why visit" lines and activity ideas are general suggestions for that kind of place, not claims about the specific business.
+- No geolocation is requested. The user types the neighborhood.
+
+**Setup**
+
+1. Go to [Kakao Developers](https://developers.kakao.com) → 내 애플리케이션 → 애플리케이션 추가하기.
+2. Under **플랫폼 → Web**, register every origin you'll use, e.g. `http://localhost:5173` and your deployed domain. Unregistered origins can't load the map.
+3. If your app settings have a **카카오맵** product toggle, turn it on.
+4. Copy `.env.example` to `.env` and paste the **JavaScript 키**:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   ```
+   VITE_KAKAO_MAP_KEY=your_javascript_key
+   ```
+
+5. Restart `npm run dev`. For a deployed build, set `VITE_KAKAO_MAP_KEY` in the host's build environment, because it is baked in at build time.
+
+The JavaScript key is public by design; the registered-domain list protects it. `.env` is git-ignored anyway. **Never use the REST API or Admin key here.** Those are secrets and are not needed.
+
+If the SDK can't load (wrong key, unregistered domain, offline), neighborhood search shows a clear message. Exploration falls back to the illustrative diagram, and the rest of the app keeps working.
+
 ## Structure
 
 ```
@@ -54,8 +85,15 @@ src/
   main.js                  Hash router, delegated events, focus preservation, toast/announcer
   style.css                Design system (tokens, typography, components, responsive, reduced motion)
   data/places.js           ILLUSTRATIVE sample places, moods, mood weights, category transitions
+  data/categoryTemplates.js  Gentle per-category copy used for real places
   services/
-    placeRepository.js     The single access point for place data (swap for a real provider here)
+    placeRepository.js     Single access point for place data; switches between sample and real places
+    kakao/
+      config.js            Reads VITE_KAKAO_MAP_KEY
+      sdk.js               Loads the Kakao Maps SDK once, on demand, with timeout and errors
+      areaSearch.js        Neighborhood → center → real places via the SDK `services` library
+      mapper.js            Pure: Kakao results → app places, filtering, distances, validation
+      map.js               Real map with markers for the exploration screen
     recommender.js         Pure recommendation engine (mood weighting, alternatives, diverse nearby picks)
     store.js               Date-keyed state, actions, localStorage persistence with validation
   components/
@@ -63,7 +101,7 @@ src/
     placeVisual.js         Locally generated editorial SVG illustrations per place category
     common.js              Shared fragments (facts, empty state, labels)
   utils/                   date.js (local date key, Korean date), dom.js (escaping html`` template)
-tests/                     recommender.test.js, store.test.js
+tests/                     recommender.test.js, store.test.js, kakao.test.js
 ```
 
 ### How recommendations work
@@ -91,8 +129,10 @@ tests/                     recommender.test.js, store.test.js
 
 ## Current limitations
 
-- **All places are fictional sample data.** Walking times, stay durations and costs are examples, and the UI labels them as such.
-- The exploration diagram is schematic. Its positions are on a 0–100 canvas, not geographic coordinates.
+- **Without a Kakao key, all places are fictional sample data.** Walking times, stay durations and costs are examples, and the UI labels them as such. The exploration diagram is then schematic.
+- With Kakao, walking times are straight-line estimates, there are no opening hours, and there is no turn-by-turn navigation.
+- The Kakao integration was tested against a stand-in SDK (unit tests plus a scripted browser run), not yet against the live Kakao service.
+- The claude.ai artifact preview can't load the Kakao SDK, because its security policy blocks the script. There it always uses sample data.
 - Illustrations are generated SVG, not photographs.
 - Only today is kept in the UI. Past days remain in `localStorage` under their own keys, but there is no history view or automatic cleanup.
 - If the app stays open past midnight, it keeps using the date it loaded with until it is refreshed.
@@ -100,8 +140,8 @@ tests/                     recommender.test.js, store.test.js
 
 ## Future integration points
 
-- **Real places (Kakao Local API / curated DB):** implement a provider in `services/placeRepository.js` that returns the same shape as `data/places.js`. Setting `place.image` to a real photo URL makes `placeVisual` render it automatically.
-- **Real map (Kakao Maps):** replace `schematicMap()` in `components/explore.js`, and replace `schematicDistance` / `describeProximity` with real distances.
+- **Curated editorial layer:** store hand-written `whyVisit` text and photos for real Kakao place ids, and merge them in `kakao/mapper.js`. Setting `place.image` makes `placeVisual` show the photo.
+- **Walking routes:** real walking times would need a directions API, which needs a server-side key.
 - **AI recommendations:** keep the signatures of `pickInitial`, `pickAlternative` and `suggestNearby` (they could become async) and call a service instead.
 - **Supabase:** put a remote adapter behind the `storage` parameter of `createStore`, or sync the date-keyed day objects.
 - **PWA:** add a manifest and service worker. The app is already static and works offline once loaded.

@@ -3,12 +3,42 @@ import { explainNext, describeProximity, schematicDistance } from '../services/r
 import { html, raw } from '../utils/dom.js';
 import { categoryLabel, emptyState } from './common.js';
 import { placeVisual } from './placeVisual.js';
+import { isKakaoConfigured } from '../services/kakao/config.js';
+import { mountKakaoMap } from '../services/kakao/map.js';
+import { metersBetween, walkMinutes } from '../services/kakao/mapper.js';
+
+const useRealMap = (place) => Boolean(place.coords) && isKakaoConfigured();
+
+/** Real walking hint when both places have coordinates, otherwise the schematic wording. */
+function distanceHint(from, to) {
+  if (from.coords && to.coords) return `걸어서 약 ${walkMinutes(metersBetween(from.coords, to.coords))}분 (직선거리)`;
+  return `${describeProximity(schematicDistance(from, to))} (예시)`;
+}
+
+function legend(others) {
+  return html`
+    <span class="legend"><span class="dot dot-current" aria-hidden="true"></span>지금 여기</span>
+    <span class="legend"><span class="dot dot-num" aria-hidden="true">1</span>발견</span>
+    ${others.length ? html`<span class="legend"><span class="dot dot-route" aria-hidden="true"></span>담아둔 곳</span>` : ''}`;
+}
+
+function kakaoMapFigure(current, routePlaces) {
+  const others = routePlaces.filter((p) => p.id !== current.id);
+  return html`
+    <figure class="schematic real-map" data-real-map>
+      <div class="kakao-map" data-kakao-map role="img" aria-label="${current.name} 주변 지도">지도를 불러오는 중…</div>
+      <figcaption>
+        ${legend(others)}
+        <span class="map-note">지도: 카카오맵. 길찾기가 아니라 주변을 가늠하는 용도예요.</span>
+      </figcaption>
+    </figure>`;
+}
 
 const MAP_PAD = 10;
 const scale = (v) => MAP_PAD + (v / 100) * (100 - MAP_PAD * 2);
 
 /** Illustrative, non-geographic diagram of where things sit relative to each other. */
-function schematicMap(current, discoveries, routePlaces) {
+function schematicMap(current, discoveries, routePlaces, { hidden = false } = {}) {
   const point = (p) => ({ x: scale(p.position.x), y: scale(p.position.y) });
   const c = point(current);
   const others = routePlaces.filter((p) => p.id !== current.id);
@@ -36,12 +66,10 @@ function schematicMap(current, discoveries, routePlaces) {
       <circle cx="${c.x}" cy="${c.y}" r="2.8" fill="var(--accent)"/>
     </svg>`;
   return html`
-    <figure class="schematic">
+    <figure class="schematic" data-schematic ${hidden ? 'hidden' : ''}>
       ${raw(svg)}
       <figcaption>
-        <span class="legend"><span class="dot dot-current" aria-hidden="true"></span>지금 여기</span>
-        <span class="legend"><span class="dot dot-num" aria-hidden="true">1</span>발견</span>
-        ${others.length ? html`<span class="legend"><span class="dot dot-route" aria-hidden="true"></span>담아둔 곳</span>` : ''}
+        ${legend(others)}
         <span class="map-note">실제 지도가 아니라 분위기를 보여주는 예시 그림이에요.</span>
       </figcaption>
     </figure>`;
@@ -79,7 +107,10 @@ export function render(state) {
         </button>
       </p>
 
-      ${schematicMap(current, discoveries, routePlaces)}
+      ${current.placeUrl ? html`<p class="quiet-link"><a href="${current.placeUrl}" target="_blank" rel="noopener noreferrer">카카오맵에서 위치 보기</a></p>` : ''}
+
+      ${useRealMap(current) ? kakaoMapFigure(current, routePlaces) : ''}
+      ${schematicMap(current, discoveries, routePlaces, { hidden: useRealMap(current) })}
 
       <section class="block" aria-labelledby="discoveries-title">
         <div class="block-head">
@@ -89,12 +120,12 @@ export function render(state) {
         ${discoveries.length
           ? html`<ol class="discoveries">
               ${discoveries.map((place, i) => {
-                const proximity = describeProximity(schematicDistance(current, place));
+                const proximity = distanceHint(current, place);
                 return html`
                   <li class="discovery">
                     <div class="discovery-visual">${placeVisual(place)}<span class="discovery-num" aria-hidden="true">${i + 1}</span></div>
                     <div class="discovery-body">
-                      <p class="kicker">${categoryLabel(place)} · ${proximity} (예시)</p>
+                      <p class="kicker">${categoryLabel(place)} · ${proximity}</p>
                       <h3 class="discovery-name">${place.name}</h3>
                       <p class="discovery-reason">${explainNext(current, place)}</p>
                       <p class="discovery-try">해볼 만한 것 — ${place.suggestedActivities[0]}</p>
@@ -114,6 +145,23 @@ export function render(state) {
 
       <p class="route-link"><a href="#route" class="button button-ghost">내 경로 보기 (${state.route.length}곳)</a></p>
     </section>`;
+}
+
+/** Mount the real map after the markup is in the DOM; fall back to the diagram on failure. */
+export function afterRender(state) {
+  const container = document.querySelector('[data-kakao-map]');
+  const current = getPlaceById(state.currentId);
+  if (!container || !current) return;
+  mountKakaoMap(container, {
+    current,
+    discoveries: state.discoveryIds.map(getPlaceById).filter(Boolean),
+    routePlaces: state.route.map((s) => getPlaceById(s.id)).filter(Boolean),
+  }).then((ok) => {
+    if (ok || !container.isConnected) return;
+    container.closest('[data-real-map]')?.remove();
+    const schematic = document.querySelector('[data-schematic]');
+    if (schematic) schematic.hidden = false;
+  });
 }
 
 export const actions = {

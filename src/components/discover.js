@@ -14,7 +14,7 @@ export function render(state) {
 
   return html`
     <section class="screen discover" aria-labelledby="discover-title">
-      <p class="eyebrow">오늘의 첫 목적지 · ${moodLabel(state.mood)}</p>
+      <p class="eyebrow">오늘의 첫 목적지 · ${moodLabel(state.mood)}${state.area ? ` · ${state.area.label} 근처` : ''}</p>
       <article class="destination">
         <div class="destination-visual">${placeVisual(place)}</div>
         <div class="destination-body">

@@ -1,17 +1,35 @@
 /**
  * Single access point for place data.
  *
- * Today it reads the bundled illustrative sample. Later this module is the
- * seam for a real provider (e.g. Kakao Local API, Supabase) — keep the
- * returned objects in the same shape as src/data/places.js and the rest of
- * the app will not need to change.
+ * By default it serves the bundled ILLUSTRATIVE sample. When the user picks
+ * a neighborhood, the store calls usePlaces() with real places fetched from
+ * Kakao (see services/kakao/), and every screen and the recommender read
+ * from that list instead — they never know which source is active.
  */
-import { places } from '../data/places.js';
+import { places as samplePlaces } from '../data/places.js';
 
-const byId = new Map(places.map((place) => [place.id, place]));
+let active = samplePlaces;
+let byId = new Map(active.map((place) => [place.id, place]));
+let source = 'sample';
+
+export function usePlaces(list) {
+  active = list;
+  byId = new Map(list.map((place) => [place.id, place]));
+  source = 'kakao';
+}
+
+export function useSamplePlaces() {
+  active = samplePlaces;
+  byId = new Map(samplePlaces.map((place) => [place.id, place]));
+  source = 'sample';
+}
+
+export function getPlaceSource() {
+  return source;
+}
 
 export function getAllPlaces() {
-  return places;
+  return active;
 }
 
 export function getPlaceById(id) {

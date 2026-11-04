@@ -42,6 +42,7 @@ export const CATEGORY_LABELS = {
   garden: '정원',
   recordshop: '레코드 가게',
   museum: '전시관',
+  trail: '산책길',
 };
 
 export const places = [
@@ -468,13 +469,14 @@ export const CATEGORY_TRANSITIONS = {
   park: ['bookstore', 'cafe', 'gallery', 'recordshop'],
   riverside: ['bookstore', 'cafe', 'garden', 'library'],
   street: ['bookstore', 'cafe', 'park', 'workshop'],
-  bookstore: ['architecture', 'street', 'riverside', 'viewpoint'],
-  library: ['architecture', 'riverside', 'park', 'street'],
-  cafe: ['street', 'gallery', 'riverside', 'architecture'],
+  bookstore: ['architecture', 'street', 'riverside', 'viewpoint', 'trail'],
+  library: ['architecture', 'riverside', 'park', 'street', 'trail'],
+  cafe: ['street', 'gallery', 'riverside', 'architecture', 'trail'],
   architecture: ['cafe', 'bookstore', 'museum', 'market'],
   market: ['park', 'riverside', 'cafe', 'garden'],
   workshop: ['cafe', 'street', 'park', 'viewpoint'],
   viewpoint: ['cafe', 'market', 'recordshop', 'park'],
   garden: ['bookstore', 'gallery', 'street', 'workshop'],
   recordshop: ['riverside', 'park', 'cafe', 'architecture'],
+  trail: ['cafe', 'bookstore', 'market', 'gallery'],
 };
