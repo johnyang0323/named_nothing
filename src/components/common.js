@@ -9,7 +9,7 @@ export function placeFacts(place) {
   const rows = [];
   const isReal = place.source === 'kakao';
   if (Number.isFinite(place.walkingTime)) {
-    rows.push(isReal ? ['동네 중심에서', `걸어서 약 ${place.walkingTime}분`] : ['걸어서', `약 ${place.walkingTime}분`]);
+    rows.push(isReal ? [place.walkingFrom || '동네 중심에서', `걸어서 약 ${place.walkingTime}분`] : ['걸어서', `약 ${place.walkingTime}분`]);
   }
   if (place.estimatedStay) rows.push(['머무는 시간', place.estimatedStay]);
   if (place.estimatedCost) rows.push(['비용', place.estimatedCost]);

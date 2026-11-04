@@ -136,3 +136,15 @@ test('store: switching to a real area recommends only real places and survives r
   assert.equal(back.getState().area, null);
   assert.equal(back.actions.setArea({ label: 'x' }), false, 'invalid area ignored');
 });
+
+test('GPS areas: coordinates are coarsened and labelled', async () => {
+  const { coarseCoords, WALKING_FROM } = await import('../src/services/kakao/mapper.js');
+  assert.deepEqual(coarseCoords({ lat: 37.5563219, lng: 126.9061877 }), { lat: 37.556, lng: 126.906 });
+  const places = buildAreaPlaces([{ search: search('cafe'), docs: [doc(9, '작은 카페', '음식점 > 카페')] }], center, WALKING_FROM.gps);
+  assert.equal(places[0].walkingFrom, '현재 위치에서');
+  const area = { ...fakeArea(), origin: 'gps' };
+  assert.equal(sanitizeArea(area).origin, 'gps');
+  assert.equal(sanitizeArea({ ...area, origin: 'evil' }).origin, 'name');
+  const tampered = { ...area, places: area.places.map((p) => ({ ...p, walkingFrom: '<b>x</b>' })) };
+  assert.equal(sanitizeArea(tampered).places[0].walkingFrom, '동네 중심에서');
+});

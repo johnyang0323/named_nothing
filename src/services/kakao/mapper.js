@@ -9,6 +9,12 @@ import { hashString } from '../../utils/date.js';
 export const SEARCH_RADIUS_METERS = 1500;
 export const MAX_PER_SEARCH = 6;
 export const MIN_AREA_PLACES = 6;
+export const WALKING_FROM = { name: '동네 중심에서', gps: '현재 위치에서' };
+
+/** ~100 m precision: enough to find nearby places, without storing an exact location. */
+export function coarseCoords({ lat, lng }) {
+  return { lat: Math.round(lat * 1000) / 1000, lng: Math.round(lng * 1000) / 1000 };
+}
 
 /**
  * What to ask Kakao for. `match` filters keyword results whose category or
@@ -79,7 +85,7 @@ export function toSchematicPosition(coords, center, radius = SEARCH_RADIUS_METER
 const pick = (list, seed, offset = 0) => list[(seed + offset) % list.length];
 
 /** Convert one Kakao document into an app place. Returns null if unusable. */
-export function toPlace(doc, search, center) {
+export function toPlace(doc, search, center, walkingFrom = WALKING_FROM.name) {
   const lat = Number(doc.y);
   const lng = Number(doc.x);
   if (!doc.id || !doc.place_name || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
@@ -104,6 +110,7 @@ export function toPlace(doc, search, center) {
     estimatedStay: template.estimatedStay,
     estimatedCost: '방문 전 확인해 주세요',
     walkingTime: walkMinutes(meters),
+    walkingFrom,
     image: null,
     tags: [kakaoKind].filter(Boolean),
     area: 'kakao',
@@ -119,13 +126,13 @@ export function toPlace(doc, search, center) {
  * Merge results of all searches: filter, dedupe (first search wins),
  * keep the closest few per search so no single kind dominates.
  */
-export function buildAreaPlaces(resultsBySearch, center) {
+export function buildAreaPlaces(resultsBySearch, center, walkingFrom = WALKING_FROM.name) {
   const seen = new Set();
   const places = [];
   resultsBySearch.forEach(({ search, docs }) => {
     const usable = (docs || [])
       .filter((doc) => matchesSearch(doc, search))
-      .map((doc) => toPlace(doc, search, center))
+      .map((doc) => toPlace(doc, search, center, walkingFrom))
       .filter(Boolean)
       .filter((p) => !seen.has(p.id))
       .sort((a, b) => (a.walkingTime ?? 99) - (b.walkingTime ?? 99))
@@ -162,6 +169,7 @@ export function sanitizePlace(p) {
     estimatedStay: isStr(p.estimatedStay) ? p.estimatedStay : '',
     estimatedCost: isStr(p.estimatedCost) ? p.estimatedCost : '',
     walkingTime: isNum(p.walkingTime) ? p.walkingTime : null,
+    walkingFrom: Object.values(WALKING_FROM).includes(p.walkingFrom) ? p.walkingFrom : WALKING_FROM.name,
     image: null,
     tags: strList(p.tags),
     area: 'kakao',
@@ -182,6 +190,7 @@ export function sanitizeArea(area) {
   if (places.length < MIN_AREA_PLACES) return null;
   return {
     label: area.label.trim().slice(0, 40),
+    origin: area.origin === 'gps' ? 'gps' : 'name',
     center: { lat: area.center.lat, lng: area.center.lng },
     places,
   };

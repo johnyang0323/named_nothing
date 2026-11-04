@@ -3,7 +3,7 @@
  * with the Kakao Maps JS SDK `services` library (JavaScript key only).
  */
 import { loadKakao, KakaoUnavailableError } from './sdk.js';
-import { SEARCHES, SEARCH_RADIUS_METERS, MIN_AREA_PLACES, buildAreaPlaces } from './mapper.js';
+import { SEARCHES, SEARCH_RADIUS_METERS, MIN_AREA_PLACES, WALKING_FROM, buildAreaPlaces, coarseCoords } from './mapper.js';
 
 export class AreaSearchError extends Error {}
 
@@ -35,22 +35,19 @@ async function findCenter(kakao, query) {
   throw new AreaSearchError(`‘${query}’을(를) 찾지 못했어요. 동 이름이나 역 이름으로 다시 적어보세요.`);
 }
 
-export async function searchArea(rawQuery) {
-  const query = String(rawQuery || '').trim();
-  if (!query) throw new AreaSearchError('동네 이름을 적어주세요.');
-
-  let kakao;
+async function ensureKakao() {
   try {
-    kakao = await loadKakao();
+    return await loadKakao();
   } catch (error) {
     throw new AreaSearchError(error instanceof KakaoUnavailableError ? error.message : '카카오맵을 불러오지 못했어요.');
   }
+}
 
-  const center = await findCenter(kakao, query);
+/** Run every search around `center` and turn the results into app places. */
+async function gatherPlaces(kakao, center, walkingFrom) {
   const places = new kakao.maps.services.Places();
   const location = new kakao.maps.LatLng(center.lat, center.lng);
   const options = { location, radius: SEARCH_RADIUS_METERS, sort: kakao.maps.services.SortBy.ACCURACY };
-
   const resultsBySearch = await Promise.all(
     SEARCHES.map(async (search) => {
       const { data } = await callService((cb) =>
@@ -61,10 +58,42 @@ export async function searchArea(rawQuery) {
       return { search, docs: data };
     }),
   );
+  return buildAreaPlaces(resultsBySearch, center, walkingFrom);
+}
 
-  const areaPlaces = buildAreaPlaces(resultsBySearch, center);
+/** Neighborhood name → area. */
+export async function searchArea(rawQuery) {
+  const query = String(rawQuery || '').trim();
+  if (!query) throw new AreaSearchError('동네 이름을 적어주세요.');
+  const kakao = await ensureKakao();
+  const center = await findCenter(kakao, query);
+  const areaPlaces = await gatherPlaces(kakao, center, WALKING_FROM.name);
   if (areaPlaces.length < MIN_AREA_PLACES) {
     throw new AreaSearchError(`‘${query}’ 근처에서 가볼 만한 곳을 충분히 찾지 못했어요. 다른 동네로 시도해 보세요.`);
   }
-  return { label: query, center, places: areaPlaces };
+  return { label: query, origin: 'name', center, places: areaPlaces };
+}
+
+/** Name of the administrative 동 at a coordinate, e.g. "망원1동". */
+async function regionName(kakao, center) {
+  const geocoder = new kakao.maps.services.Geocoder();
+  const { data, status } = await callService((cb) => geocoder.coord2RegionCode(center.lng, center.lat, cb));
+  if (status !== kakao.maps.services.Status.OK) return null;
+  const region = data.find((r) => r.region_type === 'H') || data[0];
+  return region?.region_3depth_name || region?.region_2depth_name || null;
+}
+
+/**
+ * Current position → area. Coordinates are rounded to ~100 m before they
+ * are used or stored, and never leave the device except as the Kakao
+ * search location.
+ */
+export async function searchAreaAt(position) {
+  const center = coarseCoords(position);
+  const kakao = await ensureKakao();
+  const [name, areaPlaces] = await Promise.all([regionName(kakao, center), gatherPlaces(kakao, center, WALKING_FROM.gps)]);
+  if (areaPlaces.length < MIN_AREA_PLACES) {
+    throw new AreaSearchError('지금 위치 근처에서 가볼 만한 곳을 충분히 찾지 못했어요. 동네 이름으로 찾아보세요.');
+  }
+  return { label: name ? `${name} (현재 위치)` : '현재 위치', origin: 'gps', center, places: areaPlaces };
 }

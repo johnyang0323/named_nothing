@@ -66,7 +66,7 @@ Without a key, the app runs entirely on illustrative sample data. With a Kakao *
 - Recommendations, discoveries and the route then use those places. Exploration shows a real Kakao map with the same markers as the diagram.
 - Walking times are straight-line estimates (about 4 km/h), shown as such. Opening hours and prices are not shown; each place links to Kakao Map instead.
 - The "why visit" lines and activity ideas are general suggestions for that kind of place, not claims about the specific business.
-- No geolocation is requested. The user types the neighborhood.
+- **현재 위치로 찾기** (optional) asks for location only when tapped. It does a single lookup, with no background tracking. Coordinates are rounded to about 100 m before they are used for the Kakao search or saved on the device, and the area is labelled with its administrative 동, e.g. "망원1동 (현재 위치)". If permission is denied, the app explains how to allow it or suggests typing a neighborhood instead.
 
 **Setup**
 

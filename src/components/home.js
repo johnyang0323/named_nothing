@@ -3,7 +3,8 @@ import { formatKoreanDate, hashString } from '../utils/date.js';
 import { html } from '../utils/dom.js';
 import { horizonVisual } from './placeVisual.js';
 import { isKakaoConfigured } from '../services/kakao/config.js';
-import { searchArea } from '../services/kakao/areaSearch.js';
+import { searchArea, searchAreaAt } from '../services/kakao/areaSearch.js';
+import { canUseLocation, getCurrentPosition } from '../services/geolocation.js';
 
 function areaSection(state, ui) {
   if (!isKakaoConfigured()) return '';
@@ -21,6 +22,12 @@ function areaSection(state, ui) {
         <input id="area-query" class="area-input" type="text" inputmode="search" placeholder="예: 망원동, 성수역" autocomplete="off" maxlength="40" value="${ui.areaQuery || ''}" data-input="area-query" data-focus-key="area-query">
         <button type="submit" class="button button-secondary button-small" data-focus-key="area-submit" ${loading ? 'disabled' : ''}>${loading ? '찾는 중…' : '동네 찾기'}</button>
       </form>
+      ${canUseLocation()
+        ? html`<p class="area-gps">
+            <button type="button" class="text-button" data-action="use-location" data-focus-key="use-location" ${loading ? 'disabled' : ''}>현재 위치로 찾기</button>
+            <span class="fine-print">위치는 근처 장소를 찾을 때만 쓰고, 약 100m 단위로 어림해서 이 기기에만 저장해요.</span>
+          </p>`
+        : ''}
       ${state.route.length ? html`<p class="fine-print">동네를 바꾸면 오늘 담은 경로는 새로 시작돼요.</p>` : ''}
       ${error ? html`<p class="area-error">${error}</p>` : ''}
     </section>`;
@@ -98,20 +105,26 @@ export const inputs = {
   },
 };
 
-export const forms = {
-  area: async ({ store, ui, rerender, announce }) => {
-    if (ui.areaStatus === 'loading') return;
-    ui.areaStatus = 'loading';
+/** Shared loading / success / error handling for both ways of picking an area. */
+async function runAreaSearch({ store, ui, rerender, announce }, find) {
+  if (ui.areaStatus === 'loading') return;
+  ui.areaStatus = 'loading';
+  rerender();
+  announce('근처 장소를 찾고 있어요.');
+  try {
+    const area = await find();
+    ui.areaStatus = null;
+    store.actions.setArea(area);
+    announce(`${area.label} 근처에서 ${area.places.length}곳을 찾았어요.`);
+  } catch (error) {
+    ui.areaStatus = { error: error.message || '동네를 찾지 못했어요.' };
     rerender();
-    try {
-      const area = await searchArea(ui.areaQuery);
-      ui.areaStatus = null;
-      store.actions.setArea(area);
-      announce(`${area.label} 근처에서 ${area.places.length}곳을 찾았어요.`);
-    } catch (error) {
-      ui.areaStatus = { error: error.message || '동네를 찾지 못했어요.' };
-      rerender();
-      announce(ui.areaStatus.error);
-    }
-  },
+    announce(ui.areaStatus.error);
+  }
+}
+
+actions['use-location'] = (ctx) => runAreaSearch(ctx, async () => searchAreaAt(await getCurrentPosition()));
+
+export const forms = {
+  area: (ctx) => runAreaSearch(ctx, () => searchArea(ctx.ui.areaQuery)),
 };
