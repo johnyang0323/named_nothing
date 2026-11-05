@@ -1,6 +1,6 @@
 const { chromium, devices } = require('playwright');
 const { launch, OUT, ROOT } = require('./env.cjs');
-const { createBackend, wire, signUp, setArea } = require('./helpers.cjs');
+const { createBackend, wire, signUp, setArea, until } = require('./helpers.cjs');
 const APP = 'http://localhost:4175/';
 const ok = (...a) => console.log('✔', ...a);
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
@@ -72,13 +72,27 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
   await pa.click('[data-action="go"]');
   await pa.waitForSelector('#explore-title');
   await pa.goto(APP + '#day');
-  await pa.fill('#journal-note', '지도에서 고른 동네 산책');
+  // type key by key while 지난 날들 / sync status load in the background:
+  // nothing may steal focus or drop characters
+  await pa.click('#journal-note');
+  await pa.keyboard.type('지도에서 고른 동네 산책', { delay: 35 });
+  assert((await pa.inputValue('#journal-note')) === '지도에서 고른 동네 산책', 'typed text kept: ' + (await pa.inputValue('#journal-note')));
+  assert(await pa.evaluate(() => document.activeElement?.id === 'journal-note'), 'note box kept focus');
   await pa.click('text=기록 저장');
-  await pa.waitForTimeout(1800);
-  assert(backend.db.get(`user-1|${TODAY}`)?.data.journal.note === '지도에서 고른 동네 산책', 'synced');
+  await pa.waitForSelector('.save-status:has-text("이 기기에 저장했어요")');
+  try {
+    await until(() => backend.db.get(`user-1|${TODAY}`)?.data.journal.note === '지도에서 고른 동네 산책', 8000, 'journal synced');
+  } catch (error) {
+    const row = backend.db.get(`user-1|${TODAY}`);
+    console.log('DEBUG account copy:', JSON.stringify({ note: row?.data?.journal?.note, updatedAt: row?.data?.updatedAt }));
+    console.log('DEBUG device copy:', await pa.evaluate((d) => { const v = JSON.parse(localStorage.getItem('plannish-day:' + d) || 'null'); return JSON.stringify({ note: v?.journal?.note, updatedAt: v?.updatedAt }); }, TODAY));
+    console.log('DEBUG sync line:', await pa.textContent('.account-sync').catch(() => 'n/a'));
+    console.log('DEBUG last requests:', backend.log.slice(-15).join(' | '));
+    throw error;
+  }
   assert(backend.db.has('user-1|2026-11-01'), 'earlier local day uploaded on first login');
   await pa.waitForSelector('text=느티나무 아래에서 쉬었다');
-  ok('discover → explore → journal synced; earlier local day uploaded and listed in 지난 날들');
+  ok('typing a note while My Day loads keeps every character and the focus; saved, synced; earlier local day uploaded and listed in 지난 날들');
 
   // sign out → device cleared, gate back
   await pa.click('[data-action="sign-out"]');

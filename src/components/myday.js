@@ -39,7 +39,7 @@ function tasteSection(taste) {
     </section>`;
 }
 
-function syncLine(sync) {
+export function syncLine(sync) {
   const { status, lastSavedAt } = sync.getStatus();
   if (status === 'syncing') return html`<span>저장하는 중…</span>`;
   if (status === 'error') {
@@ -100,11 +100,13 @@ function historySection(ui) {
     </section>`;
 }
 
-export function onEnter({ ui, sync, rerender, getScreen }) {
+export function onEnter({ ui, sync, getScreen }) {
   ui.history = ui.history || null;
   sync.history().then((list) => {
     ui.history = list;
-    if (getScreen() === 'day') rerender();
+    // fill just that section: a full redraw could interrupt someone typing a note
+    const slot = getScreen() === 'day' && document.querySelector('[data-history-slot]');
+    if (slot) slot.innerHTML = String(historySection(ui));
   });
 }
 
@@ -171,7 +173,7 @@ export function render(state, { ui, sync, taste }) {
           )}
         </fieldset>
         <label class="note-label" for="journal-note">오늘을 기억할 한 문장</label>
-        <textarea id="journal-note" class="note" rows="3" maxlength="${NOTE_MAX_LENGTH}" data-input="note" placeholder="예: 처음 가본 골목에서 고양이를 만났다.">${d.note}</textarea>
+        <textarea id="journal-note" class="note" rows="3" maxlength="${NOTE_MAX_LENGTH}" data-input="note" data-focus-key="journal-note" placeholder="예: 처음 가본 골목에서 고양이를 만났다.">${d.note}</textarea>
         <div class="journal-foot">
           <span class="counter" data-counter>${d.note.length}/${NOTE_MAX_LENGTH}</span>
           <button type="submit" class="button button-primary button-small" data-focus-key="save-journal">기록 저장</button>
@@ -185,7 +187,7 @@ export function render(state, { ui, sync, taste }) {
 
       ${tasteSection(taste)}
 
-      ${historySection(ui)}
+      <div data-history-slot>${historySection(ui)}</div>
 
       ${isBackendConfigured()
         ? html`<section class="block diagnostics" aria-labelledby="diag-title">

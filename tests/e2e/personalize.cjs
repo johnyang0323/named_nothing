@@ -1,6 +1,6 @@
 const { chromium, devices } = require('playwright');
 const { launch, OUT, ROOT } = require('./env.cjs');
-const { createBackend, wire, signUp, setArea } = require('./helpers.cjs');
+const { createBackend, wire, signUp, setArea, until } = require('./helpers.cjs');
 const APP = 'http://localhost:4175/';
 const ok = (...a) => console.log('✔', ...a);
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
@@ -61,7 +61,7 @@ const errors = [];
   assert((await p.locator('.wild-tag').count()) === 1, 'one wild discovery');
   ok('explore: one of three discoveries is tagged "새로운 발견"');
 
-  await p.waitForTimeout(2600); // taste push is debounced
+  await until(() => backend.prefs.get('user-1')?.taste.events >= 6, 10000, 'taste synced'); // push is debounced
   const remote = backend.prefs.get('user-1');
   assert(remote && remote.taste.events >= 6, 'taste synced ' + JSON.stringify(remote?.taste));
   ok('taste saved to the account (', remote.taste.events, 'signals )');

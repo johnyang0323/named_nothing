@@ -53,12 +53,28 @@ export function createSync(store, { onForeignDevice, onSignedIn } = {}) {
     if (error) throw error;
   }
 
+  // Today's uploads run one at a time and always send the state as it is
+  // *when the upload starts*, so an older copy can never land after a newer one.
+  let queue = Promise.resolve();
+  let lastPushed = null; // updatedAt of the copy the account has
+  const pushLatest = () => {
+    queue = queue
+      .catch(() => {})
+      .then(async () => {
+        const day = store.getState();
+        if (!day.updatedAt || day.updatedAt === lastPushed) return;
+        await upsert(day);
+        lastPushed = day.updatedAt;
+      });
+    return queue;
+  };
+
   async function pushToday() {
     clearTimeout(timer);
     timer = null;
     setStatus('syncing');
     try {
-      await upsert(store.getState());
+      await pushLatest();
       setStatus('saved');
     } catch {
       setStatus('error');
@@ -83,6 +99,7 @@ export function createSync(store, { onForeignDevice, onSignedIn } = {}) {
       onForeignDevice?.();
     }
     writeOwner(user.id);
+    lastPushed = null; // new account: it hasn't seen anything from this device yet
     // only now (after clearing someone else's data) merge per-person extras like taste
     onSignedIn?.();
 
@@ -104,11 +121,15 @@ export function createSync(store, { onForeignDevice, onSignedIn } = {}) {
         const remoteDay = remote?.data;
         const remoteTime = Date.parse(remoteDay?.updatedAt || 0) || 0;
         const localTime = Date.parse(local.updatedAt || 0) || 0;
-        if (remoteDay && remoteTime > localTime) store.actions.replaceDay(remoteDay);
-        else if (localTime > remoteTime) await upsert(local);
+        if (remoteDay && remoteTime > localTime) {
+          store.actions.replaceDay(remoteDay);
+          lastPushed = store.getState().updatedAt; // that copy came from the account
+        } else if (localTime > remoteTime) await pushLatest();
       } else if (local.updatedAt) {
-        await upsert(local);
+        await pushLatest();
       }
+      // anything changed while this ran goes up too
+      if (store.getState().updatedAt && store.getState().updatedAt !== lastPushed) await pushLatest();
       setStatus('saved');
     } catch {
       setStatus('error');

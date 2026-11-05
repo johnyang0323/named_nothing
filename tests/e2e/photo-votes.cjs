@@ -1,7 +1,7 @@
 const { chromium, devices } = require('playwright');
 const { launch, OUT, ROOT } = require('./env.cjs');
 const fs = require('fs');
-const { createBackend, wire, signUp, setArea } = require('./helpers.cjs');
+const { createBackend, wire, signUp, setArea, until } = require('./helpers.cjs');
 const APP = 'http://localhost:4175/';
 const IMG = fs.readFileSync(ROOT + '/public/icons/icon-512.png');
 const ok = (...a) => console.log('✔', ...a);
@@ -51,8 +51,8 @@ async function openAs(browser, email, targetPlace) {
   await A.p.click('.gallery-next');
   await A.p.waitForFunction(() => document.querySelector('.destination-visual .photo').src.endsWith('p2.png'));
   await A.p.click('.gallery-pin');
-  await A.p.waitForTimeout(300);
-  const key = (u) => `${'k-'}`;
+  const idA = backend.accounts.get('a@test.com').id;
+  await until(() => [...backend.votes.keys()].filter((k) => k.endsWith('|' + idA)).length >= 2, 8000, 'A votes stored');
   const votesA = [...backend.votes].filter(([k]) => k.endsWith('|' + backend.accounts.get('a@test.com').id)).map(([k, v]) => k.split('|')[1].split('/').pop() + ':' + v);
   assert(votesA.includes('p0.png:-1') && votesA.includes('p2.png:1'), 'votes stored ' + votesA);
   await A.p.reload(); await A.p.waitForSelector('.destination-visual.has-photo');
@@ -67,8 +67,9 @@ async function openAs(browser, email, targetPlace) {
 
   await B.p.click('.gallery-prev'); // p0 (score -1) sorts last → wrap back to it
   await B.p.waitForFunction(() => document.querySelector('.destination-visual .photo').src.endsWith('p0.png'));
+  const idB = () => backend.accounts.get('b@test.com').id;
   await B.p.click('.gallery-reject');
-  await B.p.waitForTimeout(300);
+  await until(() => [...backend.votes.keys()].some((k) => k.endsWith('|' + idB()) && k.includes('p0.png')), 8000, 'B vote stored');
 
   const C = await openAs(browser, 'c@test.com', place);
   const urls = await C.p.evaluate((id) => JSON.parse(localStorage.getItem('plannish-photos'))[id].photos.map((x) => x.url.split('/').pop()), [...backend.votes.keys()][0].split('|')[0]);

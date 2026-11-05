@@ -127,4 +127,14 @@ async function setArea(page, name = '망원동') {
   await page.waitForSelector('.home-mood');
 }
 
-module.exports = { createBackend, wire, signUp, setArea, SB };
+/** Poll until check() is truthy (for background saves); fails after `ms`. */
+async function until(check, ms = 8000, label = 'condition') {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (await check()) return;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error(`ASSERT: timed out waiting for ${label}`);
+}
+
+module.exports = { createBackend, wire, signUp, setArea, until, SB };

@@ -1310,9 +1310,27 @@ h1[tabindex='-1']:focus {
 
 /* ---- Home: two one-screen steps ------------------------------------------ */
 
-/* the home steps use exactly the space between the header and the bottom menu */
+/* The home steps take exactly the space left under the header (no guessed
+   header heights): the page becomes a full-height column on this screen. */
+body[data-screen='home'] {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+body[data-screen='home'] .masthead {
+  flex: none;
+  width: 100%;
+}
+
 body[data-screen='home'] .view {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
   padding-top: var(--space-4);
+  /* the bottom menu is fixed on phones, so leave its height free */
   padding-bottom: calc(var(--nav-height) + var(--space-3) + env(safe-area-inset-bottom));
 }
 
@@ -1320,9 +1338,8 @@ body[data-screen='home'] .view {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  /* 100dvh − masthead (~54px) − view padding − bottom nav */
-  height: calc(100dvh - 54px - var(--space-4) - var(--nav-height) - var(--space-3) - env(safe-area-inset-bottom));
-  min-height: 360px;
+  flex: 1 1 auto;
+  min-height: 360px; /* very small screens may scroll rather than squash */
 }
 
 .home-flow > * {
@@ -2000,9 +2017,7 @@ body.is-gated .view {
 
   .home-flow {
     max-width: 44rem;
-    /* desktop header ~100px, no bottom nav */
-    height: calc(100dvh - 100px - var(--space-6) * 2);
-    min-height: 520px;
+    min-height: 480px;
   }
 
   .cta-area {

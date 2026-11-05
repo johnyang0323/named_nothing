@@ -5,6 +5,7 @@ import * as discover from './components/discover.js';
 import * as explore from './components/explore.js';
 import * as route from './components/route.js';
 import * as myday from './components/myday.js';
+import { syncLine } from './components/myday.js';
 import * as welcome from './components/welcome.js';
 import * as splash from './components/splash.js';
 import { isBackendConfigured } from './services/backend/config.js';
@@ -126,6 +127,8 @@ function render() {
   const focusKey = view.contains(active) ? active?.dataset?.focusKey : null;
   const itemKey = view.contains(active) ? active?.closest('[data-focus-key^="item-"]')?.dataset.focusKey : null;
   const scrollY = window.scrollY;
+  // keep the caret where it was when a text field is redrawn
+  const selection = focusKey && typeof active.selectionStart === 'number' ? [active.selectionStart, active.selectionEnd] : null;
 
   view.innerHTML = String(screen.render(store.getState(), ctx));
   screen.afterRender?.(store.getState(), ctx);
@@ -139,6 +142,13 @@ function render() {
       : null;
     const el = target && !target.disabled ? target : sibling || fallback || target;
     el?.focus({ preventScroll: true });
+    if (selection && el === target && typeof el.setSelectionRange === 'function') {
+      try {
+        el.setSelectionRange(...selection);
+      } catch {
+        /* not a text field */
+      }
+    }
     window.scrollTo({ top: scrollY });
     el?.scrollIntoView?.({ block: 'nearest' });
   }
@@ -233,7 +243,12 @@ if (isBackendConfigured()) {
     ui.history = null;
     handleRoute();
   });
-  sync.onStatus(() => currentName === 'day' && render());
+  // update only the status line, so saving in the background never redraws
+  // the screen under someone who is typing
+  sync.onStatus(() => {
+    const line = currentName === 'day' && view.querySelector('.account-sync');
+    if (line) line.innerHTML = String(syncLine(sync));
+  });
   initAuth()
     .catch((error) => toast(error.message || '로그인하지 못했어요.'))
     .finally(() => {
