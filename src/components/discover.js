@@ -16,8 +16,10 @@ export function render(state) {
     <section class="screen discover" aria-labelledby="discover-title">
       <p class="eyebrow">오늘의 첫 목적지 · ${moodLabel(state.mood)}${state.area ? ` · ${state.area.label} 근처` : ''}</p>
       <article class="destination">
-        <div class="destination-visual"${photoSlot(place)}>${placeVisual(place)}</div>
-        <p class="photo-credit fine-print" data-photo-credit-for="${place.id}" hidden></p>
+        <figure class="destination-figure">
+          <div class="destination-visual"${photoSlot(place)}>${placeVisual(place)}</div>
+          <figcaption class="photo-credit fine-print" data-photo-credit-for="${place.id}" hidden></figcaption>
+        </figure>
         <div class="destination-body">
           <p class="kicker">${categoryLabel(place)}</p>
           <h1 id="discover-title" class="title" tabindex="-1">${place.name}</h1>

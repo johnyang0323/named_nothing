@@ -1436,9 +1436,13 @@ a {
     align-items: start;
   }
 
-  .destination-visual {
+  /* image + credit stick together as ONE grid item, so the text column is never pushed under it */
+  .destination-figure {
     position: sticky;
     top: var(--space-6);
+  }
+
+  .destination-visual {
     aspect-ratio: 4 / 5;
   }
 
