@@ -248,9 +248,13 @@ export const actions = {
     ctx.ui.confirmDelete = 'busy';
     ctx.rerender();
     try {
-      await deleteAccount();
+      const { kakaoUnlinked } = await deleteAccount();
       leaveDevice(ctx);
-      ctx.toast('계정과 모든 기록을 삭제했어요. 그동안 고마웠어요.');
+      ctx.toast(
+        kakaoUnlinked === false
+          ? '계정과 모든 기록을 삭제했어요. 카카오로 다시 로그인하면 새 빈 계정으로 시작돼요.'
+          : '계정과 모든 기록을 삭제했어요. 그동안 고마웠어요.',
+      );
     } catch (error) {
       ctx.ui.confirmDelete = true;
       ctx.ui.deleteError = error.message || '계정을 삭제하지 못했어요.';

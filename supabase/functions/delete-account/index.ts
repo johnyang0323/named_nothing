@@ -19,9 +19,23 @@
 // Edge Functions → Secrets as SERVICE_ROLE_KEY (Project Settings → API keys →
 // "service_role" / secret key). Never put it in the app.
 //   ALLOWED_ORIGINS = https://johnyang0323.github.io   (comma-separated, optional)
+//   KAKAO_ADMIN_KEY = Kakao Developers → 앱 키 → Admin 키 (optional but recommended)
+//     Used only to "연결 끊기" (unlink) a Kakao-login account when it is deleted,
+//     as Kakao's policy requires; otherwise the next Kakao login skips the consent
+//     screen and silently creates a NEW account, which looks like the old one.
 
 const SUPABASE_URL = (Deno.env.get('SUPABASE_URL') ?? '').replace(/\/+$/, '');
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || '';
+const KAKAO_ADMIN_KEY = Deno.env.get('KAKAO_ADMIN_KEY') || '';
+
+type Identity = { provider?: string; id?: string; identity_data?: { sub?: string; provider_id?: string } };
+
+/** The person's Kakao member number, if they signed in with Kakao. */
+export function kakaoUserId(user: { identities?: Identity[] }) {
+  const identity = (user.identities || []).find((i) => i.provider === 'kakao');
+  const id = identity?.identity_data?.provider_id || identity?.identity_data?.sub || identity?.id || '';
+  return /^\d+$/.test(String(id)) ? String(id) : '';
+}
 
 const normalize = (o: string) => o.trim().replace(/\/+$/, '').toLowerCase();
 const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') || 'https://johnyang0323.github.io')
@@ -56,6 +70,7 @@ Deno.serve(async (req) => {
         function: 'delete-account',
         deployed: true,
         serviceKeySet: Boolean(SERVICE_KEY),
+        kakaoAdminKeySet: Boolean(KAKAO_ADMIN_KEY),
         allowedOrigins: ALLOWED,
         note: '이 화면이 보이면 함수는 배포됐고 Verify JWT도 꺼져 있어요.',
       },
@@ -73,8 +88,25 @@ Deno.serve(async (req) => {
   if (!token) return json({ error: 'not signed in' }, 401, headers);
   const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` } });
   if (!who.ok) return json({ error: 'invalid session' }, 401, headers);
-  const user = (await who.json()) as { id?: string };
+  const user = (await who.json()) as { id?: string; identities?: Identity[] };
   if (!user?.id) return json({ error: 'invalid session' }, 401, headers);
+
+  // Kakao: disconnect the app from their Kakao account (Kakao requires this on
+  // account deletion). A failure here must not block deleting their data.
+  const kakaoId = kakaoUserId(user);
+  let kakaoUnlinked: boolean | null = null;
+  if (kakaoId) {
+    if (KAKAO_ADMIN_KEY) {
+      const unlink = await fetch('https://kapi.kakao.com/v1/user/unlink', {
+        method: 'POST',
+        headers: { Authorization: `KakaoAK ${KAKAO_ADMIN_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+        body: `target_id_type=user_id&target_id=${encodeURIComponent(kakaoId)}`,
+      }).catch(() => null);
+      kakaoUnlinked = Boolean(unlink?.ok);
+    } else {
+      kakaoUnlinked = false;
+    }
+  }
 
   // 2) remove their uploaded photos (avatars/<id>/…, journal/<id>/…)
   for (const bucket of ['avatars', 'journal']) {
@@ -94,8 +126,18 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 3) delete exactly that user (cascades to their rows)
-  const del = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, { method: 'DELETE', headers: adminHeaders() });
+  // 3) delete exactly that user, permanently (no soft delete); rows cascade
+  const userUrl = `${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(user.id)}`;
+  const del = await fetch(userUrl, {
+    method: 'DELETE',
+    headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ should_soft_delete: false }),
+  });
   if (!del.ok) return json({ error: 'delete failed', status: del.status }, 502, headers);
-  return json({ deleted: true }, 200, headers);
+
+  // 4) make sure it is really gone before telling the app so
+  const check = await fetch(userUrl, { headers: adminHeaders() });
+  if (check.ok) return json({ error: 'user still exists after delete', status: check.status }, 502, headers);
+
+  return json({ deleted: true, kakaoUnlinked }, 200, headers);
 });

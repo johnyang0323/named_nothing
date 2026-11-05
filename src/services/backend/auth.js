@@ -192,6 +192,7 @@ export async function deleteAccount() {
   // the server session is gone; clear this device's copy too
   await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
   setUser(null);
+  return { kakaoUnlinked: data.kakaoUnlinked ?? null };
 }
 
 export async function signOut() {

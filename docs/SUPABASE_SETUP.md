@@ -148,7 +148,13 @@ SQL을 실행하기 전에도 취향 반영은 동작해요. 다만 이 기기�
    - 다른 문구가 나오면 그 안내대로 고치면 돼요. 점검은 로그인 정보 없이 확인만 해서, 계정은 절대 지워지지 않아요.
    - "서비스 키가 없어요"가 나오면 **Project Settings → API Keys**의 `service_role`(secret) 키를 **Edge Functions → Secrets**에 `SERVICE_ROLE_KEY`라는 이름으로 추가하세요. 이 키는 절대 앱이나 채팅에 넣지 마세요.
    - 직접 확인하고 싶다면 새 탭 주소창에 `https://pheawjaqtsifkmlsjhea.supabase.co/functions/v1/delete-account`를 열어 `"serviceKeySet": true`가 보이는지 봐도 돼요.
-6. 주소 끝 이름이 `delete-account`가 아니라면, GitHub **Settings → Secrets and variables → Actions → Variables**에 `DELETE_FUNCTION` = 그 이름을 추가하고 배포를 다시 실행하세요.
+6. **카카오 연결 끊기 키 넣기 (카카오 로그인을 쓴다면 필수):** Kakao Developers → **앱 → 플랫폼 키(또는 앱 키) → Admin 키**를 복사해 **Edge Functions → Secrets**에 `KAKAO_ADMIN_KEY`로 추가하세요.
+   - 카카오 정책상 회원이 탈퇴하면 앱이 카카오 "연결 끊기"를 해야 해요.
+   - 이 키가 없으면 계정은 지워져도 카카오 연결이 남아요. 그래서 다음에 카카오로 로그인하면 동의 화면 없이 **새 빈 계정**이 자동으로 만들어지고, 같은 계정에 다시 들어간 것처럼 보여요.
+   - Admin 키는 모든 권한을 가진 비밀 키예요. 앱, GitHub, 채팅에는 절대 넣지 말고 Secrets에만 넣으세요.
+   - 함수 주소를 새 탭으로 열었을 때 `"kakaoAdminKeySet": true`가 보이면 돼요.
+7. **삭제가 실제로 됐는지 확인:** 테스트 계정으로 삭제한 뒤 Supabase **Authentication → Users**에서 그 사용자가 사라졌는지 보세요. 같은 이메일이나 카카오로 다시 들어가면 목록에 **새로 만든 날짜**의 사용자가 생겨야 정상이에요.
+8. 주소 끝 이름이 `delete-account`가 아니라면, GitHub **Settings → Secrets and variables → Actions → Variables**에 `DELETE_FUNCTION` = 그 이름을 추가하고 배포를 다시 실행하세요.
 
 ### 비밀번호 재설정 메일 보내기 (Gmail로 무료)
 Supabase 기본 메일은 본인 주소로만 보낼 수 있어요. 비밀번호 재설정 메일을 다른 사람에게도 보내려면 외부 메일(SMTP)이 필요해요. 도메인이 없다면 Gmail이 가장 간단해요.
