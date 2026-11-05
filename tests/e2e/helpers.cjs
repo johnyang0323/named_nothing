@@ -127,6 +127,7 @@ function createBackend({ photos } = {}) {
       return route.fulfill({ status: 201, headers: cors, body: '' });
     }
     if (path === '/functions/v1/delete-account') {
+      if (!(req.headers().authorization || '').startsWith('Bearer at-')) return json({ error: 'not signed in' }, 401);
       const id = (req.headers().authorization || '').replace('Bearer at-', '');
       const email = [...accounts].find(([, a]) => a.id === id)?.[0];
       if (!email && id !== 'kakao-user' && id !== 'user-1') return json({ error: 'invalid session' }, 401);
@@ -392,7 +393,7 @@ async function wire(ctx, backend, { kakao = true, errors, weather = { weather_co
   if (errors) {
     ctx.on('page', (p) => {
       p.on('pageerror', (e) => errors.push(String(e)));
-      p.on('console', (m) => m.type() === 'error' && !/40[0369]/.test(m.text()) && errors.push(m.text()));
+      p.on('console', (m) => m.type() === 'error' && !/40[01369]/.test(m.text()) && errors.push(m.text()));
     });
   }
 }

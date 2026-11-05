@@ -143,9 +143,11 @@ SQL을 실행하기 전에도 취향 반영은 동작해요. 다만 이 기기�
 2. ⚠️ **Deploy를 누르기 전에** 함수 이름 칸을 `delete-account`로 바꿔 주세요. 사진 함수가 `hyper-responder`가 된 것처럼, 그대로 두면 아무 이름이나 붙어요.
 3. [`supabase/functions/delete-account/index.ts`](../supabase/functions/delete-account/index.ts)를 **Copy raw file**로 복사해 붙여넣고 **Deploy**를 누릅니다.
 4. 함수의 **Details**에서 **Verify JWT를 끄고** 저장합니다. 로그인 확인은 함수 코드가 직접 해요.
-5. 새 탭에서 함수 Overview에 나오는 주소를 열어 `"serviceKeySet": true`가 보이는지 확인해요.
-   - `false`라면 **Project Settings → API Keys**의 `service_role`(secret) 키를 **Edge Functions → Secrets**에 `SERVICE_ROLE_KEY`라는 이름으로 추가하세요.
-   - 이 키는 절대 앱이나 채팅에 넣지 마세요.
+5. **확인:** 앱의 프로필 버튼 → **계정 → 연결 점검 → 계정 삭제 기능 점검**을 누르세요.
+   - "✓ 계정 삭제 기능이 준비됐어요"가 나오면 끝이에요.
+   - 다른 문구가 나오면 그 안내대로 고치면 돼요. 점검은 로그인 정보 없이 확인만 해서, 계정은 절대 지워지지 않아요.
+   - "서비스 키가 없어요"가 나오면 **Project Settings → API Keys**의 `service_role`(secret) 키를 **Edge Functions → Secrets**에 `SERVICE_ROLE_KEY`라는 이름으로 추가하세요. 이 키는 절대 앱이나 채팅에 넣지 마세요.
+   - 직접 확인하고 싶다면 새 탭 주소창에 `https://pheawjaqtsifkmlsjhea.supabase.co/functions/v1/delete-account`를 열어 `"serviceKeySet": true`가 보이는지 봐도 돼요.
 6. 주소 끝 이름이 `delete-account`가 아니라면, GitHub **Settings → Secrets and variables → Actions → Variables**에 `DELETE_FUNCTION` = 그 이름을 추가하고 배포를 다시 실행하세요.
 
 ### 비밀번호 재설정 메일 보내기 (Gmail로 무료)

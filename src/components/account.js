@@ -7,7 +7,7 @@ import { html } from '../utils/dom.js';
 import { isBackendConfigured } from '../services/backend/config.js';
 import { getUser, signOut, deleteAccount, avatarUrl } from '../services/backend/auth.js';
 import { getMyProfile, loadMyProfile, saveProfile, fullTag, avatarSrc, NICKNAME_MAX, SocialError, forgetMyProfile } from '../services/backend/social.js';
-import { checkPhotoService } from '../services/photos.js';
+import { checkPhotoService, checkDeleteFunction } from '../services/photos.js';
 import { tasteSummary, MIN_EVENTS } from '../services/personalize.js';
 import { inviteLink, copyText } from './share.js';
 
@@ -149,16 +149,23 @@ function diagnosticsSection(ui) {
   return html`
     <section class="block diagnostics" aria-labelledby="diag-title">
       <h2 class="section-label" id="diag-title">연결 점검</h2>
-      <p class="fine-print">장소 사진이 안 보일 때 눌러보세요. 무엇이 문제인지 알려드려요.</p>
-      <button type="button" class="button button-ghost button-small" data-action="check-photos" data-focus-key="check-photos" ${ui.photoCheck === 'running' ? 'disabled' : ''}>
-        ${ui.photoCheck === 'running' ? '점검하는 중…' : '사진 기능 점검'}
-      </button>
-      ${ui.photoCheck && ui.photoCheck !== 'running'
-        ? html`<div class="diag-result ${ui.photoCheck.ok ? 'is-ok' : 'is-bad'}" role="status">
-            <p>${ui.photoCheck.ok ? '✓ ' : '✕ '}${ui.photoCheck.message}</p>
-            ${ui.photoCheck.detail ? html`<p class="diag-detail">${ui.photoCheck.detail}</p>` : ''}
-          </div>`
-        : ''}
+      <p class="fine-print">기능이 안 될 때 눌러보세요. 무엇이 문제인지 알려드려요. 점검은 아무것도 바꾸거나 지우지 않아요.</p>
+      <div class="actions actions-compact">
+        <button type="button" class="button button-ghost button-small" data-action="check-photos" data-focus-key="check-photos" ${ui.photoCheck === 'running' ? 'disabled' : ''}>
+          ${ui.photoCheck === 'running' ? '점검하는 중…' : '사진 기능 점검'}
+        </button>
+        <button type="button" class="button button-ghost button-small" data-action="check-delete" data-focus-key="check-delete" ${ui.deleteCheck === 'running' ? 'disabled' : ''}>
+          ${ui.deleteCheck === 'running' ? '점검하는 중…' : '계정 삭제 기능 점검'}
+        </button>
+      </div>
+      ${[ui.photoCheck, ui.deleteCheck]
+        .filter((r) => r && r !== 'running')
+        .map(
+          (r) => html`<div class="diag-result ${r.ok ? 'is-ok' : 'is-bad'}" role="status">
+            <p>${r.ok ? '✓ ' : '✕ '}${r.message}</p>
+            ${r.detail ? html`<p class="diag-detail">${r.detail}</p>` : ''}
+          </div>`,
+        )}
     </section>`;
 }
 
@@ -262,6 +269,13 @@ export const actions = {
   'taste-reset': ({ taste, toast }) => {
     const previous = taste.reset();
     toast('취향을 초기화했어요.', { label: '되돌리기', run: (ctx) => ctx.taste.restore(previous) });
+  },
+  'check-delete': async ({ ui, rerender, announce, getScreen }) => {
+    ui.deleteCheck = 'running';
+    rerender();
+    ui.deleteCheck = await checkDeleteFunction();
+    announce(ui.deleteCheck.message);
+    if (getScreen() === 'account') rerender();
   },
   'check-photos': async ({ ui, rerender, announce, getScreen }) => {
     ui.photoCheck = 'running';

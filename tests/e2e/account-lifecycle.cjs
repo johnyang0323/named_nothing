@@ -83,6 +83,11 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await until(() => backend.prefs.has(id), 10000, 'taste synced');
   await p.goto(APP + '#account');
   assert(await p.isVisible('.legal-links a[href="./privacy.html"]'), '계정 legal links');
+  const callsBefore = backend.deleted.length;
+  await p.click('[data-action="check-delete"]');
+  await p.waitForSelector('.diag-result:has-text("계정 삭제 기능이 준비됐어요")');
+  assert(backend.deleted.length === callsBefore && backend.accounts.has('reset@test.com'), 'the check deletes nothing');
+  ok('계정 삭제 기능 점검: reports ready without deleting anything');
 
   await p.click('[data-action="delete-account"]');
   await p.waitForSelector('.danger-zone');

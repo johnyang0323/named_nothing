@@ -13,7 +13,7 @@
  * The illustration stays underneath as a placeholder and fallback.
  */
 import { getSupabase } from './backend/client.js';
-import { isBackendConfigured, SUPABASE_URL, PHOTO_FUNCTION } from './backend/config.js';
+import { isBackendConfigured, SUPABASE_URL, SUPABASE_ANON_KEY, PHOTO_FUNCTION, DELETE_FUNCTION } from './backend/config.js';
 import { getUser } from './backend/auth.js';
 import { getPlaceById } from './placeRepository.js';
 import { escapeHtml } from '../utils/dom.js';
@@ -465,4 +465,39 @@ export async function checkPhotoService() {
   clearPhotoMisses();
   if (!thumbOk) return { ok: false, message: '사진 주소는 받았지만 이 브라우저에서 이미지가 열리지 않아요(이미지 사이트가 외부 표시를 막는 경우).', detail: photo.url };
   return { ok: true, message: fullOk ? '사진 기능이 정상이에요.' : '사진 기능이 동작해요(원본 대신 작은 미리보기 이미지로 표시돼요).', detail: photo.site };
+}
+
+/**
+ * Is the delete-account function deployed and set up? Called WITHOUT the
+ * person's login token, so it can never delete anything: a ready function
+ * answers "not signed in" (401).
+ */
+export async function checkDeleteFunction() {
+  if (!isBackendConfigured()) return { ok: false, message: 'Supabase가 연결되지 않은 빌드예요.' };
+  const url = `${SUPABASE_URL}/functions/v1/${DELETE_FUNCTION}`;
+  let res;
+  try {
+    res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY }, body: '{}' });
+  } catch {
+    return {
+      ok: false,
+      message: `계정 삭제 함수에 연결하지 못했어요. ① 함수 이름(주소 끝)이 정확히 ${DELETE_FUNCTION}인지, ② 함수 Details에서 Verify JWT를 껐는지 확인해 주세요.`,
+      detail: url,
+    };
+  }
+  let body = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  const detail = `HTTP ${res.status}${body?.error ? ` · ${body.error}` : body?.message ? ` · ${body.message}` : body?.msg ? ` · ${body.msg}` : ''}`;
+  if (res.status === 401 && body?.error === 'not signed in') return { ok: true, message: '계정 삭제 기능이 준비됐어요.', detail };
+  if (res.status === 500 && /service role/i.test(body?.error || '')) {
+    return { ok: false, message: '함수에 서비스 키가 없어요. Project Settings → API Keys의 service_role(secret) 키를 Edge Functions → Secrets에 SERVICE_ROLE_KEY라는 이름으로 추가해 주세요.', detail };
+  }
+  if (res.status === 404) return { ok: false, message: `계정 삭제 함수를 찾지 못했어요. 앱은 ${url} 주소를 부르고 있어요. 함수 Overview의 주소와 같은지 확인해 주세요.`, detail };
+  if (res.status === 401) return { ok: false, message: '함수가 로그인 토큰(JWT)을 요구하고 있어요. 함수 Details에서 Verify JWT를 끄고 저장해 주세요.', detail };
+  if (res.status === 403) return { ok: false, message: `Secrets의 ALLOWED_ORIGINS가 이 사이트(${window.location.origin})를 허용하지 않아요.`, detail };
+  return { ok: false, message: '계정 삭제 함수가 예상과 다르게 답했어요.', detail };
 }
