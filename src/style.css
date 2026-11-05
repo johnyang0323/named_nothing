@@ -1310,6 +1310,36 @@ a {
   color: var(--text-secondary);
 }
 
+/* ---- Diagnostics ---------------------------------------------------------- */
+
+.diagnostics .button {
+  margin-top: var(--space-3);
+}
+
+.diag-result {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.diag-result.is-ok {
+  color: var(--accent-deep);
+}
+
+.diag-result.is-bad {
+  color: #8a4b2f;
+}
+
+.diag-detail {
+  margin-top: var(--space-1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
 /* ---- Larger screens ------------------------------------------------------ */
 
 @media (min-width: 860px) {

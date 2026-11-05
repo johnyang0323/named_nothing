@@ -6,6 +6,7 @@ import { categoryLabel, moodLabel } from './common.js';
 import { isBackendConfigured } from '../services/backend/config.js';
 import { getUser, isAuthReady, displayName, avatarUrl, signInWithKakao, signInWithEmail, signUpWithEmail, signOut, PASSWORD_MIN } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
+import { checkPhotoService } from '../services/photos.js';
 
 function authUi(ui) {
   if (!ui.auth) ui.auth = { mode: 'signin', email: '', password: '', busy: false, error: '', info: '' };
@@ -190,6 +191,22 @@ export function render(state, { ui, sync }) {
 
       ${historySection(ui)}
 
+      ${isBackendConfigured()
+        ? html`<section class="block diagnostics" aria-labelledby="diag-title">
+            <h2 class="section-label" id="diag-title">연결 점검</h2>
+            <p class="fine-print">장소 사진이 안 보일 때 눌러보세요. 무엇이 문제인지 알려드려요.</p>
+            <button type="button" class="button button-ghost button-small" data-action="check-photos" data-focus-key="check-photos" ${ui.photoCheck === 'running' ? 'disabled' : ''}>
+              ${ui.photoCheck === 'running' ? '점검하는 중…' : '사진 기능 점검'}
+            </button>
+            ${ui.photoCheck && ui.photoCheck !== 'running'
+              ? html`<div class="diag-result ${ui.photoCheck.ok ? 'is-ok' : 'is-bad'}" role="status">
+                  <p>${ui.photoCheck.ok ? '✓ ' : '✕ '}${ui.photoCheck.message}</p>
+                  ${ui.photoCheck.detail ? html`<p class="diag-detail">${ui.photoCheck.detail}</p>` : ''}
+                </div>`
+              : ''}
+          </section>`
+        : ''}
+
       <section class="block reset" aria-labelledby="reset-title">
         <h2 class="section-label" id="reset-title">새로 시작하기</h2>
         ${ui.confirmReset
@@ -257,6 +274,13 @@ actions['auth-mode'] = ({ ui, rerender }) => {
   rerender();
 };
 actions['sync-retry'] = ({ sync }) => sync.retry();
+actions['check-photos'] = async ({ ui, rerender, announce, getScreen }) => {
+  ui.photoCheck = 'running';
+  rerender();
+  ui.photoCheck = await checkPhotoService();
+  announce(ui.photoCheck.message);
+  if (getScreen() === 'day') rerender();
+};
 
 export const inputs = {
   'auth-email': ({ ui }, el) => {

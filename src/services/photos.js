@@ -123,3 +123,90 @@ export function hydratePhotos(root) {
     });
   });
 }
+
+function tryLoadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.referrerPolicy = 'no-referrer';
+    const timer = setTimeout(() => resolve(false), 8000);
+    img.onload = () => {
+      clearTimeout(timer);
+      resolve(img.naturalWidth > 0);
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      resolve(false);
+    };
+    img.src = src;
+  });
+}
+
+/** Forget cached "no photo" results so places are looked up again. */
+export function clearPhotoMisses() {
+  try {
+    const cache = readCache();
+    Object.keys(cache).forEach((id) => cache[id].none && delete cache[id]);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Self-check for the photo pipeline, for people who can't open dev tools.
+ * Calls the Edge Function with a well-known query and explains the result
+ * in plain language. Returns { ok, message, detail? }.
+ */
+export async function checkPhotoService() {
+  if (!isBackendConfigured()) return { ok: false, message: 'Supabase가 연결되지 않은 빌드예요.' };
+  const supabase = await getSupabase();
+  let result;
+  try {
+    result = await supabase.functions.invoke('place-photo', { body: { query: '남산서울타워 서울 용산구' } });
+  } catch (error) {
+    result = { error };
+  }
+  const { data, error } = result;
+
+  if (error) {
+    const response = error.context instanceof Response ? error.context : null;
+    let body = null;
+    try {
+      body = response ? await response.clone().json() : null;
+    } catch {
+      body = null;
+    }
+    const status = response?.status;
+    const detail = [status && `HTTP ${status}`, body?.error, body?.message, body?.msg, body?.status && `카카오 응답 ${body.status}`]
+      .filter(Boolean)
+      .join(' · ');
+
+    if (!response) {
+      return {
+        ok: false,
+        message:
+          '사진 함수에 연결하지 못했어요. ① Edge Functions에 함수가 정확히 place-photo 이름으로 배포됐는지, ② Secrets의 ALLOWED_ORIGINS가 정확히 https://johnyang0323.github.io (끝에 / 없이)인지 확인해 주세요.',
+        detail: `${error.name || 'Error'}: ${error.message || ''}`,
+      };
+    }
+    if (status === 404) return { ok: false, message: 'place-photo 함수를 찾지 못했어요. 함수 이름이 정확히 place-photo인지, Deploy까지 눌렀는지 확인해 주세요.', detail };
+    if (status === 401) return { ok: false, message: '함수가 로그인 토큰(JWT)을 요구하고 있어요. 함수 설정(Details)에서 Verify JWT(Enforce JWT)를 끄고 저장해 주세요.', detail };
+    if (status === 403 && /origin/i.test(body?.error || '')) return { ok: false, message: 'Secrets의 ALLOWED_ORIGINS 값이 사이트 주소와 달라요. https://johnyang0323.github.io 로 (끝에 / 없이) 넣어주세요.', detail };
+    if (status === 500 && /KAKAO_REST_API_KEY/.test(body?.error || '')) return { ok: false, message: 'Secrets에 KAKAO_REST_API_KEY가 없어요. 카카오 REST API 키를 추가해 주세요.', detail };
+    if (status === 502) {
+      if (body?.status === 401) return { ok: false, message: '카카오가 REST API 키를 거절했어요. KAKAO_REST_API_KEY에 JavaScript 키가 아니라 REST API 키를 넣었는지 확인해 주세요.', detail };
+      if (body?.status === 403) return { ok: false, message: '카카오가 검색 권한을 거절했어요. 카카오 앱 설정에서 다음(Daum) 검색 API 사용 권한을 확인해 주세요.', detail };
+      return { ok: false, message: '카카오 이미지 검색이 실패했어요.', detail };
+    }
+    return { ok: false, message: '사진 함수가 오류를 냈어요.', detail };
+  }
+
+  const photo = cleanPhoto(data?.photo);
+  if (!photo) return { ok: false, message: '함수는 동작하지만 검색 결과가 비어 있어요. 카카오 REST API 키의 검색 권한을 확인해 주세요.', detail: JSON.stringify(data).slice(0, 200) };
+
+  const fullOk = await tryLoadImage(photo.url);
+  const thumbOk = fullOk || (photo.thumb ? await tryLoadImage(photo.thumb) : false);
+  clearPhotoMisses();
+  if (!thumbOk) return { ok: false, message: '사진 주소는 받았지만 이 브라우저에서 이미지가 열리지 않아요(이미지 사이트가 외부 표시를 막는 경우).', detail: photo.url };
+  return { ok: true, message: fullOk ? '사진 기능이 정상이에요.' : '사진 기능이 동작해요(원본 대신 작은 미리보기 이미지로 표시돼요).', detail: photo.site };
+}
