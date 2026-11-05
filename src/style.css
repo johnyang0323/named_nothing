@@ -800,8 +800,19 @@ h1[tabindex='-1']:focus {
   color: #fff;
 }
 
-.gallery-pin {
+.gallery-reject {
   margin-left: auto;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.gallery-pin {
   min-height: 36px;
   padding: 0 var(--space-3);
   border: 0;

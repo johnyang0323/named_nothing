@@ -98,7 +98,7 @@ function render() {
 
   view.innerHTML = String(screen.render(store.getState(), ctx));
   screen.afterRender?.(store.getState(), ctx);
-  hydratePhotos(view);
+  hydratePhotos(view, { announce });
 
   if (focusKey || itemKey) {
     const target = view.querySelector(`[data-focus-key="${CSS.escape(focusKey || '')}"]`);

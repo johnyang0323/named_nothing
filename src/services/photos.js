@@ -1,20 +1,29 @@
 /**
- * Photos for REAL (Kakao) places, via the `place-photo` Supabase Edge
- * Function, which keeps the Kakao REST key on the server and returns the
- * best Kakao image-search hit for "<name> <district>".
+ * Photos for REAL (Kakao) places, via the photo Edge Function, which keeps
+ * the Kakao REST key on the server and ranks Kakao image-search results:
+ * photos from blog posts whose TITLE names the place come first, shops,
+ * news and odd shapes sink.
  *
- * These are web search results (often blog photos), not official photos,
- * so the UI always credits the source and says they may differ.
+ * On top of that, everyone's votes (supabase/photo_votes.sql) are shared:
+ * "이 사진으로 정하기" (+1) and "이 사진 아니에요" (-1). A photo is hidden
+ * for everyone at a net score of -2 or lower, and right away for the
+ * person who voted it down. Upvoted photos come first for everyone.
+ *
+ * These are still web search results, so the UI always credits the source.
  * The illustration stays underneath as a placeholder and fallback.
  */
 import { getSupabase } from './backend/client.js';
 import { isBackendConfigured, SUPABASE_URL, PHOTO_FUNCTION } from './backend/config.js';
+import { getUser } from './backend/auth.js';
 import { getPlaceById } from './placeRepository.js';
 import { escapeHtml } from '../utils/dom.js';
 
 const CACHE_KEY = 'plannish-photos';
 const TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const SCORES_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_ENTRIES = 300;
+const MAX_PHOTOS = 6;
+export const HIDE_AT_SCORE = -2;
 const inflight = new Map();
 
 function readCache() {
@@ -29,7 +38,7 @@ function readCache() {
 function writeCache(id, entry) {
   try {
     const cache = readCache();
-    cache[id] = { ...entry, at: Date.now() };
+    cache[id] = { ...entry, at: entry.at || Date.now() };
     const ids = Object.keys(cache);
     if (ids.length > MAX_ENTRIES) {
       ids.sort((a, b) => cache[a].at - cache[b].at).slice(0, ids.length - MAX_ENTRIES).forEach((k) => delete cache[k]);
@@ -49,10 +58,10 @@ function cleanPhoto(photo) {
     thumb: isHttpUrl(photo.thumb) ? photo.thumb.replace(/^http:/, 'https:') : null,
     site: typeof photo.site === 'string' ? photo.site.slice(0, 40) : '',
     link: isHttpUrl(photo.link) ? photo.link : null,
+    relevant: photo.relevant === true,
+    score: Number.isFinite(photo.score) ? photo.score : 0,
   };
 }
-
-const MAX_PHOTOS = 6;
 
 /** Candidates from the function's reply (newer `photos`, or older single `photo`). */
 function photoList(data) {
@@ -64,21 +73,58 @@ function photoList(data) {
     .slice(0, MAX_PHOTOS);
 }
 
-/** Cached entry → { photos, chosen }. Also reads the older single-photo format. */
+/** Cached entry → { photos, chosen }. Also reads the older formats. */
 function fromCache(entry) {
   if (entry.none) return { photos: [], chosen: 0 };
   const photos = (Array.isArray(entry.photos) ? entry.photos.map(cleanPhoto) : [cleanPhoto(entry)]).filter(Boolean);
-  const chosen = Number.isInteger(entry.chosen) && entry.chosen >= 0 && entry.chosen < photos.length ? entry.chosen : 0;
+  let chosen = photos.findIndex((p) => p.url === entry.chosenUrl);
+  if (chosen < 0) chosen = Number.isInteger(entry.chosen) && entry.chosen < photos.length ? entry.chosen : 0;
   return { photos, chosen };
 }
 
-function updateEntry(id, change) {
-  const cache = readCache();
-  const entry = cache[id];
-  if (!entry || entry.none) return;
-  const current = fromCache(entry);
-  const next = change(current);
-  writeCache(id, next.photos.length ? { photos: next.photos, chosen: next.chosen } : { none: true });
+function saveEntry(id, { photos, chosen }, extra = {}) {
+  const old = readCache()[id] || {};
+  writeCache(id, photos.length ? { photos, chosenUrl: photos[chosen]?.url || null, at: old.at, scoredAt: old.scoredAt, ...extra } : { none: true, at: old.at, ...extra });
+}
+
+// ---- shared votes (B) --------------------------------------------------------
+
+/** Net community score per image URL for one place. Empty if votes aren't set up yet. */
+async function fetchScores(placeId) {
+  const supabase = await getSupabase();
+  if (!supabase || !getUser()) return null;
+  const { data, error } = await supabase.rpc('photo_scores', { ids: [placeId] });
+  if (error || !Array.isArray(data)) return null;
+  return new Map(data.map((row) => [String(row.image_url).replace(/^http:/, 'https:'), row]));
+}
+
+/**
+ * Hide photos the community voted down and order the rest: score, then
+ * title relevance, then search order. Votes only reorder or hide what the
+ * search returned; they can never add an image (so nobody can push an
+ * arbitrary picture to everyone by voting for its URL).
+ */
+export function applyScores(photos, scores) {
+  if (!scores) return photos;
+  return photos
+    .map((p, order) => ({ ...p, order }))
+    .map((p) => ({ ...p, score: scores.get(p.url)?.score ?? 0 }))
+    .filter((p) => p.score > HIDE_AT_SCORE)
+    .sort((a, b) => b.score - a.score || Number(b.relevant) - Number(a.relevant) || a.order - b.order)
+    .slice(0, MAX_PHOTOS)
+    .map(({ order, ...p }) => p);
+}
+
+async function castVote(placeId, photo, vote) {
+  const supabase = await getSupabase();
+  if (!supabase || !getUser()) return false;
+  const { error } = await supabase
+    .from('photo_votes')
+    .upsert(
+      { place_id: placeId, image_url: photo.url, vote },
+      { onConflict: 'place_id,image_url,user_id' },
+    );
+  return !error;
 }
 
 export const photosEnabled = (place) => place?.source === 'kakao' && isBackendConfigured();
@@ -88,53 +134,90 @@ export function photoQuery(place) {
   return `${place.name} ${district}`.trim().slice(0, 60);
 }
 
+/** Refresh community scores on a cached list (no new search). */
+async function rescore(place, entry) {
+  const current = fromCache(entry);
+  const scores = await fetchScores(place.id);
+  if (!scores) return current;
+  const chosenUrl = current.photos[current.chosen]?.url;
+  const photos = applyScores(current.photos, scores);
+  const chosen = Math.max(0, photos.findIndex((p) => p.url === chosenUrl));
+  saveEntry(place.id, { photos, chosen }, { scoredAt: Date.now() });
+  return { photos, chosen };
+}
+
 /**
- * All photo candidates for a place and which one the person pinned.
- * Resolves { photos, chosen } or null on failure. Cached for two weeks,
- * including "no photos"; failures aren't cached, so they retry later.
+ * All photo candidates for a place and which one is shown first.
+ * Resolves { photos, chosen } or null on failure. Search results are
+ * cached for two weeks (including "no photos"); community scores are
+ * refreshed every few hours. Failures aren't cached.
  */
 export function getPhotos(place) {
   if (!photosEnabled(place)) return Promise.resolve(null);
-  const cached = readCache()[place.id];
-  if (cached && Date.now() - cached.at < TTL_MS) return Promise.resolve(fromCache(cached));
   if (inflight.has(place.id)) return inflight.get(place.id);
-
-  const request = getSupabase()
-    .then((supabase) => supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: photoQuery(place) } }))
-    .then(({ data, error }) => {
-      if (error) return null;
-      const photos = photoList(data);
-      writeCache(place.id, photos.length ? { photos, chosen: 0 } : { none: true });
-      return { photos, chosen: 0 };
-    })
-    .catch(() => null)
-    .finally(() => inflight.delete(place.id));
+  const cached = readCache()[place.id];
+  let request;
+  if (cached && Date.now() - cached.at < TTL_MS) {
+    request =
+      cached.none || Date.now() - (cached.scoredAt || 0) < SCORES_TTL_MS
+        ? Promise.resolve(fromCache(cached))
+        : rescore(place, cached).catch(() => fromCache(cached));
+  } else {
+    request = getSupabase()
+      .then((supabase) => supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: photoQuery(place), name: place.name } }))
+      .then(async ({ data, error }) => {
+        if (error) return null;
+        const scores = await fetchScores(place.id).catch(() => null);
+        const photos = applyScores(photoList(data), scores);
+        writeCache(place.id, photos.length ? { photos, chosenUrl: photos[0].url, scoredAt: Date.now() } : { none: true });
+        return { photos, chosen: 0 };
+      })
+      .catch(() => null);
+  }
+  request = request.finally(() => inflight.delete(place.id));
   inflight.set(place.id, request);
   return request;
 }
 
-/** The pinned (or first) photo, for thumbnails. */
+/** The first (pinned / best) photo, for thumbnails. */
 export function getPhoto(place) {
   return getPhotos(place).then((r) => (r && r.photos.length ? r.photos[r.chosen] : null));
 }
 
-/** Remember which candidate really shows the place. */
-export function pinPhoto(id, url) {
-  updateEntry(id, ({ photos }) => ({ photos, chosen: Math.max(0, photos.findIndex((p) => p.url === url)) }));
+/** "이 사진으로 정하기": remember it here and vote it up for everyone. */
+export function pinPhoto(id, photo) {
+  const cached = readCache()[id];
+  if (cached && !cached.none) {
+    const current = fromCache(cached);
+    saveEntry(id, { photos: current.photos, chosen: Math.max(0, current.photos.findIndex((p) => p.url === photo.url)) });
+  }
+  return castVote(id, photo, 1);
 }
 
-/** A candidate that can't be displayed here (e.g. hotlink-blocked) is forgotten. */
+/** Forget a candidate on this device (voted down, or can't be displayed). */
 function dropPhoto(id, url) {
-  updateEntry(id, ({ photos, chosen }) => {
-    const index = photos.findIndex((p) => p.url === url);
-    if (index < 0) return { photos, chosen };
-    const rest = photos.filter((_, i) => i !== index);
-    return { photos: rest, chosen: chosen > index ? chosen - 1 : Math.min(chosen, Math.max(0, rest.length - 1)) };
-  });
+  const cached = readCache()[id];
+  if (!cached || cached.none) return;
+  const { photos, chosen } = fromCache(cached);
+  const chosenUrl = photos[chosen]?.url;
+  const rest = photos.filter((p) => p.url !== url);
+  saveEntry(id, { photos: rest, chosen: Math.max(0, rest.findIndex((p) => p.url === chosenUrl)) });
 }
 
-function showCredit(root, id, photo) {
-  root.querySelectorAll(`[data-photo-credit-for="${CSS.escape(id)}"]`).forEach((el) => {
+/** "이 사진 아니에요": hide it here now, and count a vote against it for everyone. */
+export function rejectPhoto(id, photo) {
+  dropPhoto(id, photo.url);
+  return castVote(id, photo, -1);
+}
+
+function creditNote(photo, place) {
+  if (photo.score >= 1) return '다른 사람들이 이 장소의 사진으로 고른 사진이에요.';
+  if (photo.relevant) return `‘${place.name}’을(를) 다룬 글에 실린 사진이에요.`;
+  return '검색 결과라 실제 장소와 다를 수 있어요.';
+}
+
+function showCredit(root, place, photo) {
+  root.querySelectorAll(`[data-photo-credit-for="${CSS.escape(place.id)}"]`).forEach((el) => {
     if (!photo) {
       el.hidden = true;
       return;
@@ -142,7 +225,7 @@ function showCredit(root, id, photo) {
     const source = photo.link
       ? `<a href="${escapeHtml(photo.link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(photo.site || '출처 보기')}</a>`
       : escapeHtml(photo.site || '웹 검색');
-    el.innerHTML = `사진: ${source} · 검색 결과라 실제 장소와 다를 수 있어요.`;
+    el.innerHTML = `사진: ${source} · ${escapeHtml(creditNote(photo, place))}`;
     el.hidden = false;
   });
 }
@@ -171,8 +254,8 @@ function button(className, label, text) {
   return el;
 }
 
-/** ‹ 2 / 5 › controls plus "이 사진으로 정하기" for [data-photo-gallery] slots. */
-function buildGallery(slot, place, state, show) {
+/** ‹ 2 / 5 ›, "이 사진으로 정하기" and "이 사진 아니에요" for [data-photo-gallery] slots. */
+function buildGallery(slot, place, state, { show, removeCurrent, announce }) {
   const bar = document.createElement('div');
   bar.className = 'gallery';
   const prev = button('gallery-btn gallery-prev', '이전 사진', '‹');
@@ -180,8 +263,9 @@ function buildGallery(slot, place, state, show) {
   const count = document.createElement('span');
   count.className = 'gallery-count';
   count.setAttribute('aria-live', 'polite');
+  const reject = button('gallery-reject', '이 사진은 이 장소가 아니에요', '아니에요');
   const pin = button('gallery-pin', '이 사진을 대표 사진으로 정하기', '');
-  bar.append(prev, count, next, pin);
+  bar.append(prev, count, next, reject, pin);
 
   const step = (delta) => {
     const n = state.photos.length;
@@ -193,13 +277,22 @@ function buildGallery(slot, place, state, show) {
   next.addEventListener('click', () => step(1));
   pin.addEventListener('click', () => {
     state.chosen = state.index;
-    pinPhoto(place.id, state.photos[state.index].url);
+    pinPhoto(place.id, state.photos[state.index]);
+    announce?.('대표 사진으로 정했어요. 다른 사람들에게도 이 사진이 먼저 보여요.');
     update();
+  });
+  reject.addEventListener('click', () => {
+    rejectPhoto(place.id, state.photos[state.index]);
+    announce?.('이 사진을 뺐어요. 알려주셔서 고마워요.');
+    removeCurrent();
   });
 
   function update() {
     const n = state.photos.length;
-    bar.hidden = n < 2;
+    bar.hidden = n < 1;
+    [prev, next, count].forEach((el) => {
+      el.hidden = n < 2;
+    });
     count.textContent = `${state.index + 1} / ${n}`;
     const pinned = state.index === state.chosen;
     pin.textContent = pinned ? '✓ 대표 사진' : '이 사진으로 정하기';
@@ -213,10 +306,9 @@ function buildGallery(slot, place, state, show) {
 /**
  * Upgrade every [data-photo-for] slot inside `root` with a photo, keeping
  * the illustration if nothing loads. Slots marked [data-photo-gallery]
- * also get controls to flip through candidates and pin one.
- * Safe to call after every render.
+ * also get controls to flip, pin and reject. Safe after every render.
  */
-export function hydratePhotos(root) {
+export function hydratePhotos(root, { announce } = {}) {
   root.querySelectorAll('[data-photo-for]').forEach((slot) => {
     const id = slot.dataset.photoFor;
     const place = getPlaceById(id);
@@ -236,7 +328,24 @@ export function hydratePhotos(root) {
       slot.append(img);
       let gallery = null;
 
-      const show = () => {
+      // take the current candidate out and show the next (or the illustration)
+      const removeCurrent = () => {
+        state.photos.splice(state.index, 1);
+        if (state.chosen > state.index) state.chosen -= 1;
+        if (!state.photos.length) {
+          img.remove();
+          gallery?.remove();
+          slot.classList.remove('has-photo');
+          showCredit(root, place, null);
+          return;
+        }
+        state.chosen = Math.min(state.chosen, state.photos.length - 1);
+        state.index %= state.photos.length;
+        viewIndex.set(id, state.index);
+        show();
+      };
+
+      function show() {
         const photo = state.photos[state.index];
         loadInto(
           img,
@@ -244,27 +353,16 @@ export function hydratePhotos(root) {
           () => {
             slot.classList.add('has-photo');
             slot.dataset.photoState = 'shown';
-            showCredit(root, id, photo);
+            showCredit(root, place, photo);
             gallery?.update();
           },
           () => {
             dropPhoto(id, photo.url);
-            state.photos.splice(state.index, 1);
-            if (state.chosen > state.index) state.chosen -= 1;
-            if (!state.photos.length) {
-              img.remove();
-              gallery?.remove();
-              slot.classList.remove('has-photo');
-              showCredit(root, id, null);
-              return;
-            }
-            state.chosen = Math.min(state.chosen, state.photos.length - 1);
-            state.index %= state.photos.length;
-            show();
+            removeCurrent();
           },
         );
-      };
-      if (isGallery) gallery = buildGallery(slot, place, state, show);
+      }
+      if (isGallery) gallery = buildGallery(slot, place, state, { show, removeCurrent, announce });
       show();
     });
   });
@@ -308,7 +406,7 @@ export async function checkPhotoService() {
   const supabase = await getSupabase();
   let result;
   try {
-    result = await supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: '남산서울타워 서울 용산구' } });
+    result = await supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: '남산서울타워 서울 용산구', name: '남산서울타워' } });
   } catch (error) {
     result = { error };
   }
