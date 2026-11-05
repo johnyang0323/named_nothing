@@ -492,7 +492,16 @@ export async function checkDeleteFunction() {
     body = null;
   }
   const detail = `HTTP ${res.status}${body?.error ? ` · ${body.error}` : body?.message ? ` · ${body.message}` : body?.msg ? ` · ${body.msg}` : ''}`;
-  if (res.status === 401 && body?.error === 'not signed in') return { ok: true, message: '계정 삭제 기능이 준비됐어요.', detail };
+  if (res.status === 401 && body?.error === 'not signed in') {
+    if (body.kakaoAdminKeySet === false) {
+      return {
+        ok: false,
+        message: '계정 삭제는 되지만, 카카오 연결 끊기 키가 없어요. Kakao Developers의 Admin 키를 Edge Functions → Secrets에 KAKAO_ADMIN_KEY로 추가해 주세요. 없으면 카카오로 다시 로그인할 때 새 빈 계정이 만들어져요.',
+        detail,
+      };
+    }
+    return { ok: true, message: body.kakaoAdminKeySet ? '계정 삭제 기능이 준비됐어요 (카카오 연결 끊기 포함).' : '계정 삭제 기능이 준비됐어요.', detail };
+  }
   if (res.status === 500 && /service role/i.test(body?.error || '')) {
     return { ok: false, message: '함수에 서비스 키가 없어요. Project Settings → API Keys의 service_role(secret) 키를 Edge Functions → Secrets에 SERVICE_ROLE_KEY라는 이름으로 추가해 주세요.', detail };
   }

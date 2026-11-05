@@ -85,7 +85,8 @@ Deno.serve(async (req) => {
 
   // 1) who is asking? (their own access token)
   const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) return json({ error: 'not signed in' }, 401, headers);
+  // (the app's setup check calls without a token; tell it whether Kakao unlink is ready)
+  if (!token) return json({ error: 'not signed in', kakaoAdminKeySet: Boolean(KAKAO_ADMIN_KEY) }, 401, headers);
   const who = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${token}` } });
   if (!who.ok) return json({ error: 'invalid session' }, 401, headers);
   const user = (await who.json()) as { id?: string; identities?: Identity[] };

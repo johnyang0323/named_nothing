@@ -99,7 +99,9 @@ test('a delete that did not really happen is reported as a failure', async () =>
 
 test('refuses without a valid session, from other sites, or without the service key', async () => {
   const a = await load();
-  assert.equal((await a.handler(post(null))).status, 401);
+  const anon = await a.handler(post(null));
+  assert.equal(anon.status, 401);
+  assert.deepEqual(await anon.json(), { error: 'not signed in', kakaoAdminKeySet: false }, 'setup check sees whether Kakao unlink is ready');
   assert.equal((await a.handler(post('forged-token'))).status, 401);
   assert.equal(a.calls.some((c) => c.method === 'DELETE'), false, 'nothing deleted (no files, no account)');
   assert.equal((await a.handler(post('good-token', 'https://evil.example'))).status, 403);
