@@ -8,7 +8,7 @@
  * The illustration stays underneath as a placeholder and fallback.
  */
 import { getSupabase } from './backend/client.js';
-import { isBackendConfigured } from './backend/config.js';
+import { isBackendConfigured, SUPABASE_URL } from './backend/config.js';
 import { getPlaceById } from './placeRepository.js';
 import { escapeHtml } from '../utils/dom.js';
 
@@ -185,13 +185,19 @@ export async function checkPhotoService() {
       return {
         ok: false,
         message:
-          '사진 함수에 연결하지 못했어요. ① Edge Functions에 함수가 정확히 place-photo 이름으로 배포됐는지, ② Secrets의 ALLOWED_ORIGINS가 정확히 https://johnyang0323.github.io (끝에 / 없이)인지 확인해 주세요.',
-        detail: `${error.name || 'Error'}: ${error.message || ''}`,
+          '사진 함수에 연결하지 못했어요. 아래 주소를 새 탭에서 열어보세요. "Requested function was not found"가 나오면 함수가 배포되지 않은 것이고, "Missing authorization header"나 "Invalid JWT"가 나오면 함수 설정에서 Verify JWT를 꺼야 해요. "deployed": true가 보이면 최신 함수 코드로 다시 배포해 주세요.',
+        detail: `${SUPABASE_URL}/functions/v1/place-photo`,
       };
     }
     if (status === 404) return { ok: false, message: 'place-photo 함수를 찾지 못했어요. 함수 이름이 정확히 place-photo인지, Deploy까지 눌렀는지 확인해 주세요.', detail };
     if (status === 401) return { ok: false, message: '함수가 로그인 토큰(JWT)을 요구하고 있어요. 함수 설정(Details)에서 Verify JWT(Enforce JWT)를 끄고 저장해 주세요.', detail };
-    if (status === 403 && /origin/i.test(body?.error || '')) return { ok: false, message: 'Secrets의 ALLOWED_ORIGINS 값이 사이트 주소와 달라요. https://johnyang0323.github.io 로 (끝에 / 없이) 넣어주세요.', detail };
+    if (status === 403 && /origin/i.test(body?.error || '')) {
+      return {
+        ok: false,
+        message: `Secrets의 ALLOWED_ORIGINS 값이 이 사이트 주소(${window.location.origin})와 달라요. 그 값으로 바꿔주세요.`,
+        detail: `지금 설정: ${(body?.allowedOrigins || []).join(', ') || '(없음)'}`,
+      };
+    }
     if (status === 500 && /KAKAO_REST_API_KEY/.test(body?.error || '')) return { ok: false, message: 'Secrets에 KAKAO_REST_API_KEY가 없어요. 카카오 REST API 키를 추가해 주세요.', detail };
     if (status === 502) {
       if (body?.status === 401) return { ok: false, message: '카카오가 REST API 키를 거절했어요. KAKAO_REST_API_KEY에 JavaScript 키가 아니라 REST API 키를 넣었는지 확인해 주세요.', detail };

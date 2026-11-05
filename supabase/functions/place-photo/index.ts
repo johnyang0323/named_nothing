@@ -8,17 +8,24 @@
 //
 // Function settings: turn OFF "Verify JWT" (projects with sb_publishable_ keys
 // send a non-JWT key). Access is limited to the site's origin below instead.
+//
+// Health check: open https://<project>.supabase.co/functions/v1/place-photo
+// in a browser tab. It shows whether the function is deployed and whether
+// its secrets are set (never the key itself).
 
 const KAKAO_KEY = Deno.env.get('KAKAO_REST_API_KEY') ?? '';
-const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') ?? 'https://johnyang0323.github.io')
+// "https://site.io/" and "https://site.io" mean the same origin
+const normalize = (o: string) => o.trim().replace(/\/+$/, '').toLowerCase();
+const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') || 'https://johnyang0323.github.io')
   .split(',')
-  .map((o) => o.trim())
+  .map(normalize)
   .filter(Boolean);
 
+// Echo the caller's origin so even refusals are readable by the app's
+// self-check; the refusal itself (403) is what blocks other sites.
 function cors(origin: string | null) {
-  const allow = origin && ALLOWED.includes(origin) ? origin : ALLOWED[0];
   return {
-    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Origin': origin || ALLOWED[0],
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     Vary: 'Origin',
@@ -48,9 +55,27 @@ type KakaoImage = {
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin');
   const headers = cors(origin);
-  // Browsers always send Origin on these cross-site requests; require ours.
-  if (!origin || !ALLOWED.includes(origin)) return json({ error: 'origin not allowed' }, 403, headers);
   if (req.method === 'OPTIONS') return new Response('ok', { headers });
+
+  // Opened directly in a browser tab (no Origin): report status, never secrets.
+  if (!origin && req.method === 'GET') {
+    return json(
+      {
+        function: 'place-photo',
+        deployed: true,
+        kakaoRestKeySet: Boolean(KAKAO_KEY),
+        allowedOrigins: ALLOWED,
+        note: '이 화면이 보이면 함수는 배포됐고 Verify JWT도 꺼져 있어요.',
+      },
+      200,
+      headers,
+    );
+  }
+
+  // Browsers always send Origin on cross-site requests; require ours.
+  if (!origin || !ALLOWED.includes(normalize(origin))) {
+    return json({ error: 'origin not allowed', origin, allowedOrigins: ALLOWED }, 403, headers);
+  }
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405, headers);
   if (!KAKAO_KEY) return json({ error: 'KAKAO_REST_API_KEY is not set' }, 500, headers);
 

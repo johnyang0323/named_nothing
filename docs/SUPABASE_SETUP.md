@@ -91,6 +91,18 @@
 6. `place-photo` 함수의 **Details**(또는 Settings) 탭에서 **Verify JWT with legacy secret**(또는 *Enforce JWT verification*)을 **끄고** 저장합니다.
    새 방식 키(`sb_publishable_…`)는 JWT 형식이 아니라서, 이 설정이 켜져 있으면 로그인하지 않은 사용자의 사진 요청이 거절돼요.
    대신 함수 코드가 `ALLOWED_ORIGINS`에 등록한 사이트에서 온 요청만 받도록 막고 있어요.
+7. **확인:** 새 탭 주소창에 아래 주소를 열어보세요.
+   `https://pheawjaqtsifkmlsjhea.supabase.co/functions/v1/place-photo`
+
+   | 보이는 내용 | 뜻 / 해결 |
+   |---|---|
+   | `"deployed": true`, `"kakaoRestKeySet": true` | 정상이에요. 앱의 **나의 하루 → 사진 기능 점검**을 눌러보세요. |
+   | `"kakaoRestKeySet": false` | Secrets에 `KAKAO_REST_API_KEY`를 추가해 주세요. |
+   | `Requested function was not found` | 함수가 없어요. 이름이 정확히 `place-photo`인지, **Deploy**까지 눌렀는지 확인해 주세요. |
+   | `Missing authorization header` / `Invalid JWT` | 6번의 Verify JWT를 꺼주세요. |
+   | `{"error":"origin not allowed"}` | 예전 버전 함수예요. 3번처럼 최신 코드를 다시 붙여넣고 **Deploy** 해주세요. |
+
+   함수 코드를 고칠 때는 함수의 **Code** 탭에서 내용을 전부 지우고 새 코드를 붙여넣은 뒤 **Deploy**를 누르면 됩니다.
 
 ## 7. 앱에 Supabase 연결하기
 
