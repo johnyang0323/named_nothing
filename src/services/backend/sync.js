@@ -10,6 +10,24 @@ import { getSupabase } from './client.js';
 import { getUser, onAuthChange } from './auth.js';
 
 const PUSH_DELAY_MS = 1200;
+const OWNER_KEY = 'plannish-owner';
+
+function readOwner() {
+  try {
+    return localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeOwner(id) {
+  try {
+    if (id) localStorage.setItem(OWNER_KEY, id);
+    else localStorage.removeItem(OWNER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 const HISTORY_DAYS = 60;
 
 export function createSync(store) {
@@ -48,7 +66,8 @@ export function createSync(store) {
   }
 
   const schedulePush = () => {
-    if (!getUser()) return;
+    // only days someone actually changed (an emptied/sign-out day has no updatedAt)
+    if (!getUser() || !store.getState().updatedAt) return;
     clearTimeout(timer);
     timer = setTimeout(pushToday, PUSH_DELAY_MS);
   };
@@ -57,6 +76,11 @@ export function createSync(store) {
     const supabase = await getSupabase();
     const user = getUser();
     if (!supabase || !user) return;
+    // this browser's days belong to someone else → keep them out of this account
+    const owner = readOwner();
+    if (owner && owner !== user.id) store.actions.forgetDevice();
+    writeOwner(user.id);
+
     setStatus('syncing');
     try {
       const { data: rows, error } = await supabase.from('days').select('date, updated_at').eq('user_id', user.id).order('date', { ascending: false }).limit(366);
@@ -116,9 +140,17 @@ export function createSync(store) {
     return [...byDate.values()].sort((a, b) => b.date.localeCompare(a.date)).slice(0, HISTORY_DAYS);
   }
 
+  /** Push pending changes now (before sign-out). Never throws. */
+  async function flush() {
+    if (!getUser() || !store.getState().updatedAt) return;
+    await pushToday();
+  }
+
   return {
     start,
     history,
+    flush,
+    forgetOwner: () => writeOwner(null),
     retry: pushToday,
     getStatus: () => ({ status, lastSavedAt }),
     onStatus(fn) {

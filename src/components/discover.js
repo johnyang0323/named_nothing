@@ -3,9 +3,16 @@ import { html } from '../utils/dom.js';
 import { categoryLabel, moodLabel, placeFacts } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
 import { attachSwipe, hasLearnedSwipe, markSwipeLearned } from './swipe.js';
+import { needsLocation } from './home.js';
 
-export function onEnter({ store }) {
-  if (!getPlaceById(store.getState().recommendationId)) store.actions.startDay();
+export function onEnter({ store, ui }) {
+  const state = store.getState();
+  if (needsLocation(state)) {
+    ui.areaStatus = { error: '어디서 시작할지 먼저 정해주세요. 위치 없이는 추천하지 않아요.' };
+    return 'home';
+  }
+  if (!getPlaceById(state.recommendationId)) store.actions.startDay();
+  return null;
 }
 
 export function render(state, { ui }) {

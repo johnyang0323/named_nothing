@@ -84,16 +84,22 @@ async function regionName(kakao, center) {
 }
 
 /**
- * Current position → area. Coordinates are rounded to ~100 m before they
- * are used or stored, and never leave the device except as the Kakao
- * search location.
+ * A point → area: the current position ('gps') or a spot tapped on the
+ * map ('map'). Coordinates are rounded to ~100 m before they are used or
+ * stored, and never leave the device except as the Kakao search location.
  */
-export async function searchAreaAt(position) {
+export async function searchAreaAt(position, { origin = 'gps' } = {}) {
   const center = coarseCoords(position);
   const kakao = await ensureKakao();
-  const [name, areaPlaces] = await Promise.all([regionName(kakao, center), gatherPlaces(kakao, center, WALKING_FROM.gps)]);
+  const from = origin === 'map' ? WALKING_FROM.map : WALKING_FROM.gps;
+  const [name, areaPlaces] = await Promise.all([regionName(kakao, center), gatherPlaces(kakao, center, from)]);
   if (areaPlaces.length < MIN_AREA_PLACES) {
-    throw new AreaSearchError('지금 위치 근처에서 가볼 만한 곳을 충분히 찾지 못했어요. 동네 이름으로 찾아보세요.');
+    throw new AreaSearchError(
+      origin === 'map'
+        ? '고른 위치 근처에서 가볼 만한 곳을 충분히 찾지 못했어요. 조금 더 번화한 곳을 눌러보세요.'
+        : '지금 위치 근처에서 가볼 만한 곳을 충분히 찾지 못했어요. 동네 이름으로 찾아보세요.',
+    );
   }
-  return { label: name ? `${name} (현재 위치)` : '현재 위치', origin: 'gps', center, places: areaPlaces };
+  const suffix = origin === 'map' ? '지도에서 고른 곳' : '현재 위치';
+  return { label: name ? `${name} (${suffix})` : suffix, origin, center, places: areaPlaces };
 }

@@ -103,6 +103,16 @@ a {
   outline: none;
 }
 
+/* headings get focus only so screen readers start at the new screen; no box needed */
+h1[tabindex='-1']:focus {
+  outline: none;
+}
+
+/* `hidden` must win over component display rules (e.g. .button is inline-flex) */
+[hidden] {
+  display: none !important;
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px;
@@ -1247,6 +1257,7 @@ a {
 
 .area-input {
   flex: 1;
+  width: 100%;
   min-width: 0;
   min-height: 44px;
   padding: 0 var(--space-4);
@@ -1284,6 +1295,75 @@ a {
   margin-top: var(--space-3);
   font-size: 0.88rem;
   color: #8a4b2f;
+}
+
+/* ---- Location first (home) ---------------------------------------------- */
+
+.area-first {
+  display: grid;
+  /* never wider than the card, whatever the children's intrinsic widths */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  background: var(--white);
+}
+
+.area-first .area-form {
+  margin-top: 0;
+}
+
+.area-title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.area-gps-button {
+  justify-self: start;
+}
+
+.area-map-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.area-map-wrap .button {
+  justify-self: start;
+}
+
+.area-map {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  background: var(--surface);
+}
+
+.area-map-slot {
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.area-map-slot.is-error {
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.km-pick {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #fff;
+  background: var(--accent-deep);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.home .lede {
+  margin-top: var(--space-6);
 }
 
 /* ---- Real map (Kakao) --------------------------------------------------- */
@@ -1446,6 +1526,65 @@ a {
   margin-top: var(--space-1);
   font-size: 0.82rem;
   color: var(--text-secondary);
+}
+
+/* ---- Sign-in gate --------------------------------------------------------- */
+
+body.is-gated .nav {
+  display: none;
+}
+
+body.is-gated .view {
+  padding-bottom: var(--space-7);
+}
+
+.welcome-visual {
+  aspect-ratio: 16 / 7;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius);
+  margin-bottom: var(--space-6);
+}
+
+.welcome .eyebrow {
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+.auth-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  max-width: 26rem;
+}
+
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.auth-or::before,
+.auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.auth-panel .email-form .note-label {
+  margin-top: 0;
+}
+
+.auth-panel .auth-fields .button {
+  justify-self: stretch;
+}
+
+.splash {
+  padding-top: var(--space-8);
+  text-align: center;
 }
 
 /* ---- Diagnostics ---------------------------------------------------------- */

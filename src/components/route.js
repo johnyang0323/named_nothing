@@ -3,6 +3,7 @@ import { suggestReplacements } from '../services/recommender.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, emptyState } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
+import { needsLocation } from './home.js';
 
 function replacementPanel(stop, ui) {
   if (ui.replacingId !== stop.id) return '';
@@ -127,6 +128,10 @@ export const actions = {
     }
   },
   'new-destination': ({ store, navigate }) => {
+    if (needsLocation(store.getState())) {
+      navigate('home');
+      return;
+    }
     store.actions.startDay();
     navigate('discover');
   },

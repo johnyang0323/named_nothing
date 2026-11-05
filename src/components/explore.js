@@ -5,6 +5,7 @@ import { categoryLabel, emptyState } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
 import { isKakaoConfigured } from '../services/kakao/config.js';
 import { mountKakaoMap } from '../services/kakao/map.js';
+import { needsLocation } from './home.js';
 import { metersBetween, walkMinutes } from '../services/kakao/mapper.js';
 
 const useRealMap = (place) => Boolean(place.coords) && isKakaoConfigured();
@@ -77,6 +78,19 @@ function schematicMap(current, discoveries, routePlaces, { hidden = false } = {}
 
 export function render(state) {
   const current = getPlaceById(state.currentId);
+  if (needsLocation(state)) {
+    return html`
+      <section class="screen" aria-labelledby="explore-title">
+        <p class="eyebrow">둘러보기</p>
+        <h1 id="explore-title" class="title" tabindex="-1">어디서 시작할까요?</h1>
+        ${emptyState({
+          title: '출발할 위치를 먼저 정해주세요',
+          body: '동네 이름, 현재 위치, 지도 중 하나로 정하면 그 근처의 실제 장소를 보여드려요.',
+          actionLabel: '위치 정하러 가기',
+          href: '#home',
+        })}
+      </section>`;
+  }
   if (!current) {
     return html`
       <section class="screen" aria-labelledby="explore-title">

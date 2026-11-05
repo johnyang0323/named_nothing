@@ -5,12 +5,17 @@ import * as discover from './components/discover.js';
 import * as explore from './components/explore.js';
 import * as route from './components/route.js';
 import * as myday from './components/myday.js';
+import * as welcome from './components/welcome.js';
+import * as splash from './components/splash.js';
 import { isBackendConfigured } from './services/backend/config.js';
-import { initAuth, onAuthChange } from './services/backend/auth.js';
+import { initAuth, onAuthChange, getUser, isAuthReady, markAuthReady } from './services/backend/auth.js';
 import { createSync } from './services/backend/sync.js';
 import { hydratePhotos } from './services/photos.js';
 
-const SCREENS = { home, discover, explore, route, day: myday };
+/** Screens reachable by #hash. */
+const APP_SCREENS = { home, discover, explore, route, day: myday };
+/** All renderable screens, including the sign-in gate. */
+const SCREENS = { ...APP_SCREENS, login: welcome, splash };
 const DEFAULT_SCREEN = 'home';
 
 const store = createStore();
@@ -39,7 +44,7 @@ const ctx = {
 
 function screenFromHash() {
   const name = window.location.hash.replace(/^#\/?/, '').split('?')[0];
-  return SCREENS[name] ? name : DEFAULT_SCREEN;
+  return APP_SCREENS[name] ? name : DEFAULT_SCREEN;
 }
 
 function navigate(name) {
@@ -120,12 +125,30 @@ function updateNav() {
   });
 }
 
+/**
+ * With accounts configured, nothing is usable signed out: show a short
+ * splash while the session restores, then the sign-in screen if needed.
+ */
+function gateScreen() {
+  if (!isBackendConfigured()) return null;
+  if (!isAuthReady()) return 'splash';
+  return getUser() ? null : 'login';
+}
+
 function handleRoute() {
   const isFirst = currentName === null;
-  currentName = screenFromHash();
+  const gate = gateScreen();
+  ui.afterLogin = screenFromHash();
+  currentName = gate || screenFromHash();
+  document.body.classList.toggle('is-gated', Boolean(gate));
   ui.replacingId = null;
   ui.confirmReset = false;
-  SCREENS[currentName].onEnter?.(ctx);
+  // a screen can send the person elsewhere first (e.g. no location yet → home)
+  const redirect = SCREENS[currentName].onEnter?.(ctx);
+  if (typeof redirect === 'string' && redirect !== currentName && APP_SCREENS[redirect]) {
+    navigate(redirect);
+    return;
+  }
   render();
   view.firstElementChild?.classList.add('is-entering');
   if (!isFirst) {
@@ -167,19 +190,18 @@ handleRoute();
 
 // Optional accounts (Supabase). Without configuration none of this runs.
 if (isBackendConfigured()) {
+  // signing in or out swaps between the gate and the app
   onAuthChange(() => {
-    if (currentName === 'day') {
-      ui.history = null;
-      SCREENS.day.onEnter?.(ctx);
-    }
-    render();
+    ui.history = null;
+    handleRoute();
   });
   sync.onStatus(() => currentName === 'day' && render());
   initAuth()
     .catch((error) => toast(error.message || '로그인하지 못했어요.'))
     .finally(() => {
+      markAuthReady();
       sync.start();
-      if (window.location.hash !== `#${currentName}`) handleRoute();
+      handleRoute();
     });
 }
 

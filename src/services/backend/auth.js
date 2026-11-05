@@ -12,6 +12,11 @@ let currentUser = null;
 let ready = false;
 
 export const getUser = () => currentUser;
+
+/** If restoring the session failed (e.g. offline), still settle as "signed out". */
+export function markAuthReady() {
+  if (!ready) setUser(currentUser);
+}
 export const isAuthReady = () => ready;
 
 export function onAuthChange(fn) {

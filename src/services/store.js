@@ -314,6 +314,26 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
       return true;
     },
 
+    /**
+     * Sign-out: remove every day kept in this browser (the account keeps
+     * its copy). The emptied day has no updatedAt, so it is never pushed
+     * over the account's version.
+     */
+    forgetDevice() {
+      try {
+        const keys = [];
+        for (let i = 0; i < storage.length; i += 1) {
+          const k = storage.key(i);
+          if (k?.startsWith(STORAGE_PREFIX)) keys.push(k);
+        }
+        keys.forEach((k) => storage.removeItem(k));
+      } catch {
+        /* storage unavailable */
+      }
+      activateArea(null);
+      commit(createEmptyDay(date), { stamp: false });
+    },
+
     resetDay() {
       persist.remove(key);
       activateArea(null);

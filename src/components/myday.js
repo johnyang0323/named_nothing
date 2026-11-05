@@ -4,14 +4,9 @@ import { formatKoreanDate } from '../utils/date.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, moodLabel } from './common.js';
 import { isBackendConfigured } from '../services/backend/config.js';
-import { getUser, isAuthReady, displayName, avatarUrl, signInWithKakao, signInWithEmail, signUpWithEmail, signOut, PASSWORD_MIN } from '../services/backend/auth.js';
+import { getUser, displayName, avatarUrl, signOut } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
 import { checkPhotoService } from '../services/photos.js';
-
-function authUi(ui) {
-  if (!ui.auth) ui.auth = { mode: 'signin', email: '', password: '', busy: false, error: '', info: '' };
-  return ui.auth;
-}
 
 function syncLine(sync) {
   const { status, lastSavedAt } = sync.getStatus();
@@ -26,15 +21,12 @@ function syncLine(sync) {
   return '';
 }
 
-function accountSection(ui, sync) {
-  if (!isBackendConfigured()) return '';
-  const a = authUi(ui);
+function accountSection(sync) {
   const user = getUser();
-  let body;
-  if (!isAuthReady()) {
-    body = html`<p class="empty-body">계정 상태를 확인하고 있어요…</p>`;
-  } else if (user) {
-    body = html`
+  if (!isBackendConfigured() || !user) return '';
+  return html`
+    <section class="block account" aria-labelledby="account-title">
+      <h2 class="section-label" id="account-title">계정</h2>
       <div class="account-who">
         <span class="avatar" aria-hidden="true">
           <span class="avatar-initial">${Array.from(displayName(user))[0] || '·'}</span>
@@ -43,36 +35,7 @@ function accountSection(ui, sync) {
         <p class="account-line"><strong>${displayName(user)}</strong> 계정에 오늘을 저장하고 있어요.</p>
       </div>
       <p class="account-sync" role="status">${syncLine(sync)}</p>
-      <button type="button" class="text-button text-button-muted" data-action="sign-out" data-focus-key="sign-out">로그아웃</button>`;
-  } else {
-    body = html`
-      <p class="empty-body">로그인하면 기록이 계정에 저장돼서 다른 기기에서도 이어볼 수 있어요. 로그인하지 않아도 이 기기에는 그대로 남아요.</p>
-      <button type="button" class="kakao-login" data-action="kakao-login" data-focus-key="kakao-login" ${a.busy ? 'disabled' : ''}>
-        <svg viewBox="0 0 24 24" aria-hidden="true" width="18" height="18"><path fill="currentColor" d="M12 3C6.48 3 2 6.48 2 10.78c0 2.77 1.86 5.2 4.65 6.58l-.95 3.5c-.08.3.26.54.52.37l4.17-2.76c.53.06 1.07.09 1.61.09 5.52 0 10-3.48 10-7.78S17.52 3 12 3z"/></svg>
-        카카오 로그인
-      </button>
-      <form class="email-form" data-form="email-auth" novalidate>
-        <p class="note-label">${a.mode === 'signin' ? '또는 이메일로 로그인' : '이메일로 가입하기'}</p>
-        <div class="auth-fields">
-          <label class="visually-hidden" for="auth-email">이메일</label>
-          <input id="auth-email" class="area-input" type="email" inputmode="email" autocomplete="${a.mode === 'signin' ? 'username' : 'email'}" placeholder="이메일" value="${a.email}" data-input="auth-email" data-focus-key="auth-email">
-          <label class="visually-hidden" for="auth-password">비밀번호</label>
-          <input id="auth-password" class="area-input" type="password" autocomplete="${a.mode === 'signin' ? 'current-password' : 'new-password'}" placeholder="${a.mode === 'signin' ? '비밀번호' : `비밀번호 (${PASSWORD_MIN}자 이상)`}" minlength="${PASSWORD_MIN}" value="${a.password}" data-input="auth-password" data-focus-key="auth-password">
-          <button type="submit" class="button button-primary button-small" ${a.busy ? 'disabled' : ''}>
-            ${a.busy ? '잠시만요…' : a.mode === 'signin' ? '로그인' : '가입하고 시작하기'}
-          </button>
-        </div>
-        <button type="button" class="text-button text-button-muted" data-action="auth-mode" data-focus-key="auth-mode">
-          ${a.mode === 'signin' ? '처음이에요 (가입하기)' : '이미 계정이 있어요 (로그인)'}
-        </button>
-      </form>
-      ${a.info ? html`<p class="save-status">${a.info}</p>` : ''}
-      ${a.error ? html`<p class="area-error">${a.error}</p>` : ''}`;
-  }
-  return html`
-    <section class="block account" aria-labelledby="account-title">
-      <h2 class="section-label" id="account-title">계정에 저장 <span class="optional">(선택)</span></h2>
-      ${body}
+      <button type="button" class="text-button text-button-muted" data-action="sign-out" data-focus-key="sign-out">로그아웃</button>
     </section>`;
 }
 
@@ -187,7 +150,7 @@ export function render(state, { ui, sync }) {
         </p>
       </form>
 
-      ${accountSection(ui, sync)}
+      ${accountSection(sync)}
 
       ${historySection(ui)}
 
@@ -245,33 +208,15 @@ export const actions = {
   },
 };
 
-async function authStep(ctx, run) {
-  const a = authUi(ctx.ui);
-  a.busy = true;
-  a.error = '';
-  ctx.rerender();
-  try {
-    await run(a);
-  } catch (error) {
-    a.error = error.message || '로그인하지 못했어요.';
-    ctx.announce(a.error);
-  } finally {
-    a.busy = false;
-    if (ctx.getScreen() === 'day') ctx.rerender();
-  }
-}
-
-actions['kakao-login'] = (ctx) => authStep(ctx, () => signInWithKakao('day'));
 actions['sign-out'] = async (ctx) => {
+  // save the latest changes first, then leave nothing behind on this device
+  await ctx.sync.flush();
   await signOut();
-  ctx.ui.auth = null;
-  ctx.announce('로그아웃했어요. 오늘 기록은 이 기기에 그대로 있어요.');
-  ctx.rerender();
-};
-actions['auth-mode'] = ({ ui, rerender }) => {
-  const a = authUi(ui);
-  ui.auth = { ...a, mode: a.mode === 'signin' ? 'signup' : 'signin', error: '', info: '' };
-  rerender();
+  ctx.store.actions.forgetDevice();
+  ctx.sync.forgetOwner();
+  ctx.ui.journalDraft = null;
+  ctx.ui.history = null;
+  ctx.toast('로그아웃했어요. 기록은 계정에 남아 있어요.');
 };
 actions['sync-retry'] = ({ sync }) => sync.retry();
 actions['check-photos'] = async ({ ui, rerender, announce, getScreen }) => {
@@ -283,12 +228,6 @@ actions['check-photos'] = async ({ ui, rerender, announce, getScreen }) => {
 };
 
 export const inputs = {
-  'auth-email': ({ ui }, el) => {
-    authUi(ui).email = el.value;
-  },
-  'auth-password': ({ ui }, el) => {
-    authUi(ui).password = el.value;
-  },
   note: ({ ui }, el) => {
     ui.journalDraft.note = el.value;
     const counter = document.querySelector('[data-counter]');
@@ -299,23 +238,6 @@ export const inputs = {
 };
 
 export const forms = {
-  'email-auth': (ctx) =>
-    authStep(ctx, async (a) => {
-      if (a.mode === 'signin') {
-        await signInWithEmail(a.email, a.password);
-      } else {
-        const { needsConfirmation } = await signUpWithEmail(a.email, a.password);
-        if (needsConfirmation) {
-          a.password = '';
-          a.mode = 'signin';
-          a.info = '확인 메일을 보냈어요. 메일의 링크를 이 브라우저에서 연 뒤 로그인해 주세요.';
-          ctx.announce(a.info);
-          return;
-        }
-      }
-      ctx.ui.auth = null;
-      ctx.announce('로그인했어요. 오늘 기록을 계정에 저장할게요.');
-    }),
   journal: ({ store, ui, announce }) => {
     store.actions.saveJournal(ui.journalDraft);
     ui.journalDraft = null;

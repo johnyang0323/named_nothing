@@ -9,7 +9,7 @@ import { hashString } from '../../utils/date.js';
 export const SEARCH_RADIUS_METERS = 1500;
 export const MAX_PER_SEARCH = 6;
 export const MIN_AREA_PLACES = 6;
-export const WALKING_FROM = { name: '동네 중심에서', gps: '현재 위치에서' };
+export const WALKING_FROM = { name: '동네 중심에서', gps: '현재 위치에서', map: '고른 위치에서' };
 
 /** ~100 m precision: enough to find nearby places, without storing an exact location. */
 export function coarseCoords({ lat, lng }) {
@@ -190,7 +190,7 @@ export function sanitizeArea(area) {
   if (places.length < MIN_AREA_PLACES) return null;
   return {
     label: area.label.trim().slice(0, 40),
-    origin: area.origin === 'gps' ? 'gps' : 'name',
+    origin: ['gps', 'map'].includes(area.origin) ? area.origin : 'name',
     center: { lat: area.center.lat, lng: area.center.lng },
     places,
   };
