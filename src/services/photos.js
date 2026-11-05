@@ -8,7 +8,7 @@
  * The illustration stays underneath as a placeholder and fallback.
  */
 import { getSupabase } from './backend/client.js';
-import { isBackendConfigured, SUPABASE_URL } from './backend/config.js';
+import { isBackendConfigured, SUPABASE_URL, PHOTO_FUNCTION } from './backend/config.js';
 import { getPlaceById } from './placeRepository.js';
 import { escapeHtml } from '../utils/dom.js';
 
@@ -67,7 +67,7 @@ export function getPhoto(place) {
   if (inflight.has(place.id)) return inflight.get(place.id);
 
   const request = getSupabase()
-    .then((supabase) => supabase.functions.invoke('place-photo', { body: { query: photoQuery(place) } }))
+    .then((supabase) => supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: photoQuery(place) } }))
     .then(({ data, error }) => {
       if (error) return null; // don't cache failures; try again next time
       const photo = cleanPhoto(data?.photo);
@@ -162,7 +162,7 @@ export async function checkPhotoService() {
   const supabase = await getSupabase();
   let result;
   try {
-    result = await supabase.functions.invoke('place-photo', { body: { query: '남산서울타워 서울 용산구' } });
+    result = await supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: '남산서울타워 서울 용산구' } });
   } catch (error) {
     result = { error };
   }
@@ -186,10 +186,16 @@ export async function checkPhotoService() {
         ok: false,
         message:
           '사진 함수에 연결하지 못했어요. 아래 주소를 새 탭에서 열어보세요. "Requested function was not found"가 나오면 함수가 배포되지 않은 것이고, "Missing authorization header"나 "Invalid JWT"가 나오면 함수 설정에서 Verify JWT를 꺼야 해요. "deployed": true가 보이면 최신 함수 코드로 다시 배포해 주세요.',
-        detail: `${SUPABASE_URL}/functions/v1/place-photo`,
+        detail: `${SUPABASE_URL}/functions/v1/${PHOTO_FUNCTION}`,
       };
     }
-    if (status === 404) return { ok: false, message: 'place-photo 함수를 찾지 못했어요. 함수 이름이 정확히 place-photo인지, Deploy까지 눌렀는지 확인해 주세요.', detail };
+    if (status === 404) {
+      return {
+        ok: false,
+        message: `사진 함수를 찾지 못했어요. 앱은 ${SUPABASE_URL}/functions/v1/${PHOTO_FUNCTION} 주소를 부르고 있어요. Supabase 함수 개요(Overview)에 나오는 주소와 같은지 확인해 주세요.`,
+        detail,
+      };
+    }
     if (status === 401) return { ok: false, message: '함수가 로그인 토큰(JWT)을 요구하고 있어요. 함수 설정(Details)에서 Verify JWT(Enforce JWT)를 끄고 저장해 주세요.', detail };
     if (status === 403 && /origin/i.test(body?.error || '')) {
       return {

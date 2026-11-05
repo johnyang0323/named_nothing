@@ -38,6 +38,9 @@ jobs:
           # Never use the service_role key here.
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://pheawjaqtsifkmlsjhea.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_2h_vEGHjbvnC0kxSlUj7BA_C1WjxQCU' }}
+          # URL name of the photo Edge Function (the last part of its URL on the
+          # function's Overview page). The dashboard editor assigned this one.
+          VITE_PHOTO_FUNCTION: ${{ vars.PHOTO_FUNCTION || 'hyper-responder' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -11,4 +11,11 @@ export const SUPABASE_URL = (import.meta.env?.VITE_SUPABASE_URL || '')
   .replace(/\/+$/, '');
 export const SUPABASE_ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY || '').trim();
 
+/**
+ * URL name (slug) of the photo Edge Function. Supabase may assign its own
+ * slug when a function is created in the dashboard editor (e.g.
+ * "hyper-responder") and it can't be renamed, so it's configurable.
+ */
+export const PHOTO_FUNCTION = (import.meta.env?.VITE_PHOTO_FUNCTION || 'place-photo').trim().replace(/^.*\/functions\/v1\//, '').replace(/\/+$/, '');
+
 export const isBackendConfigured = () => Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
