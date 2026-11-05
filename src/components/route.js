@@ -1,7 +1,7 @@
 import { getAllPlaces, getPlaceById } from '../services/placeRepository.js';
 import { suggestReplacements } from '../services/recommender.js';
 import { html } from '../utils/dom.js';
-import { categoryLabel, emptyState } from './common.js';
+import { categoryLabel, emptyState, directionsLink } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
 import { needsLocation } from './home.js';
 
@@ -52,6 +52,7 @@ function stopItem(stop, index, total, state, ui) {
         </button>
         <button type="button" class="text-button" data-action="replace" data-id="${stop.id}" data-focus-key="replace-${stop.id}" aria-expanded="${ui.replacingId === stop.id ? 'true' : 'false'}" aria-label="${name} 다른 곳으로 바꾸기">바꾸기</button>
         ${isCurrent ? '' : html`<button type="button" class="text-button" data-action="explore-from" data-id="${stop.id}" aria-label="${name}에서 둘러보기">여기서 둘러보기</button>`}
+        ${directionsLink(place, { className: 'text-button directions-link' })}
         <button type="button" class="text-button text-button-muted" data-action="remove" data-id="${stop.id}" aria-label="${name} 경로에서 빼기">빼기</button>
       </div>
       ${replacementPanel(stop, ui)}

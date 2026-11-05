@@ -45,6 +45,30 @@ npm test
 npm run build && npm run preview
 ```
 
+## Tests
+
+```bash
+npm test
+```
+
+```bash
+npm run test:e2e
+```
+
+- **Unit tests** (`tests/*.test.js`, `node:test`) cover the recommender, store, Kakao mapping, personalisation, and the photo Edge Function (compiled with esbuild and run with stand-ins for Deno and Kakao).
+- **Browser tests** (`tests/e2e/`, Playwright 1.63) build three variants (sample only / Kakao / everything) and serve them locally. They then run nine suites against stand-ins for Kakao Maps, Supabase and Open-Meteo, so no keys or network are needed:
+  - the sample journey
+  - PWA install and offline use under `/named_nothing/`
+  - Kakao places, map and 길찾기 links
+  - current location
+  - sign-in gate, sync and account switching
+  - one-screen home at five sizes
+  - swipe and photo gallery
+  - shared photo votes
+  - personalisation
+- Run one suite with `npm run test:e2e -- kakao`. Screenshots land in `tests/e2e/.output/shots`. The first run on a new machine needs `npx playwright install chromium`.
+- GitHub Actions runs both suites before every deploy. A failure stops the deploy and uploads the screenshots as an artifact.
+
 ## Install on a phone (PWA)
 
 The deployed site (https://johnyang0323.github.io/named_nothing/) can be installed like an app:
@@ -64,7 +88,7 @@ Without a key, the app runs entirely on illustrative sample data. With a Kakao *
 
 - Home shows an optional "어디서 시작할까요?" field. Type a neighborhood (e.g. `망원동`, `성수역`) and the app gathers real places within about 1.5 km: independent cafés (big chains are skipped), bookstores, parks, libraries, galleries, culture spaces, workshops, record shops, markets and walking trails.
 - Recommendations, discoveries and the route then use those places. Exploration shows a real Kakao map with the same markers as the diagram.
-- Walking times are straight-line estimates (about 4 km/h), shown as such. Opening hours and prices are not shown; each place links to Kakao Map instead.
+- Walking times are straight-line estimates (about 4 km/h), shown as such. **길찾기 ↗** on the discovery card, the current place and every route stop opens Kakao Map directions (`map.kakao.com/link/to/…`): the Kakao Map app on phones, the web map elsewhere. Opening hours and prices are not shown; each place links to Kakao Map instead.
 - The "why visit" lines and activity ideas are general suggestions for that kind of place, not claims about the specific business.
 - **A location is required** when Kakao is configured: nothing is recommended until a starting point is set (home blocks "오늘 시작하기", #discover redirects home, Exploration asks for a location). "어디서 시작할까요?" is the first block on home, with three ways in: neighborhood name, current location, or **tap on the map** and "이 위치에서 시작하기" (`kakao/picker.js`; the map element is reused across re-renders).
 - **현재 위치로 찾기** asks for location only when tapped. It does a single lookup, with no background tracking. Coordinates are rounded to about 100 m before they are used for the Kakao search or saved on the device, and the area is labelled with its administrative 동, e.g. "망원1동 (현재 위치)". If permission is denied, the app explains how to allow it or suggests typing a neighborhood instead.
@@ -94,6 +118,7 @@ If the SDK can't load (wrong key, unregistered domain, offline), neighborhood se
 
 Step-by-step setup (Korean, browser-only): [`docs/SUPABASE_SETUP.md`](docs/SUPABASE_SETUP.md).
 
+- **Kept awake:** `.github/workflows/keep-supabase-awake.yml` reads the database every 3 days. Supabase pauses free projects after 7 idle days, and GitHub turns scheduled workflows off after 60 days without commits; if that happens, re-enable it from the Actions tab.
 - **Sign-in is required** when Supabase is configured: signed out, the app shows only a welcome/login screen, and after signing in it continues to the screen that was requested. Signing out first pushes pending changes, then clears this device's days (the account keeps them). If a different account signs in on the same browser, the previous person's local days are not uploaded to it.
 - **Sign-in methods:** Kakao login (OAuth with PKCE, so the `?code=` doesn't clash with the `#screen` router) or email + password. Email + password sends no email, so it works on Supabase's free plan, where email templates can't be edited, and inside the iPhone home-screen app, where emailed links would open in Safari. It expects "Confirm email" to be off. 
 - **Sync:** local-first. The app always uses localStorage. When signed in, today's day is upserted to `days` (one row per user and date, JSON payload) about 1.2 s after each change. On sign-in, the copy with the newer `updatedAt` wins, and earlier days that only exist in this browser are uploaded once. **지난 날들** on My Day lists earlier days from both sources.

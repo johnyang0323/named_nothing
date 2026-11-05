@@ -4,3 +4,4 @@ dist
 *.zip
 .env
 .env.local
+tests/e2e/.output

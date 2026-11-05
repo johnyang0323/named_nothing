@@ -1728,6 +1728,25 @@ body.is-gated .view {
   text-align: center;
 }
 
+/* ---- Directions ----------------------------------------------------------- */
+
+.directions-button {
+  margin-top: var(--space-3);
+}
+
+.place-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.directions-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+
 /* ---- Personalisation ------------------------------------------------------ */
 
 .context-row {

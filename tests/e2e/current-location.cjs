@@ -1,0 +1,50 @@
+const { chromium, devices } = require('playwright');
+const { launch, OUT, ROOT } = require('./env.cjs');
+const fs = require('fs');
+const URL = 'http://localhost:4174/';
+const FAKE = fs.readFileSync(__dirname + '/fake-kakao.js', 'utf8');
+const ok = (...a) => console.log('✔', ...a);
+const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
+(async () => {
+  const b = await launch();
+  const errors = [];
+  // allowed
+  const ctx = await b.newContext({ ...devices['iPhone 13'], reducedMotion: 'reduce', geolocation: { latitude: 37.5563219, longitude: 126.9061877 }, permissions: ['geolocation'] });
+  await ctx.route('https://dapi.kakao.com/**', (r) => r.fulfill({ contentType: 'application/javascript', body: FAKE }));
+  await ctx.route('https://api.open-meteo.com/**', (r) => r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ current: { weather_code: 1, temperature_2m: 18, precipitation: 0 } }) }));
+  const p = await ctx.newPage();
+  p.on('pageerror', (e) => errors.push(String(e)));
+  await p.goto(URL);
+  await p.click('[data-action="use-location"]');
+  await p.waitForSelector('.home-mood');
+  const label = (await p.textContent('.place-chip')).replace('바꾸기', '').trim();
+  assert(label === '망원1동 (현재 위치)', label);
+  const region = await p.evaluate(() => window.__regionCall);
+  const searchAt = await p.evaluate(() => window.__searchAt);
+  assert(region[0] === 126.906 && region[1] === 37.556, 'coarse coords to geocoder ' + region);
+  assert(searchAt.lat === 37.556 && searchAt.lng === 126.906, 'coarse coords to search');
+  const stored = await p.evaluate(() => JSON.stringify(Object.values(localStorage).map((v) => JSON.parse(v).area?.center).filter(Boolean)));
+  assert(stored === '[{"lat":37.556,"lng":126.906}]', 'stored coarse ' + stored);
+  ok('GPS allowed ->', label, '| coords rounded to ~100m everywhere:', stored);
+  await p.click('text=오늘 시작하기');
+  assert((await p.textContent('.facts')).includes('현재 위치에서'), 'facts label');
+  ok('discover shows "현재 위치에서 걸어서 약 N분"');
+  await p.screenshot({ path: OUT + '/g1-home.png' });
+
+  // denied
+  const ctx2 = await b.newContext({ ...devices['iPhone 13'], reducedMotion: 'reduce', permissions: [] });
+  await ctx2.route('https://dapi.kakao.com/**', (r) => r.fulfill({ contentType: 'application/javascript', body: FAKE }));
+  await ctx2.route('https://api.open-meteo.com/**', (r) => r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ current: { weather_code: 1, temperature_2m: 18, precipitation: 0 } }) }));
+  const p2 = await ctx2.newPage();
+  p2.on('pageerror', (e) => errors.push(String(e)));
+  await p2.goto(URL);
+  await p2.click('[data-action="use-location"]');
+  await p2.waitForSelector('.area-error', { timeout: 15000 });
+  const msg = await p2.textContent('.area-error');
+  assert(msg.includes('위치 권한이 꺼져 있어요'), msg);
+  assert(await p2.isEnabled('[data-action="use-location"]'), 'button re-enabled');
+  ok('GPS denied ->', msg.slice(0, 40) + '…');
+  console.log('errors:', errors.length ? errors : 'none');
+  await b.close();
+  if (errors.length) process.exit(1);
+})().catch((e) => { console.error(e); process.exit(1); });

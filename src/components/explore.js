@@ -1,7 +1,7 @@
 import { getPlaceById } from '../services/placeRepository.js';
 import { explainNext, describeProximity, schematicDistance } from '../services/recommender.js';
 import { html, raw } from '../utils/dom.js';
-import { categoryLabel, emptyState } from './common.js';
+import { categoryLabel, emptyState, directionsLink } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
 import { isKakaoConfigured } from '../services/kakao/config.js';
 import { mountKakaoMap } from '../services/kakao/map.js';
@@ -121,7 +121,12 @@ export function render(state) {
         </button>
       </p>
 
-      ${current.placeUrl ? html`<p class="quiet-link"><a href="${current.placeUrl}" target="_blank" rel="noopener noreferrer">카카오맵에서 위치 보기</a></p>` : ''}
+      ${current.placeUrl || current.coords
+        ? html`<p class="quiet-link place-links">
+            ${current.placeUrl ? html`<a href="${current.placeUrl}" target="_blank" rel="noopener noreferrer">카카오맵에서 위치 보기</a>` : ''}
+            ${directionsLink(current)}
+          </p>`
+        : ''}
 
       ${useRealMap(current) ? kakaoMapFigure(current, routePlaces) : ''}
       ${schematicMap(current, discoveries, routePlaces, { hidden: useRealMap(current) })}
