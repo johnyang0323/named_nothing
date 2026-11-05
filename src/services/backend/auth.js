@@ -32,7 +32,19 @@ function setUser(user) {
 export function displayName(user) {
   if (!user) return '';
   const meta = user.user_metadata || {};
-  return user.email || meta.email || meta.name || meta.full_name || meta.preferred_username || '카카오 계정';
+  // Kakao nickname first (it's what the person chose to show), then email
+  return meta.name || meta.full_name || meta.nickname || meta.preferred_username || user.email || meta.email || '카카오 계정';
+}
+
+/**
+ * Profile photo from the login provider (Kakao profile_image), or null.
+ * Kakao can return http:// URLs; its CDN serves the same file over https,
+ * which the https site needs to avoid mixed content.
+ */
+export function avatarUrl(user) {
+  const meta = user?.user_metadata || {};
+  const url = [meta.avatar_url, meta.picture, meta.profile_image].find((v) => typeof v === 'string' && /^https?:\/\//.test(v));
+  return url ? url.replace(/^http:/, 'https:') : null;
 }
 
 /** Restore the session (and finish an OAuth redirect if we just came back from one). */

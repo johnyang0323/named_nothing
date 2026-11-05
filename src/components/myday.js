@@ -4,7 +4,7 @@ import { formatKoreanDate } from '../utils/date.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, moodLabel } from './common.js';
 import { isBackendConfigured } from '../services/backend/config.js';
-import { getUser, isAuthReady, displayName, signInWithKakao, signInWithEmail, signUpWithEmail, signOut, PASSWORD_MIN } from '../services/backend/auth.js';
+import { getUser, isAuthReady, displayName, avatarUrl, signInWithKakao, signInWithEmail, signUpWithEmail, signOut, PASSWORD_MIN } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
 
 function authUi(ui) {
@@ -34,7 +34,13 @@ function accountSection(ui, sync) {
     body = html`<p class="empty-body">계정 상태를 확인하고 있어요…</p>`;
   } else if (user) {
     body = html`
-      <p class="account-line"><strong>${displayName(user)}</strong> 계정에 오늘을 저장하고 있어요.</p>
+      <div class="account-who">
+        <span class="avatar" aria-hidden="true">
+          <span class="avatar-initial">${Array.from(displayName(user))[0] || '·'}</span>
+          ${avatarUrl(user) ? html`<img class="avatar-img" src="${avatarUrl(user)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">` : ''}
+        </span>
+        <p class="account-line"><strong>${displayName(user)}</strong> 계정에 오늘을 저장하고 있어요.</p>
+      </div>
       <p class="account-sync" role="status">${syncLine(sync)}</p>
       <button type="button" class="text-button text-button-muted" data-action="sign-out" data-focus-key="sign-out">로그아웃</button>`;
   } else {
