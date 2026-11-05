@@ -187,6 +187,13 @@ docs/SUPABASE_SETUP.md     Browser-only setup guide for accounts and photos
 - Visited state is shown in text (`✓ 다녀왔어요`), not only by colour.
 - `prefers-reduced-motion` turns off animations.
 
+## Ready for other people
+
+- **Account deletion:** 나의 하루 → 계정 삭제. A two-step confirmation explains what gets deleted. The `delete-account` Edge Function checks the caller's own token with Supabase Auth, then deletes exactly that user with the server-only service key. Days, taste and photo votes cascade, and error reports keep no link to the person. The device is cleared too.
+- **Password reset:** "비밀번호를 잊었어요" sends a 6-digit code (`resetPasswordForEmail`, then `verifyOtp({ type: 'recovery' })`, then `updateUser`). It works inside the home-screen app, unlike emailed links. It needs custom SMTP (Gmail app password is enough) and `{{ .Token }}` in the Reset Password template.
+- **Privacy policy and terms:** static pages `public/privacy.html` and `public/terms.html`. They are drafts written from what the app actually does; fill in the highlighted placeholders and review before publishing. They are linked from the sign-in screen and My Day.
+- **Error reports:** `src/services/errorLog.js` sends uncaught errors and rejected promises to `client_errors` (`supabase/client_errors.sql`). That table accepts inserts only, and you read it in the dashboard. Each distinct message is sent once, at most 10 per visit. Network blips and cross-origin noise are ignored, and no notes or locations are sent. Builds carry `__APP_VERSION__` (the commit SHA in CI).
+
 ## Personal recommendations
 
 No questionnaire. The app learns from what people already do.

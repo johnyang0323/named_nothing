@@ -9,6 +9,9 @@ function createBackend({ photos } = {}) {
   const db = new Map();
   const votes = new Map(); // place|url|user -> vote
   const prefs = new Map(); // user -> { taste, updated_at }
+  const errorsLog = []; // client_errors rows
+  const resetCodes = new Map(); // email -> code
+  const deleted = [];
   const accounts = new Map(); // email -> { password, id }
   const log = [];
   const fnBodies = [];
@@ -34,6 +37,26 @@ function createBackend({ photos } = {}) {
     if (path === '/auth/v1/token' && url.searchParams.get('grant_type') === 'password') {
       const b = req.postDataJSON();
       return accounts.get(b.email)?.password === b.password ? json(session(userFor(b.email))) : json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400);
+    }
+    if (path === '/auth/v1/recover') {
+      const b = req.postDataJSON();
+      if (accounts.has(b.email)) resetCodes.set(b.email, '654321');
+      return json({}); // same answer either way
+    }
+    if (path === '/auth/v1/verify') {
+      const b = req.postDataJSON();
+      if (b.type === 'recovery' && resetCodes.get(b.email) === b.token) {
+        resetCodes.delete(b.email);
+        return json(session(userFor(b.email)));
+      }
+      return json({ code: 403, msg: 'Token has expired or is invalid' }, 403);
+    }
+    if (path === '/auth/v1/user' && req.method() === 'PUT') {
+      const b = req.postDataJSON();
+      const id = (req.headers().authorization || '').replace('Bearer at-', '');
+      const email = [...accounts].find(([, a]) => a.id === id)?.[0];
+      if (email && b.password) accounts.get(email).password = b.password;
+      return json(userFor(email));
     }
     if (path === '/auth/v1/token') return json(session(kakaoUser)); // PKCE after Kakao
     if (path === '/auth/v1/authorize') return route.fulfill({ status: 302, headers: { location: `${url.searchParams.get('redirect_to')}?code=kakao-code` } });
@@ -86,6 +109,21 @@ function createBackend({ photos } = {}) {
       });
       return json([...sums].map(([k, score]) => ({ place_id: k.split('|')[0], image_url: k.split('|')[1], score })));
     }
+    if (path === '/rest/v1/client_errors' && req.method() === 'POST') {
+      [].concat(req.postDataJSON()).forEach((r) => errorsLog.push(r));
+      return route.fulfill({ status: 201, headers: cors, body: '' });
+    }
+    if (path === '/functions/v1/delete-account') {
+      const id = (req.headers().authorization || '').replace('Bearer at-', '');
+      const email = [...accounts].find(([, a]) => a.id === id)?.[0];
+      if (!email && id !== 'kakao-user' && id !== 'user-1') return json({ error: 'invalid session' }, 401);
+      if (email) accounts.delete(email);
+      [...db.keys()].filter((k) => k.startsWith(id + '|')).forEach((k) => db.delete(k));
+      prefs.delete(id);
+      [...votes.keys()].filter((k) => k.endsWith('|' + id)).forEach((k) => votes.delete(k));
+      deleted.push(id);
+      return json({ deleted: true });
+    }
     if (path.startsWith('/functions/v1/')) {
       const body = req.postDataJSON();
       fnBodies.push(body);
@@ -93,7 +131,7 @@ function createBackend({ photos } = {}) {
     }
     return json({ error: 'unmocked ' + path }, 404);
   }
-  return { db, accounts, log, handle, votes, fnBodies, prefs };
+  return { db, accounts, log, handle, votes, fnBodies, prefs, errorsLog, resetCodes, deleted };
 }
 
 async function wire(ctx, backend, { kakao = true, errors, weather = { weather_code: 1, temperature_2m: 18, precipitation: 0 } } = {}) {

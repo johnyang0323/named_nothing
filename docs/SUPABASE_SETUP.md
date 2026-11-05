@@ -129,6 +129,50 @@ SQL을 실행하기 전에도 앱은 정상 동작해요. 다만 투표가 저�
 
 SQL을 실행하기 전에도 취향 반영은 동작해요. 다만 이 기기에만 저장돼요.
 
+## 6-3. 공개 준비: 오류 기록, 계정 삭제, 비밀번호 재설정, 약관
+
+### 오류 기록 켜기
+1. **SQL Editor → New query**에 [`supabase/client_errors.sql`](../supabase/client_errors.sql) 내용을 붙여넣고 **Run**을 누릅니다.
+2. 이후 다른 사람의 기기에서 생긴 오류가 **Table Editor → client_errors**에 쌓여요. 대시보드에서만 볼 수 있어요.
+   - 남는 정보: 오류 문구, 화면 이름, 앱 버전, 브라우저 종류
+   - 한 줄 기록이나 위치는 남지 않아요.
+3. (선택) 90일이 지난 기록을 자동으로 지우려면 **Database → Extensions**에서 `pg_cron`을 켜고, SQL 파일 맨 아래의 주석을 풀어 한 번 실행하세요.
+
+### 계정 삭제 함수 배포
+1. **Edge Functions → Deploy a new function → Via Editor**를 엽니다.
+2. ⚠️ **Deploy를 누르기 전에** 함수 이름 칸을 `delete-account`로 바꿔 주세요. 사진 함수가 `hyper-responder`가 된 것처럼, 그대로 두면 아무 이름이나 붙어요.
+3. [`supabase/functions/delete-account/index.ts`](../supabase/functions/delete-account/index.ts)를 **Copy raw file**로 복사해 붙여넣고 **Deploy**를 누릅니다.
+4. 함수의 **Details**에서 **Verify JWT를 끄고** 저장합니다. 로그인 확인은 함수 코드가 직접 해요.
+5. 새 탭에서 함수 Overview에 나오는 주소를 열어 `"serviceKeySet": true`가 보이는지 확인해요.
+   - `false`라면 **Project Settings → API Keys**의 `service_role`(secret) 키를 **Edge Functions → Secrets**에 `SERVICE_ROLE_KEY`라는 이름으로 추가하세요.
+   - 이 키는 절대 앱이나 채팅에 넣지 마세요.
+6. 주소 끝 이름이 `delete-account`가 아니라면, GitHub **Settings → Secrets and variables → Actions → Variables**에 `DELETE_FUNCTION` = 그 이름을 추가하고 배포를 다시 실행하세요.
+
+### 비밀번호 재설정 메일 보내기 (Gmail로 무료)
+Supabase 기본 메일은 본인 주소로만 보낼 수 있어요. 비밀번호 재설정 메일을 다른 사람에게도 보내려면 외부 메일(SMTP)이 필요해요. 도메인이 없다면 Gmail이 가장 간단해요.
+
+1. 보낼 Gmail 계정에서 **2단계 인증**을 켜요.
+2. https://myaccount.google.com/apppasswords 에서 **앱 비밀번호**를 만들어요(16자리). 이 값도 다른 곳에 보내지 마세요.
+3. Supabase **Authentication → Emails → SMTP Settings**에서 **Enable custom SMTP**를 켜고 입력해요.
+   - Sender email: 그 Gmail 주소 · Sender name: `계획 있는 하루`
+   - Host: `smtp.gmail.com` · Port: `465`
+   - Username: 그 Gmail 주소 · Password: 2번의 앱 비밀번호
+4. 이제 템플릿을 고칠 수 있어요. **Authentication → Emails → Templates → Reset Password** 본문을 아래처럼 바꾸고 저장해요. 앱은 링크가 아니라 숫자 코드를 받아요.
+   ```html
+   <h2>계획 있는 것처럼 사는 하루</h2>
+   <p>비밀번호 재설정 코드: <strong>{{ .Token }}</strong></p>
+   <p>앱의 "비밀번호를 잊었어요" 화면에 이 숫자와 새 비밀번호를 입력해 주세요. 직접 요청하지 않았다면 이 메일은 무시하셔도 돼요.</p>
+   ```
+5. Gmail은 하루 약 500통까지 보낼 수 있어요. 사용자가 많아지면 도메인을 마련해서 Resend 같은 메일 서비스로 바꾸면 돼요.
+
+### 개인정보 처리방침·이용약관 채우기
+1. GitHub에서 [`public/privacy.html`](../public/privacy.html)과 [`public/terms.html`](../public/terms.html)을 열고 연필(✎) 버튼으로 편집해요.
+2. 노란색으로 표시되는 **[운영자 이름]**, **[연락 이메일]**, **[시행일]**을 채우고 **Commit changes**를 누르면 자동으로 배포돼요.
+3. 내용은 앱이 실제로 하는 일에 맞춰 쓴 **초안**이에요. 공개 전에 직접 읽어 보고, 필요하면 전문가 검토를 받으세요.
+4. 카카오 비즈 앱이나 Play 스토어에 넣을 주소:
+   - 개인정보 처리방침: `https://johnyang0323.github.io/named_nothing/privacy.html`
+   - 이용약관: `https://johnyang0323.github.io/named_nothing/terms.html`
+
 ## 7. 앱에 Supabase 연결하기
 
 1. Supabase에서 **Project Settings → API**(또는 **Data API / API Keys**)를 엽니다.

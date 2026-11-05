@@ -55,6 +55,8 @@ jobs:
           # URL name of the photo Edge Function (the last part of its URL on the
           # function's Overview page). The dashboard editor assigned this one.
           VITE_PHOTO_FUNCTION: ${{ vars.PHOTO_FUNCTION || 'hyper-responder' }}
+          # URL name of the account-deletion Edge Function.
+          VITE_DELETE_FUNCTION: ${{ vars.DELETE_FUNCTION || 'delete-account' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

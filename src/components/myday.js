@@ -4,7 +4,7 @@ import { formatKoreanDate } from '../utils/date.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, moodLabel } from './common.js';
 import { isBackendConfigured } from '../services/backend/config.js';
-import { getUser, displayName, avatarUrl, signOut } from '../services/backend/auth.js';
+import { getUser, displayName, avatarUrl, signOut, deleteAccount } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
 import { checkPhotoService } from '../services/photos.js';
 import { tasteSummary, MIN_EVENTS } from '../services/personalize.js';
@@ -52,7 +52,7 @@ export function syncLine(sync) {
   return '';
 }
 
-function accountSection(sync) {
+function accountSection(sync, ui) {
   const user = getUser();
   if (!isBackendConfigured() || !user) return '';
   return html`
@@ -66,8 +66,26 @@ function accountSection(sync) {
         <p class="account-line"><strong>${displayName(user)}</strong> 계정에 오늘을 저장하고 있어요.</p>
       </div>
       <p class="account-sync" role="status">${syncLine(sync)}</p>
-      <button type="button" class="text-button text-button-muted" data-action="sign-out" data-focus-key="sign-out">로그아웃</button>
+      <div class="account-actions">
+        <button type="button" class="text-button text-button-muted" data-action="sign-out" data-focus-key="sign-out">로그아웃</button>
+        ${ui.confirmDelete ? '' : html`<button type="button" class="text-button text-button-muted" data-action="delete-account" data-focus-key="delete-account">계정 삭제</button>`}
+      </div>
+      ${ui.confirmDelete ? deleteConfirm(ui) : ''}
     </section>`;
+}
+
+function deleteConfirm(ui) {
+  const busy = ui.confirmDelete === 'busy';
+  return html`
+    <div class="danger-zone" role="group" aria-labelledby="delete-title">
+      <p class="danger-title" id="delete-title">계정을 삭제할까요?</p>
+      <p class="fine-print">계정과 함께 지금까지의 모든 하루 기록, 나의 취향, 사진 투표가 <strong>영구히</strong> 지워져요. 되돌릴 수 없어요.</p>
+      <div class="actions">
+        <button type="button" class="button button-danger button-small" data-action="delete-account-confirm" data-focus-key="delete-account-confirm" ${busy ? 'disabled' : ''}>${busy ? '삭제하는 중…' : '네, 모두 삭제할게요'}</button>
+        <button type="button" class="text-button" data-action="delete-account-cancel" ${busy ? 'disabled' : ''}>취소</button>
+      </div>
+      ${ui.deleteError ? html`<p class="area-error" role="alert">${ui.deleteError}</p>` : ''}
+    </div>`;
 }
 
 /** Resolve a stored day's place ids to names using that day's own places. */
@@ -183,7 +201,7 @@ export function render(state, { ui, sync, taste }) {
         </p>
       </form>
 
-      ${accountSection(sync)}
+      ${accountSection(sync, ui)}
 
       ${tasteSection(taste)}
 
@@ -204,6 +222,12 @@ export function render(state, { ui, sync, taste }) {
               : ''}
           </section>`
         : ''}
+
+      <p class="legal-links">
+        <a href="./privacy.html" target="_blank" rel="noopener">개인정보 처리방침</a>
+        <span aria-hidden="true">·</span>
+        <a href="./terms.html" target="_blank" rel="noopener">이용약관</a>
+      </p>
 
       <section class="block reset" aria-labelledby="reset-title">
         <h2 class="section-label" id="reset-title">새로 시작하기</h2>
@@ -243,16 +267,49 @@ export const actions = {
   },
 };
 
-actions['sign-out'] = async (ctx) => {
-  // save the latest changes first, then leave nothing behind on this device
-  await ctx.sync.flush();
-  await ctx.taste.flush();
-  await signOut();
+/** Clear everything personal from this device (after sign-out or deletion). */
+function leaveDevice(ctx) {
   ctx.store.actions.forgetDevice();
   ctx.taste.forgetDevice();
   ctx.sync.forgetOwner();
   ctx.ui.journalDraft = null;
   ctx.ui.history = null;
+  ctx.ui.confirmDelete = false;
+  ctx.ui.deleteError = '';
+}
+
+actions['delete-account'] = ({ ui, rerender }) => {
+  ui.confirmDelete = true;
+  ui.deleteError = '';
+  rerender();
+  document.querySelector('[data-focus-key="delete-account-confirm"]')?.focus();
+};
+actions['delete-account-cancel'] = ({ ui, rerender }) => {
+  ui.confirmDelete = false;
+  ui.deleteError = '';
+  rerender();
+  document.querySelector('[data-focus-key="delete-account"]')?.focus();
+};
+actions['delete-account-confirm'] = async (ctx) => {
+  ctx.ui.confirmDelete = 'busy';
+  ctx.rerender();
+  try {
+    await deleteAccount();
+    leaveDevice(ctx);
+    ctx.toast('계정과 모든 기록을 삭제했어요. 그동안 고마웠어요.');
+  } catch (error) {
+    ctx.ui.confirmDelete = true;
+    ctx.ui.deleteError = error.message || '계정을 삭제하지 못했어요.';
+    ctx.rerender();
+  }
+};
+
+actions['sign-out'] = async (ctx) => {
+  // save the latest changes first, then leave nothing behind on this device
+  await ctx.sync.flush();
+  await ctx.taste.flush();
+  await signOut();
+  leaveDevice(ctx);
   ctx.toast('로그아웃했어요. 기록은 계정에 남아 있어요.');
 };
 actions['sync-retry'] = ({ sync }) => sync.retry();

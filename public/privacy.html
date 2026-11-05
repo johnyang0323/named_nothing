@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index" />
+    <title>개인정보 처리방침 · 계획 있는 것처럼 사는 하루</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <!--
+      초안(DRAFT): 공개 전에 운영자가 직접 검토하고, 대괄호 [ ] 안의 내용을 채워야 합니다.
+      필요하면 개인정보 보호 전문가의 검토를 받으세요.
+    -->
+    <style>
+      :root { --bg: #f7f5f0; --text: #252525; --muted: #6f6c66; --accent: #5e6553; --line: #dcd8ce; --surface: #ece9e1; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif; line-height: 1.75; word-break: keep-all; }
+      main { max-width: 44rem; margin: 0 auto; padding: 2.5rem max(16px, env(safe-area-inset-left)) 4rem; }
+      a { color: var(--accent); }
+      .back { font-size: 0.9rem; }
+      h1 { font-family: 'Nanum Myeongjo', 'Noto Serif KR', 'AppleMyungjo', Georgia, serif; font-size: 1.9rem; line-height: 1.3; margin: 1.5rem 0 0.5rem; }
+      h2 { font-size: 1.05rem; margin: 2.2rem 0 0.6rem; }
+      p, li { font-size: 0.95rem; }
+      .meta { color: var(--muted); font-size: 0.85rem; }
+      .summary { background: #fff; border-radius: 14px; padding: 1rem 1.25rem; margin-top: 1.5rem; }
+      .summary li { margin-bottom: 0.3rem; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+      th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--line); }
+      th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+      .scroll { overflow-x: auto; }
+      .fill { background: #fff3c4; padding: 0 0.2em; border-radius: 3px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="./">← 앱으로 돌아가기</a>
+      <h1>개인정보 처리방침</h1>
+      <p class="meta">시행일: <span class="fill">[2026년 ○월 ○일]</span></p>
+
+      <p>
+        <span class="fill">[운영자 이름]</span>(이하 "운영자")은 「계획 있는 것처럼 사는 하루」(이하 "서비스")를 운영하면서
+        이용자의 개인정보를 「개인정보 보호법」에 따라 처리합니다. 꼭 필요한 정보만 모으고, 모은 목적에만 쓰고,
+        필요 없어지면 지웁니다.
+      </p>
+
+      <div class="summary">
+        <strong>한눈에 보기</strong>
+        <ul>
+          <li>정확한 위치는 저장하지 않아요. 동네 이름 또는 약 100m 단위로 어림한 위치만 써요.</li>
+          <li>개인정보를 다른 회사에 팔거나 제공하지 않아요.</li>
+          <li>앱의 <strong>나의 하루 → 계정 삭제</strong>로 계정과 모든 기록을 언제든 바로 지울 수 있어요.</li>
+          <li>광고나 마케팅에 쓰지 않아요.</li>
+        </ul>
+      </div>
+
+      <h2>1. 수집하는 개인정보</h2>
+      <div class="scroll">
+        <table>
+          <tr><th>언제</th><th>항목</th></tr>
+          <tr><td>이메일로 가입·로그인</td><td>이메일 주소, 비밀번호(암호화되어 저장되며 운영자도 볼 수 없어요)</td></tr>
+          <tr><td>카카오로 로그인</td><td>카카오 회원 식별값, 닉네임, 프로필 사진, 이메일(동의한 경우에만)</td></tr>
+          <tr><td>서비스를 쓰는 동안</td><td>출발 위치(동네 이름 또는 약 100m 단위로 어림한 좌표), 오늘 담은 장소와 다녀온 장소, 고른 기분과 쓸 수 있는 시간, 한 줄 기록과 그날의 기분, 장소 종류별 취향 점수, 사진 투표(이 사진으로 정하기·아니에요)</td></tr>
+          <tr><td>오류가 났을 때 자동으로</td><td>오류 내용, 오류가 난 화면 이름, 앱 버전, 브라우저 종류(User-Agent). 한 줄 기록이나 위치는 포함하지 않아요.</td></tr>
+        </table>
+      </div>
+      <p>
+        <strong>현재 위치</strong>는 이용자가 "현재 위치"를 누를 때에만 기기에서 한 번 읽어요. 읽은 위치는 약 100m 단위로 어림한 뒤에만
+        장소 검색에 쓰고 저장해요. 위치를 계속 추적하지 않아요.
+      </p>
+
+      <h2>2. 이용 목적</h2>
+      <ul>
+        <li>로그인과 계정 구분</li>
+        <li>출발 위치 근처의 장소 추천, 하루 기록 저장, 여러 기기 간 동기화</li>
+        <li>고른 장소와 날씨·시간대에 맞춘 추천(취향 반영은 앱에서 끌 수 있어요)</li>
+        <li>장소 사진 순서 정하기(사진 투표)</li>
+        <li>오류를 찾아 고치기</li>
+      </ul>
+
+      <h2>3. 보유 기간과 파기</h2>
+      <ul>
+        <li>계정, 하루 기록, 취향 점수, 사진 투표는 <strong>계정을 삭제하면 즉시</strong> 함께 지워져요.</li>
+        <li>오류 기록은 계정과의 연결을 끊은 상태로 최대 90일 동안 보관한 뒤 지워요.</li>
+        <li>기기(브라우저)에 저장된 기록과 취향은 로그아웃하거나 계정을 삭제하면 그 기기에서 지워요.</li>
+        <li>법령에 따라 따로 보관해야 하는 정보(결제 기록 등)는 수집하지 않아요.</li>
+      </ul>
+
+      <h2>4. 제3자 제공</h2>
+      <p>개인정보를 제3자에게 제공하지 않아요. 법령에 따라 수사기관 등이 적법하게 요청한 경우에만 예외로 해요.</p>
+
+      <h2>5. 처리 위탁과 국외 이전</h2>
+      <p>서비스를 운영하려고 아래 회사들의 서비스를 이용해요. 각 회사에는 아래에 적은 정보만 전달돼요.</p>
+      <div class="scroll">
+        <table>
+          <tr><th>받는 곳</th><th>하는 일</th><th>전달되는 정보</th><th>국가</th></tr>
+          <tr><td>Supabase Inc.</td><td>계정과 기록의 저장, 로그인</td><td>1번의 계정 정보와 서비스 이용 기록, 오류 기록</td><td>미국 회사 · 데이터는 서울 리전(대한민국)에 저장</td></tr>
+          <tr><td>㈜카카오</td><td>지도 표시, 장소 검색, 장소 사진 검색, 카카오 로그인</td><td>검색한 동네 이름, 어림한 위치, 장소 이름, (카카오 로그인 시) 로그인 정보</td><td>대한민국</td></tr>
+          <tr><td>Open-Meteo (Open-Meteo GmbH)</td><td>날씨 조회</td><td>동네 중심의 어림한 좌표(계정 정보는 보내지 않아요)</td><td>스위스</td></tr>
+          <tr><td>GitHub, Inc.</td><td>웹사이트 제공(호스팅)</td><td>접속 시 IP 주소 등 접속 기록(GitHub의 정책에 따라 처리)</td><td>미국</td></tr>
+        </table>
+      </div>
+      <p>국외 이전은 서비스를 이용할 때 네트워크를 통해 이루어지고, 각 회사의 보유 기간은 서비스 제공에 필요한 기간이에요.</p>
+
+      <h2>6. 이용자의 권리</h2>
+      <ul>
+        <li>앱에서 직접: 한 줄 기록과 경로 수정·삭제, 오늘 기록 지우기, 취향 끄기·초기화, <strong>계정 삭제</strong>.</li>
+        <li>그 밖의 열람·정정·삭제·처리정지는 아래 연락처로 요청하면 지체 없이 처리해요.</li>
+      </ul>
+
+      <h2>7. 안전하게 지키는 방법</h2>
+      <ul>
+        <li>모든 통신은 암호화(HTTPS)돼요.</li>
+        <li>비밀번호는 암호화되어 저장돼요.</li>
+        <li>데이터베이스는 각자 자기 데이터만 읽고 쓸 수 있게 제한돼요(행 단위 보안).</li>
+        <li>관리자 권한 키는 서버에만 두고 앱에 넣지 않아요.</li>
+      </ul>
+
+      <h2>8. 쿠키와 기기 저장소</h2>
+      <p>쿠키는 쓰지 않아요. 로그인 상태, 오늘의 기록, 장소 사진 목록을 빠르게 보여주려고 브라우저 저장소(localStorage)를 써요. 브라우저 설정에서 언제든 지울 수 있어요.</p>
+
+      <h2>9. 만 14세 미만</h2>
+      <p>서비스는 만 14세 이상을 대상으로 해요. 만 14세 미만은 가입할 수 없어요.</p>
+
+      <h2>10. 개인정보 보호책임자</h2>
+      <p>
+        이름: <span class="fill">[운영자 이름]</span><br />
+        연락처: <span class="fill">[연락 이메일]</span>
+      </p>
+      <p class="meta">
+        개인정보 침해 신고·상담: 개인정보침해신고센터(privacy.kisa.or.kr, 국번 없이 118), 개인정보분쟁조정위원회(kopico.go.kr, 1833-6972)
+      </p>
+
+      <h2>11. 바뀌는 경우</h2>
+      <p>이 방침이 바뀌면 시행 7일 전부터 이 페이지와 앱에서 알려요.</p>
+    </main>
+  </body>
+</html>

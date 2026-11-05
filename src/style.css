@@ -1895,6 +1895,67 @@ body.is-gated .view {
   accent-color: var(--accent-deep);
 }
 
+/* ---- Account management & legal ------------------------------------------- */
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
+}
+
+.legal-note {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.legal-note a,
+.legal-links a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.legal-links {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-4);
+}
+
+.danger-zone {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid #d9b8a8;
+  border-radius: var(--radius-small);
+  background: #fbf1ec;
+}
+
+.danger-title {
+  font-weight: 600;
+  color: #8a4b2f;
+}
+
+.danger-zone .actions {
+  margin-top: var(--space-3);
+  align-items: center;
+}
+
+.button-danger {
+  background: #8a4b2f;
+  color: #fff;
+}
+
+.button-danger:hover {
+  background: #6f3a23;
+}
+
 /* ---- Diagnostics ---------------------------------------------------------- */
 
 .diagnostics .button {

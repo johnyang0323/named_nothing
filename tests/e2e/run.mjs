@@ -44,6 +44,7 @@ const SUITES = [
   'swipe-gallery.cjs',
   'photo-votes.cjs',
   'personalize.cjs',
+  'account-lifecycle.cjs',
 ];
 
 const TYPES = {

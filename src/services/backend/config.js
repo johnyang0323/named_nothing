@@ -18,4 +18,7 @@ export const SUPABASE_ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY || '')
  */
 export const PHOTO_FUNCTION = (import.meta.env?.VITE_PHOTO_FUNCTION || 'place-photo').trim().replace(/^.*\/functions\/v1\//, '').replace(/\/+$/, '');
 
+/** URL name of the account-deletion Edge Function (see supabase/functions/delete-account). */
+export const DELETE_FUNCTION = (import.meta.env?.VITE_DELETE_FUNCTION || 'delete-account').trim().replace(/^.*\/functions\/v1\//, '').replace(/\/+$/, '');
+
 export const isBackendConfigured = () => Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);

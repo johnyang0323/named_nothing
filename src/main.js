@@ -15,6 +15,7 @@ import { hydratePhotos } from './services/photos.js';
 import { createTasteStore } from './services/tasteStore.js';
 import { buildContext, makeBias, tasteActive, WILDCARD_RATE } from './services/personalize.js';
 import { getWeather } from './services/weather.js';
+import { installErrorReporting } from './services/errorLog.js';
 
 /** Screens reachable by #hash. */
 const APP_SCREENS = { home, discover, explore, route, day: myday };
@@ -235,6 +236,8 @@ taste.subscribe(() => currentName === 'day' && render());
 refreshWeather();
 window.addEventListener('hashchange', handleRoute);
 handleRoute();
+
+installErrorReporting(() => currentName || '');
 
 // Optional accounts (Supabase). Without configuration none of this runs.
 if (isBackendConfigured()) {

@@ -3,6 +3,7 @@
  * Everything still works signed out; signing in only adds cloud saving.
  */
 import { getSupabase } from './client.js';
+import { DELETE_FUNCTION } from './config.js';
 
 const AFTER_LOGIN_KEY = 'plannish-after-login';
 export class AuthError extends Error {}
@@ -141,6 +142,56 @@ export async function signUpWithEmail(email, password) {
   if (!data?.session) return { needsConfirmation: true };
   setUser(data.user);
   return { needsConfirmation: false };
+}
+
+/**
+ * Forgot password, step 1: email a reset code. Supabase answers the same
+ * whether or not the address has an account (no account fishing).
+ * Needs an SMTP sender set up in Supabase (see docs/SUPABASE_SETUP.md).
+ */
+export async function requestPasswordReset(email) {
+  const address = String(email || '').trim();
+  if (!EMAIL_RE.test(address)) throw new AuthError('이메일 주소를 확인해 주세요.');
+  const supabase = await getSupabase();
+  if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
+  const { error } = await supabase.auth.resetPasswordForEmail(address);
+  if (error) {
+    if (error.status === 429) throw new AuthError('메일을 너무 자주 요청했어요. 잠시 후 다시 시도해 주세요.');
+    throw new AuthError('재설정 메일을 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
+  }
+  return address;
+}
+
+/** Forgot password, step 2: the code from the email + a new password → signed in. */
+export async function resetPasswordWithCode(email, code, newPassword) {
+  const token = String(code || '').replace(/\s/g, '');
+  if (!/^\d{6,10}$/.test(token)) throw new AuthError('메일로 받은 숫자 코드를 입력해 주세요.');
+  if (String(newPassword || '').length < PASSWORD_MIN) throw new AuthError(`새 비밀번호는 ${PASSWORD_MIN}자 이상이어야 해요.`);
+  const supabase = await getSupabase();
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'recovery' });
+  if (error) throw new AuthError('코드가 맞지 않거나 시간이 지났어요. 코드를 다시 받아주세요.');
+  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+  if (updateError) {
+    if (/password/i.test(updateError.message)) throw new AuthError('비밀번호가 너무 쉬워요. 더 길거나 다른 비밀번호를 써주세요.');
+    throw new AuthError('비밀번호를 바꾸지 못했어요. 다시 시도해 주세요.');
+  }
+  setUser(data?.user || data?.session?.user || null);
+  return currentUser;
+}
+
+/**
+ * Permanently delete the signed-in account (and, through the database,
+ * all of its days, taste and photo votes). Runs in an Edge Function,
+ * which checks this person's own login token first.
+ */
+export async function deleteAccount() {
+  const supabase = await getSupabase();
+  if (!supabase || !currentUser) throw new AuthError('로그인한 상태에서만 계정을 삭제할 수 있어요.');
+  const { data, error } = await supabase.functions.invoke(DELETE_FUNCTION, { body: {} });
+  if (error || !data?.deleted) throw new AuthError('계정을 삭제하지 못했어요. 잠시 후 다시 시도하거나 운영자에게 알려주세요.');
+  // the server session is gone; clear this device's copy too
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+  setUser(null);
 }
 
 export async function signOut() {

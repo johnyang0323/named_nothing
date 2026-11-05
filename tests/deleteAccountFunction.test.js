@@ -1,0 +1,74 @@
+/**
+ * supabase/functions/delete-account, run in Node with stand-ins for Deno
+ * and Supabase Auth. The key promise: it deletes exactly the account whose
+ * token was sent, and only after Supabase confirms that token.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { transformSync } from 'esbuild';
+
+const SITE = 'https://johnyang0323.github.io';
+const compiled = transformSync(readFileSync(new URL('../supabase/functions/delete-account/index.ts', import.meta.url), 'utf8'), { loader: 'ts', format: 'esm' }).code;
+const ENV = { SUPABASE_URL: 'https://proj.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'service-secret', ALLOWED_ORIGINS: SITE };
+
+async function load(env = ENV, { deleteStatus = 200 } = {}) {
+  let handler;
+  const calls = [];
+  globalThis.Deno = { env: { get: (k) => env[k] }, serve: (h) => { handler = h; } };
+  globalThis.fetch = async (url, init = {}) => {
+    const headers = init.headers || {};
+    calls.push({ url: String(url), method: init.method || 'GET', auth: headers.Authorization });
+    if (String(url).endsWith('/auth/v1/user')) {
+      return headers.Authorization === 'Bearer good-token'
+        ? new Response(JSON.stringify({ id: 'user-123', email: 'a@test.com' }), { status: 200 })
+        : new Response('{"msg":"invalid JWT"}', { status: 401 });
+    }
+    if (String(url).includes('/auth/v1/admin/users/')) return new Response('{}', { status: deleteStatus });
+    return new Response('{}', { status: 404 });
+  };
+  await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}#${Math.random()}`);
+  return { handler, calls };
+}
+
+const post = (token, origin = SITE) =>
+  new Request('https://x/functions/v1/delete-account', {
+    method: 'POST',
+    headers: { origin, 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+    body: '{}',
+  });
+
+test('deletes exactly the signed-in user, checked with their own token', async () => {
+  const { handler, calls } = await load();
+  const res = await handler(post('good-token'));
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { deleted: true });
+  const del = calls.find((c) => c.method === 'DELETE');
+  assert.equal(del.url, 'https://proj.supabase.co/auth/v1/admin/users/user-123');
+  assert.equal(del.auth, 'Bearer service-secret', 'admin call uses the server-only key');
+  assert.equal(calls[0].auth, 'Bearer good-token', 'identity comes from the caller’s token');
+});
+
+test('refuses without a valid session, from other sites, or without the service key', async () => {
+  const a = await load();
+  assert.equal((await a.handler(post(null))).status, 401);
+  assert.equal((await a.handler(post('forged-token'))).status, 401);
+  assert.equal(a.calls.some((c) => c.method === 'DELETE'), false, 'nothing deleted');
+  assert.equal((await a.handler(post('good-token', 'https://evil.example'))).status, 403);
+
+  const noKey = await load({ SUPABASE_URL: 'https://proj.supabase.co', ALLOWED_ORIGINS: SITE });
+  assert.equal((await noKey.handler(post('good-token'))).status, 500);
+  const fallback = await load({ SUPABASE_URL: 'https://proj.supabase.co', SERVICE_ROLE_KEY: 'manual', ALLOWED_ORIGINS: SITE });
+  assert.equal((await fallback.handler(post('good-token'))).status, 200, 'manually added SERVICE_ROLE_KEY works too');
+
+  const failing = await load(ENV, { deleteStatus: 500 });
+  assert.equal((await failing.handler(post('good-token'))).status, 502);
+});
+
+test('health check shows setup without revealing the key', async () => {
+  const { handler } = await load();
+  const body = await (await handler(new Request('https://x/f', { method: 'GET' }))).json();
+  assert.equal(body.deployed, true);
+  assert.equal(body.serviceKeySet, true);
+  assert.equal(JSON.stringify(body).includes('service-secret'), false);
+});
