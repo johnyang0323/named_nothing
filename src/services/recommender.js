@@ -41,10 +41,21 @@ function candidatePool(places, { hardExclude = [], softExclude = [] }) {
   return places.filter((p) => !hard.has(p.id));
 }
 
-/** First destination of the day, shaped by mood. */
-export function pickInitial({ places, mood = DEFAULT_MOOD, excludeIds = [], visitedIds = [], random = Math.random }) {
+const NEUTRAL = { taste: () => 1, context: () => 1, proximityWeight: 1, tasteActive: false };
+
+/**
+ * Personal weight: mood × situation × taste. A "wild" pick inverts the
+ * taste part on purpose, to keep room for something unexpected.
+ */
+function personalWeight(bias, place, wild) {
+  const taste = bias.taste(place);
+  return bias.context(place) * (wild ? 1 / taste : taste);
+}
+
+/** First destination of the day, shaped by mood (and, if given, taste + situation). */
+export function pickInitial({ places, mood = DEFAULT_MOOD, excludeIds = [], visitedIds = [], random = Math.random, bias = NEUTRAL, wild = false }) {
   const pool = candidatePool(places, { softExclude: [...excludeIds, ...visitedIds] });
-  return weightedPick(pool, (p) => moodWeight(mood, p), random);
+  return weightedPick(pool, (p) => moodWeight(mood, p) * personalWeight(bias, p, wild), random);
 }
 
 /**
@@ -60,13 +71,15 @@ export function pickAlternative({
   seenIds = [],
   visitedIds = [],
   random = Math.random,
+  bias = NEUTRAL,
+  wild = false,
 }) {
   const hardExclude = current ? [current.id] : [];
   const pool = candidatePool(places, { hardExclude, softExclude: [...seenIds, ...visitedIds] });
   return weightedPick(
     pool,
     (p) => {
-      let w = moodWeight(mood, p);
+      let w = moodWeight(mood, p) * personalWeight(bias, p, wild);
       if (current && p.experienceType === current.experienceType) w *= 0.25;
       if (current && p.category === current.category) w *= 0.5;
       return w;
@@ -121,7 +134,7 @@ export function explainNext(from, to) {
  * Scores variety first (transition fit + different experience type),
  * proximity only a little, plus randomness, then greedily diversifies.
  */
-export function suggestNearby({ places, from, excludeIds = [], visitedIds = [], count = 3, random = Math.random }) {
+export function suggestNearby({ places, from, excludeIds = [], visitedIds = [], count = 3, random = Math.random, bias = NEUTRAL }) {
   if (!from) return [];
   const pool = candidatePool(places, {
     hardExclude: [from.id, ...excludeIds],
@@ -136,9 +149,11 @@ export function suggestNearby({ places, from, excludeIds = [], visitedIds = [], 
     if (place.experienceType !== from.experienceType) score += 2;
     else score -= 1.5;
     if (place.category === from.category) score -= 1;
-    score += Math.max(0, 1 - distance / 100); // proximity matters, but only a little
+    score += Math.max(0, 1 - distance / 100) * bias.proximityWeight; // proximity matters, but only a little
     score += random() * 2.2; // keep serendipity
-    return { place, distance, score };
+    const situation = Math.log(bias.context(place));
+    const taste = Math.log(bias.taste(place));
+    return { place, distance, score: score + 1.5 * (situation + taste), wildScore: score + 1.5 * (situation - taste) };
   });
 
   const chosen = [];
@@ -154,10 +169,20 @@ export function suggestNearby({ places, from, excludeIds = [], visitedIds = [], 
     usedTypes.set(next.place.experienceType, (usedTypes.get(next.place.experienceType) || 0) + 1);
   }
 
-  return chosen.map(({ place, distance }) => ({
+  // with a known taste, the last slot goes to something the person doesn't usually pick
+  if (bias.tasteActive && chosen.length === count && remaining.length) {
+    const takenTypes = new Set(chosen.slice(0, -1).map((c) => c.place.experienceType));
+    const wildPick = [...remaining, chosen[chosen.length - 1]]
+      .filter((c) => !takenTypes.has(c.place.experienceType))
+      .sort((a, b) => b.wildScore - a.wildScore)[0];
+    if (wildPick) chosen[chosen.length - 1] = { ...wildPick, wild: true };
+  }
+
+  return chosen.map(({ place, distance, wild }) => ({
     place,
     reason: explainNext(from, place),
     proximity: describeProximity(distance),
+    wild: Boolean(wild),
   }));
 }
 

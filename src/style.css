@@ -1728,6 +1728,137 @@ body.is-gated .view {
   text-align: center;
 }
 
+/* ---- Personalisation ------------------------------------------------------ */
+
+.context-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.weather-badge {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.weather-note {
+  color: var(--accent-deep);
+  font-weight: 600;
+}
+
+.budget {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.budget-label {
+  float: left;
+  padding: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.budget-options {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.budget-chip {
+  position: relative;
+  cursor: pointer;
+}
+
+.budget-chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.budget-chip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+  font-size: 0.85rem;
+}
+
+.budget-chip input:checked + span {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.budget-chip input:focus-visible + span {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.why-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.why-tags li {
+  padding: 2px var(--space-2);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 0.78rem;
+  color: var(--accent-deep);
+}
+
+.wild-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent-deep);
+  color: #fff;
+  font-size: 0.72rem;
+}
+
+.taste-line {
+  margin-bottom: var(--space-1);
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.taste-line strong {
+  margin-left: var(--space-2);
+  color: var(--text);
+}
+
+.taste-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-deep);
+}
+
 /* ---- Diagnostics ---------------------------------------------------------- */
 
 .diagnostics .button {

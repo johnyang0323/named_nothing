@@ -7,6 +7,37 @@ import { isBackendConfigured } from '../services/backend/config.js';
 import { getUser, displayName, avatarUrl, signOut } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
 import { checkPhotoService } from '../services/photos.js';
+import { tasteSummary, MIN_EVENTS } from '../services/personalize.js';
+
+function tasteSection(taste) {
+  if (!taste) return '';
+  const t = taste.get();
+  const { liked, less } = tasteSummary(t);
+  let body;
+  if (t.events < MIN_EVENTS) {
+    body = html`<p class="empty-body">아직 배운 게 없어요. 가보기, 다른 곳 보기, 다녀왔어요를 누르다 보면 조금씩 알아가요.</p>`;
+  } else if (liked.length || less.length) {
+    body = html`
+      ${liked.length ? html`<p class="taste-line">자주 고른 곳 <strong>${liked.join(' · ')}</strong></p>` : ''}
+      ${less.length ? html`<p class="taste-line">덜 끌렸던 곳 <strong>${less.join(' · ')}</strong></p>` : ''}`;
+  } else {
+    body = html`<p class="empty-body">아직 뚜렷한 취향은 보이지 않아요. 고르는 대로 조금씩 알아갈게요.</p>`;
+  }
+  return html`
+    <section class="block taste" aria-labelledby="taste-title">
+      <h2 class="section-label" id="taste-title">나의 취향</h2>
+      ${body}
+      <p class="fine-print">고른 곳과 다녀온 곳, 그날의 기분으로만 배워요. 추천의 일부는 일부러 평소와 다른 곳으로 섞어요. 우연한 발견도 하루의 일부니까요.</p>
+      <p class="fine-print">날씨·시간대·쓸 수 있는 시간도 함께 반영해요. 날씨 정보: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0)</p>
+      <div class="taste-controls">
+        <label class="toggle">
+          <input type="checkbox" data-input="taste-enabled" data-focus-key="taste-enabled" ${t.enabled ? 'checked' : ''}>
+          <span>추천에 취향 반영하기</span>
+        </label>
+        ${t.events ? html`<button type="button" class="text-button text-button-muted" data-action="taste-reset" data-focus-key="taste-reset">취향 초기화</button>` : ''}
+      </div>
+    </section>`;
+}
 
 function syncLine(sync) {
   const { status, lastSavedAt } = sync.getStatus();
@@ -105,7 +136,7 @@ const placeList = (stops) =>
     })}
   </ul>`;
 
-export function render(state, { ui, sync }) {
+export function render(state, { ui, sync, taste }) {
   const d = draft(state, ui);
   const visited = state.route.filter((s) => s.visited);
   const notYet = state.route.filter((s) => !s.visited);
@@ -151,6 +182,8 @@ export function render(state, { ui, sync }) {
       </form>
 
       ${accountSection(sync)}
+
+      ${tasteSection(taste)}
 
       ${historySection(ui)}
 
@@ -211,14 +244,20 @@ export const actions = {
 actions['sign-out'] = async (ctx) => {
   // save the latest changes first, then leave nothing behind on this device
   await ctx.sync.flush();
+  await ctx.taste.flush();
   await signOut();
   ctx.store.actions.forgetDevice();
+  ctx.taste.forgetDevice();
   ctx.sync.forgetOwner();
   ctx.ui.journalDraft = null;
   ctx.ui.history = null;
   ctx.toast('로그아웃했어요. 기록은 계정에 남아 있어요.');
 };
 actions['sync-retry'] = ({ sync }) => sync.retry();
+actions['taste-reset'] = ({ taste, toast }) => {
+  const previous = taste.reset();
+  toast('취향을 초기화했어요.', { label: '되돌리기', run: (ctx) => ctx.taste.restore(previous) });
+};
 actions['check-photos'] = async ({ ui, rerender, announce, getScreen }) => {
   ui.photoCheck = 'running';
   rerender();
@@ -228,6 +267,7 @@ actions['check-photos'] = async ({ ui, rerender, announce, getScreen }) => {
 };
 
 export const inputs = {
+  'taste-enabled': ({ taste }, el) => taste.setEnabled(el.checked),
   note: ({ ui }, el) => {
     ui.journalDraft.note = el.value;
     const counter = document.querySelector('[data-counter]');

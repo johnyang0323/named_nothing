@@ -135,11 +135,12 @@ export function render(state) {
           ? html`<ol class="discoveries">
               ${discoveries.map((place, i) => {
                 const proximity = distanceHint(current, place);
+                const wild = state.wildDiscoveryId === place.id;
                 return html`
                   <li class="discovery">
                     <div class="discovery-visual"${photoSlot(place)}>${placeVisual(place)}<span class="discovery-num" aria-hidden="true">${i + 1}</span></div>
                     <div class="discovery-body">
-                      <p class="kicker">${categoryLabel(place)} · ${proximity}</p>
+                      <p class="kicker">${wild ? html`<span class="wild-tag">새로운 발견</span> ` : ''}${categoryLabel(place)} · ${proximity}</p>
                       <h3 class="discovery-name">${place.name}</h3>
                       <p class="discovery-reason">${explainNext(current, place)}</p>
                       <p class="discovery-try">해볼 만한 것 — ${place.suggestedActivities[0]}</p>

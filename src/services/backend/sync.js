@@ -30,7 +30,7 @@ function writeOwner(id) {
 }
 const HISTORY_DAYS = 60;
 
-export function createSync(store) {
+export function createSync(store, { onForeignDevice, onSignedIn } = {}) {
   let status = 'off'; // off | syncing | saved | error
   let lastSavedAt = null;
   let timer = null;
@@ -78,8 +78,13 @@ export function createSync(store) {
     if (!supabase || !user) return;
     // this browser's days belong to someone else → keep them out of this account
     const owner = readOwner();
-    if (owner && owner !== user.id) store.actions.forgetDevice();
+    if (owner && owner !== user.id) {
+      store.actions.forgetDevice();
+      onForeignDevice?.();
+    }
     writeOwner(user.id);
+    // only now (after clearing someone else's data) merge per-person extras like taste
+    onSignedIn?.();
 
     setStatus('syncing');
     try {

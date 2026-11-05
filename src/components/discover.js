@@ -4,6 +4,7 @@ import { categoryLabel, moodLabel, placeFacts } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
 import { attachSwipe, hasLearnedSwipe, markSwipeLearned } from './swipe.js';
 import { needsLocation } from './home.js';
+import { explainPick } from '../services/personalize.js';
 
 export function onEnter({ store, ui }) {
   const state = store.getState();
@@ -16,7 +17,7 @@ export function onEnter({ store, ui }) {
   return null;
 }
 
-export function render(state, { ui }) {
+export function render(state, { ui, taste, context }) {
   const place = getPlaceById(state.recommendationId);
   if (!place) return html`<section class="screen"><h1 class="title" tabindex="-1">잠시만요</h1></section>`;
   const inRoute = state.route.some((s) => s.id === place.id);
@@ -33,6 +34,10 @@ export function render(state, { ui }) {
         </figure>
         <div class="destination-body">
           <p class="kicker">${categoryLabel(place)}</p>
+          ${(() => {
+            const reasons = taste && context ? explainPick(place, { taste: taste.get(), context: context(), wild: state.recommendationWild }) : [];
+            return reasons.length ? html`<ul class="why-tags" aria-label="이 장소를 고른 이유">${reasons.map((r) => html`<li>${r}</li>`)}</ul>` : '';
+          })()}
           <h1 id="discover-title" class="title" tabindex="-1">${place.name}</h1>
           <p class="description">${place.description}</p>
 

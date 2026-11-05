@@ -11,6 +11,9 @@ import { isBackendConfigured } from './services/backend/config.js';
 import { initAuth, onAuthChange, getUser, isAuthReady, markAuthReady } from './services/backend/auth.js';
 import { createSync } from './services/backend/sync.js';
 import { hydratePhotos } from './services/photos.js';
+import { createTasteStore } from './services/tasteStore.js';
+import { buildContext, makeBias, tasteActive, WILDCARD_RATE } from './services/personalize.js';
+import { getWeather } from './services/weather.js';
 
 /** Screens reachable by #hash. */
 const APP_SCREENS = { home, discover, explore, route, day: myday };
@@ -18,7 +21,17 @@ const APP_SCREENS = { home, discover, explore, route, day: myday };
 const SCREENS = { ...APP_SCREENS, login: welcome, splash };
 const DEFAULT_SCREEN = 'home';
 
-const store = createStore();
+// personal recommendations: learned taste × situation (weather, time, time budget)
+const taste = createTasteStore();
+const live = { weather: null, weatherFor: null };
+const contextFor = (state) => buildContext({ weather: live.weather, budget: state.timeBudget });
+const store = createStore({
+  personalize: {
+    bias: (state) => makeBias(taste.get(), contextFor(state)),
+    signal: (event, place) => taste.signal(event, place),
+    wild: () => tasteActive(taste.get()) && Math.random() < WILDCARD_RATE,
+  },
+});
 const view = document.getElementById('view');
 const announcer = document.getElementById('announcer');
 const toastEl = document.getElementById('toast');
@@ -29,11 +42,29 @@ const ui = { replacingId: null, replacementOptions: [], journalDraft: null, conf
 let currentName = null;
 let toastTimer = null;
 
-const sync = createSync(store);
+const sync = createSync(store, {
+  onForeignDevice: () => taste.forgetDevice(),
+  onSignedIn: () => taste.pull(),
+});
+
+/** Fetch weather for the current area (once per area per hour). */
+function refreshWeather() {
+  const center = store.getState().area?.center;
+  const key = center ? `${center.lat},${center.lng}` : null;
+  if (!key || key === live.weatherFor) return;
+  live.weatherFor = key;
+  getWeather(center).then((weather) => {
+    if (live.weatherFor !== key) return;
+    live.weather = weather;
+    if (['home', 'discover'].includes(currentName)) render();
+  });
+}
 
 const ctx = {
   store,
   sync,
+  taste,
+  context: () => contextFor(store.getState()),
   ui,
   getScreen: () => currentName,
   navigate,
@@ -176,6 +207,7 @@ const onInput = (event) => {
   SCREENS[currentName].inputs?.[el.dataset.input]?.(ctx, el);
 };
 view.addEventListener('input', (event) => event.target.type !== 'radio' && onInput(event));
+// radios report through "change" (mood, time budget)
 view.addEventListener('change', (event) => event.target.type === 'radio' && onInput(event));
 
 view.addEventListener('submit', (event) => {
@@ -185,7 +217,12 @@ view.addEventListener('submit', (event) => {
   SCREENS[currentName].forms?.[form.dataset.form]?.(ctx, form);
 });
 
-store.subscribe(() => render());
+store.subscribe(() => {
+  refreshWeather();
+  render();
+});
+taste.subscribe(() => currentName === 'day' && render());
+refreshWeather();
 window.addEventListener('hashchange', handleRoute);
 handleRoute();
 

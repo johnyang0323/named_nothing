@@ -162,6 +162,16 @@ docs/SUPABASE_SETUP.md     Browser-only setup guide for accounts and photos
 - Visited state is shown in text (`✓ 다녀왔어요`), not only by colour.
 - `prefers-reduced-motion` turns off animations.
 
+## Personal recommendations
+
+No questionnaire. The app learns from what people already do.
+
+- **Taste:** each action nudges a score for that kind of place (and, more gently, its experience type). The signals are 가보기 +1, 다른 곳 −0.4, 담기 +0.7, 빼기 −0.5, 다녀왔어요 +1, and the day's feeling for places visited (±). Scores are clamped and turned into a 0.3–3× multiplier, which only kicks in after 2 signals. The code is in `src/services/personalize.js`, which is pure and unit-tested.
+- **Situation:** weather from Open-Meteo (free, no key, area centre only). Rain, snow or extreme temperatures push picks indoors. The time of day also counts (evening → viewpoints and riversides, night → fewer parks), as does **쓸 수 있는 시간** on home step 2 (2시간 → nearby and short stays; 하루 종일 → farther and longer).
+- **Serendipity kept on purpose:** about 20% of first picks, and one of the three nearby discoveries, deliberately go *against* the taste. These are labelled "새로운 발견".
+- **Transparent and controllable:** the discovery card shows why a place was picked (취향 반영 / 새로운 발견 / 비가 와서 실내 위주로 / …). **나의 하루 → 나의 취향** shows what the app has learned, with an on/off switch and 초기화 (with undo).
+- **Stored:** on the device, and in the account via `supabase/prefs.sql` (RLS: own row). The newer copy wins. Taste is cleared from the device on sign-out, and when another account signs in on the same browser it is cleared *before* syncing.
+
 ## Next ideas
 
 - **AI check for place photos:** after the function ranks candidates, ask a vision model whether each image really shows that kind of place (and isn't food, people, a menu or a map screenshot), and drop the misses. It fits in the Edge Function, so the key stays server-side. It needs a paid AI API.

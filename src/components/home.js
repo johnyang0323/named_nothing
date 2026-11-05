@@ -11,6 +11,7 @@ import { isKakaoConfigured } from '../services/kakao/config.js';
 import { searchArea, searchAreaAt } from '../services/kakao/areaSearch.js';
 import { mountAreaPicker } from '../services/kakao/picker.js';
 import { canUseLocation, getCurrentPosition } from '../services/geolocation.js';
+import { TIME_BUDGETS } from '../services/personalize.js';
 
 /** With real places available, nothing is recommended until a starting point is set. */
 export const needsLocation = (state) => isKakaoConfigured() && !state.area;
@@ -61,18 +62,41 @@ function placeStep(state, ui) {
     </section>`;
 }
 
-function moodStep(state) {
+function weatherBadge(context) {
+  const w = context?.weather;
+  if (!w) return '';
+  return html`<span class="weather-badge" title="날씨: Open-Meteo">
+    <span aria-hidden="true">${w.icon}</span> ${w.label} ${w.temp}°${context.badWeather ? html`<span class="weather-note"> · 실내 위주로</span>` : ''}
+  </span>`;
+}
+
+function moodStep(state, context) {
   const suggestion = todaysSuggestion(state);
   const stops = state.route.length;
   return html`
     <section class="screen home home-flow home-mood" aria-labelledby="home-title">
       <p class="eyebrow">${stepEyebrow('mood')}</p>
-      ${state.area
-        ? html`<button type="button" class="place-chip" data-action="to-place" data-focus-key="to-place" aria-label="출발 위치 바꾸기 (지금: ${state.area.label})">
-            <span class="place-chip-dot" aria-hidden="true"></span>${state.area.label}<span class="place-chip-edit" aria-hidden="true">바꾸기</span>
-          </button>`
-        : ''}
+      <div class="context-row">
+        ${state.area
+          ? html`<button type="button" class="place-chip" data-action="to-place" data-focus-key="to-place" aria-label="출발 위치 바꾸기 (지금: ${state.area.label})">
+              <span class="place-chip-dot" aria-hidden="true"></span>${state.area.label}<span class="place-chip-edit" aria-hidden="true">바꾸기</span>
+            </button>`
+          : ''}
+        ${weatherBadge(context)}
+      </div>
       <h1 id="home-title" class="flow-title" tabindex="-1">어떤 하루가 끌리세요?</h1>
+
+      <fieldset class="budget">
+        <legend class="budget-label">쓸 수 있는 시간</legend>
+        <div class="budget-options">
+          ${TIME_BUDGETS.map(
+            (b) => html`<label class="budget-chip">
+              <input type="radio" name="budget" value="${b.id}" data-input="budget" data-focus-key="budget-${b.id}" ${state.timeBudget === b.id ? 'checked' : ''}>
+              <span>${b.label}</span>
+            </label>`,
+          )}
+        </div>
+      </fieldset>
 
       <fieldset class="moods">
         <legend class="visually-hidden">오늘의 기분</legend>
@@ -101,8 +125,8 @@ function moodStep(state) {
     </section>`;
 }
 
-export function render(state, { ui }) {
-  return currentStep(state, ui) === 'place' ? placeStep(state, ui) : moodStep(state);
+export function render(state, { ui, context }) {
+  return currentStep(state, ui) === 'place' ? placeStep(state, ui) : moodStep(state, context?.());
 }
 
 export const actions = {
@@ -130,6 +154,7 @@ function goToStep({ ui, rerender }, step) {
 
 export const inputs = {
   mood: ({ store }, el) => store.actions.setMood(el.value),
+  budget: ({ store }, el) => store.actions.setTimeBudget(el.value),
   'area-query': ({ ui }, el) => {
     ui.areaQuery = el.value;
   },

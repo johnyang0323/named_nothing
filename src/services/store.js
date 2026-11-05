@@ -20,6 +20,10 @@ const MOOD_IDS = moods.map((m) => m.id);
 export const FEELINGS = ['평온했어요', '설렜어요', '포근했어요', '조금 지쳤어요', '그저 그랬어요'];
 export const NOTE_MAX_LENGTH = 300;
 const DISCOVERY_COUNT = 3;
+const TIME_BUDGET_IDS = ['2h', 'half', 'day'];
+const GOOD_FEELINGS = ['평온했어요', '설렜어요', '포근했어요'];
+const BAD_FEELINGS = ['조금 지쳤어요'];
+const NO_PERSONALIZE = { bias: () => undefined, signal: () => {}, wild: () => false };
 
 export function createEmptyDay(date) {
   return {
@@ -35,6 +39,9 @@ export function createEmptyDay(date) {
     journal: { note: '', feeling: null, savedAt: null },
     area: null,
     updatedAt: null,
+    timeBudget: 'half',
+    recommendationWild: false,
+    wildDiscoveryId: null,
   };
 }
 
@@ -53,6 +60,9 @@ export function sanitizeDay(input, date) {
   if (!input || typeof input !== 'object' || input.date !== date) return day;
 
   if (MOOD_IDS.includes(input.mood)) day.mood = input.mood;
+  if (TIME_BUDGET_IDS.includes(input.timeBudget)) day.timeBudget = input.timeBudget;
+  day.recommendationWild = input.recommendationWild === true;
+  if (placeExists(input.wildDiscoveryId)) day.wildDiscoveryId = input.wildDiscoveryId;
   if (Number.isInteger(input.suggestionOffset) && input.suggestionOffset >= 0) {
     day.suggestionOffset = input.suggestionOffset;
   }
@@ -108,7 +118,11 @@ function safeStorage(storage) {
   };
 }
 
-export function createStore({ storage = globalThis.localStorage, now = () => new Date(), random = Math.random } = {}) {
+/**
+ * personalize (optional): { bias() → recommender bias, signal(event, place),
+ * wild() → should this pick deliberately go against the taste? }
+ */
+export function createStore({ storage = globalThis.localStorage, now = () => new Date(), random = Math.random, personalize = NO_PERSONALIZE } = {}) {
   const persist = safeStorage(storage);
   const date = toDateKey(now());
   const key = STORAGE_PREFIX + date;
@@ -132,17 +146,25 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
 
   const update = (patch) => commit({ ...state, ...patch });
 
-  function computeDiscoveries(fromId, base = state) {
-    const from = getPlaceById(fromId);
-    return suggestNearby({
+  const signal = (event, id) => {
+    const place = getPlaceById(id);
+    if (place) personalize.signal(event, place);
+  };
+
+  /** Ids of nearby discoveries, plus which one (if any) is a deliberate "새로운 발견". */
+  function discover(fromId, base = state, extraExclude = []) {
+    const result = suggestNearby({
       places: places(),
-      from,
-      excludeIds: base.route.map((s) => s.id),
+      from: getPlaceById(fromId),
+      excludeIds: [...base.route.map((s) => s.id), ...extraExclude],
       visitedIds: base.route.filter((s) => s.visited).map((s) => s.id),
       count: DISCOVERY_COUNT,
       random,
-    }).map((d) => d.place.id);
+      bias: personalize.bias(base),
+    });
+    return { discoveryIds: result.map((d) => d.place.id), wildDiscoveryId: result.find((d) => d.wild)?.place.id || null };
   }
+  const computeDiscoveries = (fromId, base = state) => discover(fromId, base).discoveryIds;
 
   const actions = {
     setMood(mood) {
@@ -154,21 +176,31 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
       update({ suggestionOffset: state.suggestionOffset + 1 });
     },
 
-    /** Fresh first suggestion for the chosen mood. */
+    setTimeBudget(budget) {
+      if (!TIME_BUDGET_IDS.includes(budget) || budget === state.timeBudget) return;
+      update({ timeBudget: budget });
+    },
+
+    /** Fresh first suggestion for the chosen mood (and taste + situation). */
     startDay() {
+      const wild = personalize.wild();
       const place = pickInitial({
         places: places(),
         mood: state.mood,
         excludeIds: [...routeIds(), state.recommendationId].filter(Boolean),
         visitedIds: visitedIds(),
         random,
+        bias: personalize.bias(state),
+        wild,
       });
-      update({ recommendationId: place.id, seenIds: [place.id] });
+      update({ recommendationId: place.id, seenIds: [place.id], recommendationWild: wild });
       return place;
     },
 
     showAnother() {
       const current = getPlaceById(state.recommendationId);
+      if (current) personalize.signal('skip', current);
+      const wild = personalize.wild();
       const place = pickAlternative({
         places: places(),
         mood: state.mood,
@@ -176,12 +208,14 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
         seenIds: [...state.seenIds, ...routeIds()],
         visitedIds: visitedIds(),
         random,
+        bias: personalize.bias(state),
+        wild,
       });
       if (!place) return null;
       // once every option has been seen, start the "seen" cycle again
       const unseenLeft = places().some((p) => p.id !== place.id && !state.seenIds.includes(p.id));
       const seenIds = unseenLeft ? [...new Set([...state.seenIds, place.id])] : [place.id];
-      update({ recommendationId: place.id, seenIds });
+      update({ recommendationId: place.id, seenIds, recommendationWild: wild });
       return place;
     },
 
@@ -189,36 +223,29 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
     acceptRecommendation() {
       const id = state.recommendationId;
       if (!placeExists(id)) return null;
+      signal('go', id);
       const route = routeIds().includes(id) ? state.route : [...state.route, { id, visited: false }];
       const base = { ...state, route };
-      commit({ ...base, currentId: id, discoveryIds: computeDiscoveries(id, base) });
+      commit({ ...base, currentId: id, ...discover(id, base) });
       return id;
     },
 
     /** Explore from any place on the route. */
     setCurrent(id) {
       if (!placeExists(id)) return;
-      commit({ ...state, currentId: id, discoveryIds: computeDiscoveries(id) });
+      commit({ ...state, currentId: id, ...discover(id) });
     },
 
     refreshDiscoveries() {
       if (!state.currentId) return;
-      const previous = state.discoveryIds;
-      const from = getPlaceById(state.currentId);
       // prefer not to show the exact same set again
-      const fresh = suggestNearby({
-        places: places(),
-        from,
-        excludeIds: [...routeIds(), ...previous],
-        visitedIds: visitedIds(),
-        count: DISCOVERY_COUNT,
-        random,
-      }).map((d) => d.place.id);
-      update({ discoveryIds: fresh.length ? fresh : computeDiscoveries(state.currentId) });
+      const fresh = discover(state.currentId, state, state.discoveryIds);
+      update(fresh.discoveryIds.length ? fresh : discover(state.currentId));
     },
 
     addToRoute(id) {
       if (!placeExists(id) || routeIds().includes(id)) return false;
+      signal('add', id);
       update({
         route: [...state.route, { id, visited: false }],
         discoveryIds: state.discoveryIds.filter((d) => d !== id),
@@ -231,6 +258,7 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
       const index = state.route.findIndex((s) => s.id === id);
       if (index < 0) return null;
       const entry = state.route[index];
+      signal('remove', id);
       const route = state.route.filter((s) => s.id !== id);
       const currentId = state.currentId === id ? null : state.currentId;
       const wasCurrent = state.currentId === id;
@@ -261,11 +289,15 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
     },
 
     toggleVisited(id) {
+      const stop = state.route.find((s) => s.id === id);
+      if (stop) signal(stop.visited ? 'unvisit' : 'visit', id);
       update({ route: state.route.map((s) => (s.id === id ? { ...s, visited: !s.visited } : s)) });
     },
 
     replaceInRoute(id, newId) {
       if (!placeExists(newId) || routeIds().includes(newId)) return false;
+      signal('remove', id);
+      signal('add', newId);
       const route = state.route.map((s) => (s.id === id ? { id: newId, visited: false } : s));
       const currentId = state.currentId === id ? newId : state.currentId;
       const base = { ...state, route, currentId };
@@ -277,6 +309,15 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
     },
 
     saveJournal({ note = '', feeling = null }) {
+      // how the day felt says something about the places actually visited
+      const tone = (f) => (GOOD_FEELINGS.includes(f) ? 'feel-good' : BAD_FEELINGS.includes(f) ? 'feel-bad' : null);
+      const before = tone(state.journal.feeling);
+      const after = tone(FEELINGS.includes(feeling) ? feeling : null);
+      if (before !== after) {
+        visitedIds().forEach((visited) => {
+          if (after) signal(after, visited);
+        });
+      }
       update({
         journal: {
           note: String(note).slice(0, NOTE_MAX_LENGTH),
