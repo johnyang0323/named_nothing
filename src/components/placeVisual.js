@@ -8,8 +8,9 @@ import { escapeHtml, raw } from '../utils/dom.js';
 import { photosEnabled } from '../services/photos.js';
 
 /** Attribute that lets hydratePhotos() upgrade this slot with a real photo. */
-export function photoSlot(place) {
-  return photosEnabled(place) ? raw(` data-photo-for="${escapeHtml(place.id)}"`) : '';
+export function photoSlot(place, { gallery = false } = {}) {
+  if (!photosEnabled(place)) return '';
+  return raw(` data-photo-for="${escapeHtml(place.id)}"${gallery ? ' data-photo-gallery' : ''}`);
 }
 
 const C = {

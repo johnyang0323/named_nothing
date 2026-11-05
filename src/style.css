@@ -675,6 +675,144 @@ a {
   font-weight: 500;
 }
 
+/* ---- Swipeable card & photo gallery -------------------------------------- */
+
+.discover {
+  overflow-x: clip;
+}
+
+.destination {
+  position: relative;
+  --swipe: 0;
+}
+
+.destination.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.swipe-hint {
+  position: absolute;
+  top: var(--space-4);
+  z-index: 3;
+  padding: var(--space-1) var(--space-3);
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  background: var(--bg);
+  font-weight: 700;
+  font-size: 0.95rem;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.swipe-hint-go {
+  left: var(--space-4);
+  color: var(--accent-deep);
+  transform: rotate(-8deg);
+  opacity: clamp(0, var(--swipe), 1);
+}
+
+.swipe-hint-skip {
+  right: var(--space-4);
+  color: var(--text-secondary);
+  transform: rotate(8deg);
+  opacity: clamp(0, calc(var(--swipe) * -1), 1);
+}
+
+.card-enter-next {
+  animation: card-in 0.35s var(--ease) both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+
+.swipe-tip {
+  display: none;
+  margin-top: var(--space-3);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+@media (pointer: coarse) {
+  .swipe-tip {
+    display: block;
+  }
+}
+
+.destination-figure {
+  user-select: none;
+}
+
+.destination-figure .visual,
+.destination-figure .photo {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.gallery {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent);
+}
+
+.gallery[hidden] {
+  display: none;
+}
+
+.gallery-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #252525;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gallery-count {
+  min-width: 3.2em;
+  text-align: center;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.gallery-pin {
+  margin-left: auto;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #252525;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gallery-pin.is-pinned {
+  background: var(--accent-deep);
+  color: #fff;
+}
+
+.gallery button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 /* ---- Exploration --------------------------------------------------------- */
 
 .inline-status {

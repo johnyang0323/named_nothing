@@ -2,12 +2,13 @@ import { getPlaceById } from '../services/placeRepository.js';
 import { html } from '../utils/dom.js';
 import { categoryLabel, moodLabel, placeFacts } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
+import { attachSwipe, hasLearnedSwipe, markSwipeLearned } from './swipe.js';
 
 export function onEnter({ store }) {
   if (!getPlaceById(store.getState().recommendationId)) store.actions.startDay();
 }
 
-export function render(state) {
+export function render(state, { ui }) {
   const place = getPlaceById(state.recommendationId);
   if (!place) return html`<section class="screen"><h1 class="title" tabindex="-1">잠시만요</h1></section>`;
   const inRoute = state.route.some((s) => s.id === place.id);
@@ -15,9 +16,11 @@ export function render(state) {
   return html`
     <section class="screen discover" aria-labelledby="discover-title">
       <p class="eyebrow">오늘의 첫 목적지 · ${moodLabel(state.mood)}${state.area ? ` · ${state.area.label} 근처` : ''}</p>
-      <article class="destination">
+      <article class="destination ${ui.cardEnter ? `card-enter-${ui.cardEnter}` : ''}" data-swipe-card>
+        <span class="swipe-hint swipe-hint-go" aria-hidden="true">가보기</span>
+        <span class="swipe-hint swipe-hint-skip" aria-hidden="true">다른 곳</span>
         <figure class="destination-figure">
-          <div class="destination-visual"${photoSlot(place)}>${placeVisual(place)}</div>
+          <div class="destination-visual"${photoSlot(place, { gallery: true })}>${placeVisual(place)}</div>
           <figcaption class="photo-credit fine-print" data-photo-credit-for="${place.id}" hidden></figcaption>
         </figure>
         <div class="destination-body">
@@ -41,6 +44,7 @@ export function render(state) {
             </button>
             <button type="button" class="button button-secondary" data-action="another" data-focus-key="another">다른 곳 보기</button>
           </div>
+          ${hasLearnedSwipe() ? '' : html`<p class="swipe-tip">카드를 오른쪽으로 밀면 가보기, 왼쪽으로 밀면 다른 곳을 보여드려요.</p>`}
           <p class="quiet-link"><a href="#home">기분 다시 고르기</a></p>
         </div>
       </article>
@@ -52,8 +56,26 @@ export const actions = {
     store.actions.acceptRecommendation();
     navigate('explore');
   },
-  another: ({ store, announce }) => {
-    const place = store.actions.showAnother();
-    if (place) announce(`새로운 제안: ${place.name}`);
+  another: (ctx) => {
+    ctx.ui.cardEnter = 'next';
+    const place = ctx.store.actions.showAnother();
+    ctx.ui.cardEnter = null;
+    if (place) ctx.announce(`새로운 제안: ${place.name}`);
   },
 };
+
+/** Swipe right = 가보기, left = 다른 곳 보기 (same as the buttons). */
+export function afterRender(_state, ctx) {
+  const card = document.querySelector('[data-swipe-card]');
+  if (!card) return;
+  attachSwipe(card, {
+    mouseArea: '.destination-figure',
+    onCommit: (direction) => {
+      markSwipeLearned();
+      if (direction === 'right') actions.go(ctx);
+      else actions.another(ctx);
+      // nothing re-rendered (e.g. no other place) → bring the card back
+      if (card.isConnected) ctx.rerender();
+    },
+  });
+}

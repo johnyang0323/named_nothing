@@ -93,10 +93,15 @@ Deno.serve(async (req) => {
   if (!res.ok) return json({ error: 'kakao search failed', status: res.status }, 502, headers);
   const { documents = [] } = (await res.json()) as { documents: KakaoImage[] };
 
+  // Several candidates, so people can flip to the one that really shows the place.
   const usable = documents.filter((d) => d.image_url && d.width >= 400 && d.height >= 300 && d.width / d.height < 2.5);
-  const best = usable.find((d) => d.image_url.startsWith('https://')) ?? usable[0] ?? documents[0];
-  const photo = best
-    ? { url: best.image_url, thumb: best.thumbnail_url, site: best.display_sitename, link: best.doc_url }
-    : null;
-  return json({ photo }, 200, headers, true);
+  const ordered = [...usable.filter((d) => d.image_url.startsWith('https://')), ...usable.filter((d) => !d.image_url.startsWith('https://'))];
+  const pool = ordered.length ? ordered : documents.filter((d) => d.image_url);
+  const seen = new Set<string>();
+  const photos = pool
+    .filter((d) => (seen.has(d.image_url) ? false : (seen.add(d.image_url), true)))
+    .slice(0, 6)
+    .map((d) => ({ url: d.image_url, thumb: d.thumbnail_url, site: d.display_sitename, link: d.doc_url }));
+  // `photo` keeps older app versions working
+  return json({ photo: photos[0] ?? null, photos }, 200, headers, true);
 });

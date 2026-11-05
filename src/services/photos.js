@@ -52,6 +52,35 @@ function cleanPhoto(photo) {
   };
 }
 
+const MAX_PHOTOS = 6;
+
+/** Candidates from the function's reply (newer `photos`, or older single `photo`). */
+function photoList(data) {
+  const list = Array.isArray(data?.photos) && data.photos.length ? data.photos : [data?.photo];
+  const seen = new Set();
+  return list
+    .map(cleanPhoto)
+    .filter((p) => p && !seen.has(p.url) && seen.add(p.url))
+    .slice(0, MAX_PHOTOS);
+}
+
+/** Cached entry → { photos, chosen }. Also reads the older single-photo format. */
+function fromCache(entry) {
+  if (entry.none) return { photos: [], chosen: 0 };
+  const photos = (Array.isArray(entry.photos) ? entry.photos.map(cleanPhoto) : [cleanPhoto(entry)]).filter(Boolean);
+  const chosen = Number.isInteger(entry.chosen) && entry.chosen >= 0 && entry.chosen < photos.length ? entry.chosen : 0;
+  return { photos, chosen };
+}
+
+function updateEntry(id, change) {
+  const cache = readCache();
+  const entry = cache[id];
+  if (!entry || entry.none) return;
+  const current = fromCache(entry);
+  const next = change(current);
+  writeCache(id, next.photos.length ? { photos: next.photos, chosen: next.chosen } : { none: true });
+}
+
 export const photosEnabled = (place) => place?.source === 'kakao' && isBackendConfigured();
 
 export function photoQuery(place) {
@@ -59,20 +88,24 @@ export function photoQuery(place) {
   return `${place.name} ${district}`.trim().slice(0, 60);
 }
 
-/** Resolves a photo object or null. Cached (including "no photo") for two weeks. */
-export function getPhoto(place) {
+/**
+ * All photo candidates for a place and which one the person pinned.
+ * Resolves { photos, chosen } or null on failure. Cached for two weeks,
+ * including "no photos"; failures aren't cached, so they retry later.
+ */
+export function getPhotos(place) {
   if (!photosEnabled(place)) return Promise.resolve(null);
   const cached = readCache()[place.id];
-  if (cached && Date.now() - cached.at < TTL_MS) return Promise.resolve(cached.none ? null : cleanPhoto(cached));
+  if (cached && Date.now() - cached.at < TTL_MS) return Promise.resolve(fromCache(cached));
   if (inflight.has(place.id)) return inflight.get(place.id);
 
   const request = getSupabase()
     .then((supabase) => supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: photoQuery(place) } }))
     .then(({ data, error }) => {
-      if (error) return null; // don't cache failures; try again next time
-      const photo = cleanPhoto(data?.photo);
-      writeCache(place.id, photo || { none: true });
-      return photo;
+      if (error) return null;
+      const photos = photoList(data);
+      writeCache(place.id, photos.length ? { photos, chosen: 0 } : { none: true });
+      return { photos, chosen: 0 };
     })
     .catch(() => null)
     .finally(() => inflight.delete(place.id));
@@ -80,8 +113,32 @@ export function getPhoto(place) {
   return request;
 }
 
+/** The pinned (or first) photo, for thumbnails. */
+export function getPhoto(place) {
+  return getPhotos(place).then((r) => (r && r.photos.length ? r.photos[r.chosen] : null));
+}
+
+/** Remember which candidate really shows the place. */
+export function pinPhoto(id, url) {
+  updateEntry(id, ({ photos }) => ({ photos, chosen: Math.max(0, photos.findIndex((p) => p.url === url)) }));
+}
+
+/** A candidate that can't be displayed here (e.g. hotlink-blocked) is forgotten. */
+function dropPhoto(id, url) {
+  updateEntry(id, ({ photos, chosen }) => {
+    const index = photos.findIndex((p) => p.url === url);
+    if (index < 0) return { photos, chosen };
+    const rest = photos.filter((_, i) => i !== index);
+    return { photos: rest, chosen: chosen > index ? chosen - 1 : Math.min(chosen, Math.max(0, rest.length - 1)) };
+  });
+}
+
 function showCredit(root, id, photo) {
   root.querySelectorAll(`[data-photo-credit-for="${CSS.escape(id)}"]`).forEach((el) => {
+    if (!photo) {
+      el.hidden = true;
+      return;
+    }
     const source = photo.link
       ? `<a href="${escapeHtml(photo.link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(photo.site || '출처 보기')}</a>`
       : escapeHtml(photo.site || '웹 검색');
@@ -90,9 +147,74 @@ function showCredit(root, id, photo) {
   });
 }
 
+/** Try the full image, then the search thumbnail. */
+function loadInto(img, photo, onLoad, onFail) {
+  const sources = [photo.url, photo.thumb].filter(Boolean);
+  img.onerror = () => {
+    sources.shift();
+    if (sources.length) img.src = sources[0];
+    else onFail();
+  };
+  img.onload = onLoad;
+  img.src = sources[0];
+}
+
+/** Which candidate each gallery is showing, kept across re-renders. */
+const viewIndex = new Map();
+
+function button(className, label, text) {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = className;
+  el.setAttribute('aria-label', label);
+  el.textContent = text;
+  return el;
+}
+
+/** ‹ 2 / 5 › controls plus "이 사진으로 정하기" for [data-photo-gallery] slots. */
+function buildGallery(slot, place, state, show) {
+  const bar = document.createElement('div');
+  bar.className = 'gallery';
+  const prev = button('gallery-btn gallery-prev', '이전 사진', '‹');
+  const next = button('gallery-btn gallery-next', '다음 사진', '›');
+  const count = document.createElement('span');
+  count.className = 'gallery-count';
+  count.setAttribute('aria-live', 'polite');
+  const pin = button('gallery-pin', '이 사진을 대표 사진으로 정하기', '');
+  bar.append(prev, count, next, pin);
+
+  const step = (delta) => {
+    const n = state.photos.length;
+    state.index = (state.index + delta + n) % n;
+    viewIndex.set(place.id, state.index);
+    show();
+  };
+  prev.addEventListener('click', () => step(-1));
+  next.addEventListener('click', () => step(1));
+  pin.addEventListener('click', () => {
+    state.chosen = state.index;
+    pinPhoto(place.id, state.photos[state.index].url);
+    update();
+  });
+
+  function update() {
+    const n = state.photos.length;
+    bar.hidden = n < 2;
+    count.textContent = `${state.index + 1} / ${n}`;
+    const pinned = state.index === state.chosen;
+    pin.textContent = pinned ? '✓ 대표 사진' : '이 사진으로 정하기';
+    pin.setAttribute('aria-pressed', String(pinned));
+    pin.classList.toggle('is-pinned', pinned);
+  }
+  slot.append(bar);
+  return { update, remove: () => bar.remove() };
+}
+
 /**
  * Upgrade every [data-photo-for] slot inside `root` with a photo, keeping
- * the illustration if nothing loads. Safe to call after every render.
+ * the illustration if nothing loads. Slots marked [data-photo-gallery]
+ * also get controls to flip through candidates and pin one.
+ * Safe to call after every render.
  */
 export function hydratePhotos(root) {
   root.querySelectorAll('[data-photo-for]').forEach((slot) => {
@@ -100,26 +222,50 @@ export function hydratePhotos(root) {
     const place = getPlaceById(id);
     if (!place || slot.dataset.photoState) return;
     slot.dataset.photoState = 'loading';
-    getPhoto(place).then((photo) => {
-      if (!photo || !slot.isConnected) return;
+    getPhotos(place).then((result) => {
+      if (!result || !result.photos.length || !slot.isConnected) return;
+      const isGallery = slot.hasAttribute('data-photo-gallery');
+      const state = { photos: [...result.photos], chosen: result.chosen, index: result.chosen };
+      if (isGallery && viewIndex.has(id)) state.index = Math.min(viewIndex.get(id), state.photos.length - 1);
+
       const img = new Image();
       img.alt = '';
       img.className = 'photo';
       img.decoding = 'async';
       img.referrerPolicy = 'no-referrer'; // many image hosts block hotlinks by referrer
-      const sources = [photo.url, photo.thumb].filter(Boolean);
-      img.onerror = () => {
-        sources.shift();
-        if (sources.length) img.src = sources[0];
-        else img.remove();
-      };
-      img.onload = () => {
-        slot.classList.add('has-photo');
-        slot.dataset.photoState = 'shown';
-        showCredit(root, id, photo);
-      };
-      img.src = sources[0];
       slot.append(img);
+      let gallery = null;
+
+      const show = () => {
+        const photo = state.photos[state.index];
+        loadInto(
+          img,
+          photo,
+          () => {
+            slot.classList.add('has-photo');
+            slot.dataset.photoState = 'shown';
+            showCredit(root, id, photo);
+            gallery?.update();
+          },
+          () => {
+            dropPhoto(id, photo.url);
+            state.photos.splice(state.index, 1);
+            if (state.chosen > state.index) state.chosen -= 1;
+            if (!state.photos.length) {
+              img.remove();
+              gallery?.remove();
+              slot.classList.remove('has-photo');
+              showCredit(root, id, null);
+              return;
+            }
+            state.chosen = Math.min(state.chosen, state.photos.length - 1);
+            state.index %= state.photos.length;
+            show();
+          },
+        );
+      };
+      if (isGallery) gallery = buildGallery(slot, place, state, show);
+      show();
     });
   });
 }
