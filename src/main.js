@@ -141,6 +141,7 @@ function handleRoute() {
   ui.afterLogin = screenFromHash();
   currentName = gate || screenFromHash();
   document.body.classList.toggle('is-gated', Boolean(gate));
+  document.body.dataset.screen = currentName;
   ui.replacingId = null;
   ui.confirmReset = false;
   // a screen can send the person elsewhere first (e.g. no location yet → home)

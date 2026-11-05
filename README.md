@@ -162,6 +162,10 @@ docs/SUPABASE_SETUP.md     Browser-only setup guide for accounts and photos
 - Visited state is shown in text (`✓ 다녀왔어요`), not only by colour.
 - `prefers-reduced-motion` turns off animations.
 
+## Next ideas
+
+- **AI check for place photos:** after the function ranks candidates, ask a vision model whether each image really shows that kind of place (and isn't food, people, a menu or a map screenshot), and drop the misses. It fits in the Edge Function, so the key stays server-side. It needs a paid AI API.
+
 ## Current limitations
 
 - **Without a Kakao key, all places are fictional sample data.** Walking times, stay durations and costs are examples, and the UI labels them as such. The exploration diagram is then schematic.

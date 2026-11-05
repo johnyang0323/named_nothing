@@ -9,6 +9,7 @@ export function onEnter({ store, ui }) {
   const state = store.getState();
   if (needsLocation(state)) {
     ui.areaStatus = { error: '어디서 시작할지 먼저 정해주세요. 위치 없이는 추천하지 않아요.' };
+    ui.homeStep = 'place';
     return 'home';
   }
   if (!getPlaceById(state.recommendationId)) store.actions.startDay();
