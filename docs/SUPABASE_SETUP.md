@@ -173,6 +173,19 @@ Supabase 기본 메일은 본인 주소로만 보낼 수 있어요. 비밀번호
    - 개인정보 처리방침: `https://johnyang0323.github.io/named_nothing/privacy.html`
    - 이용약관: `https://johnyang0323.github.io/named_nothing/terms.html`
 
+## 6-4. 프로필, 사진 소감, 친구·단체방 켜기
+
+1. **SQL Editor → New query**에 [`supabase/social.sql`](../supabase/social.sql) 내용을 전부 붙여넣고 **Run**을 누릅니다. 여러 번 실행해도 괜찮아요.
+   - 프로필, 소감, 친구, 차단, 단체방, 댓글, 신고 테이블이 만들어져요.
+   - 사진 보관함(Storage bucket) `avatars`(공개)와 `journal`(비공개)도 함께 만들어져요.
+   - **누가 무엇을 볼 수 있는지는 데이터베이스가 직접 정해요.** 예를 들어 친구 공개 기록은 친구만, 단체방 기록은 멤버만 볼 수 있어요. 앱을 고쳐도 이 규칙은 뚫리지 않아요.
+2. **계정 삭제 함수를 다시 배포**해 주세요. 계정을 지울 때 그 사람이 올린 사진 파일까지 지우도록 바뀌었어요.
+   - `delete-account` 함수의 **Code** 탭에 최신 [`index.ts`](../supabase/functions/delete-account/index.ts)를 붙여넣고 **Deploy**를 누르면 돼요.
+3. 확인 방법:
+   - 앱의 프로필 버튼(오른쪽 위) → **계정**에서 닉네임과 사진을 저장해요.
+   - **함께 → 친구**에서 내 이름표(`닉네임#12345`)가 보이면 성공이에요.
+   - 신고 내역은 **Table Editor → reports**에서 확인하고, 문제 있는 기록은 **journal_entries**에서 지우면 돼요.
+
 ## 7. 앱에 Supabase 연결하기
 
 1. Supabase에서 **Project Settings → API**(또는 **Data API / API Keys**)를 엽니다.

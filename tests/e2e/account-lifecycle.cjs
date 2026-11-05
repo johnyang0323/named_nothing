@@ -26,7 +26,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 
   // ---- password reset with an emailed code ----
   await signUp(p, 'reset@test.com', 'first-password');
-  await p.goto(APP + '#day');
+  await p.goto(APP + '#account');
   await p.click('[data-action="sign-out"]');
   await p.waitForSelector('.welcome');
   await p.click('[data-action="auth-forgot"]');
@@ -81,7 +81,8 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   const id = backend.accounts.get('reset@test.com').id;
   await until(() => [...backend.db.keys()].some((k) => k.startsWith(id + '|')), 8000, 'day synced');
   await until(() => backend.prefs.has(id), 10000, 'taste synced');
-  assert(await p.isVisible('.legal-links a[href="./privacy.html"]'), 'My Day legal links');
+  await p.goto(APP + '#account');
+  assert(await p.isVisible('.legal-links a[href="./privacy.html"]'), '계정 legal links');
 
   await p.click('[data-action="delete-account"]');
   await p.waitForSelector('.danger-zone');

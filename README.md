@@ -187,6 +187,16 @@ docs/SUPABASE_SETUP.md     Browser-only setup guide for accounts and photos
 - Visited state is shown in text (`✓ 다녀왔어요`), not only by colour.
 - `prefers-reduced-motion` turns off animations.
 
+## Profiles, photo journal, friends and group rooms
+
+- **계정** (profile button, top right) is its own screen. It holds the profile (nickname, photo, and my `닉네임#12345` name tag with an invite link), 나의 취향, the account itself (sync, sign-out, deletion), the connection check, and the legal pages. Until a photo is uploaded, the Kakao photo is shown as a fallback.
+- **Photo journal:** on 나의 하루, every visited place gets "소감 남기기": a note, up to 4 photos, and who can see it. Visibility is 나만 보기 by default, or 친구에게 / 단체방에. Photos are resized in the browser and redrawn on a canvas, which **drops EXIF including GPS**. They are stored in a private bucket and shown through short-lived signed URLs. 지난 날들 lists past entries.
+- **함께:**
+  - **Friends:** add someone by typing their exact `닉네임#12345` (the tag is random, unique per nickname) or by opening their invite link (`?friend=…`). Nobody can be searched or listed. Friends' shared entries appear in a feed with comments.
+  - **Group rooms:** a shared journal plus comments, joined by an 8-character code or link (`?group=…`). The owner can delete posts and comments and remove members.
+  - **Safety:** report entries, comments and rooms, and block people. Blocking removes the friendship and hides each other's content. No likes, follower counts or public feed.
+- **Security lives in the database** (`supabase/social.sql`). RLS decides who reads each entry, profile, comment and photo (via `can_read_entry`, `is_friend`, `is_member` and `is_blocked_between`). Profiles are written and friends added through `SECURITY DEFINER` functions, so tags can't be enumerated. Account deletion also removes the person's storage files.
+
 ## Ready for other people
 
 - **Account deletion:** 나의 하루 → 계정 삭제. A two-step confirmation explains what gets deleted. The `delete-account` Edge Function checks the caller's own token with Supabase Auth, then deletes exactly that user with the server-only service key. Days, taste and photo votes cascade, and error reports keep no link to the person. The device is cleared too.

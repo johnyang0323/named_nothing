@@ -3,6 +3,9 @@
 // photo votes go with it (those tables reference auth.users ON DELETE CASCADE);
 // error reports keep no link to them (ON DELETE SET NULL).
 //
+// Their uploaded photos (storage buckets "avatars" and "journal", folder = user id)
+// are removed first, since storage files are not part of the database cascade.
+//
 // The person proves who they are with their own login token (sent by the app
 // as "Authorization: Bearer <access token>"); the function checks it with
 // Supabase Auth and only then deletes that same user. Nobody can delete
@@ -73,7 +76,25 @@ Deno.serve(async (req) => {
   const user = (await who.json()) as { id?: string };
   if (!user?.id) return json({ error: 'invalid session' }, 401, headers);
 
-  // 2) delete exactly that user (cascades to their rows)
+  // 2) remove their uploaded photos (avatars/<id>/…, journal/<id>/…)
+  for (const bucket of ['avatars', 'journal']) {
+    const listed = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${bucket}`, {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefix: user.id, limit: 1000, offset: 0 }),
+    });
+    if (!listed.ok) continue; // bucket not set up yet
+    const files = ((await listed.json()) as { name: string }[]).map((f) => `${user.id}/${f.name}`);
+    if (files.length) {
+      await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}`, {
+        method: 'DELETE',
+        headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: files }),
+      });
+    }
+  }
+
+  // 3) delete exactly that user (cascades to their rows)
   const del = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, { method: 'DELETE', headers: adminHeaders() });
   if (!del.ok) return json({ error: 'delete failed', status: del.status }, 502, headers);
   return json({ deleted: true }, 200, headers);

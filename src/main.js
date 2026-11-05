@@ -5,11 +5,17 @@ import * as discover from './components/discover.js';
 import * as explore from './components/explore.js';
 import * as route from './components/route.js';
 import * as myday from './components/myday.js';
-import { syncLine } from './components/myday.js';
+import * as account from './components/account.js';
+import * as together from './components/together.js';
+import { syncLine } from './components/account.js';
+import { captureInvite } from './components/share.js';
+import { avatar } from './components/entryCard.js';
+import { getMyProfile, loadMyProfile, onProfileChange } from './services/backend/social.js';
+import { hydrateJournalPhotos } from './components/entryCard.js';
 import * as welcome from './components/welcome.js';
 import * as splash from './components/splash.js';
 import { isBackendConfigured } from './services/backend/config.js';
-import { initAuth, onAuthChange, getUser, isAuthReady, markAuthReady } from './services/backend/auth.js';
+import { initAuth, onAuthChange, getUser, isAuthReady, markAuthReady, avatarUrl } from './services/backend/auth.js';
 import { createSync } from './services/backend/sync.js';
 import { hydratePhotos } from './services/photos.js';
 import { createTasteStore } from './services/tasteStore.js';
@@ -18,7 +24,7 @@ import { getWeather } from './services/weather.js';
 import { installErrorReporting } from './services/errorLog.js';
 
 /** Screens reachable by #hash. */
-const APP_SCREENS = { home, discover, explore, route, day: myday };
+const APP_SCREENS = { home, discover, explore, route, day: myday, account, together };
 /** All renderable screens, including the sign-in gate. */
 const SCREENS = { ...APP_SCREENS, login: welcome, splash };
 const DEFAULT_SCREEN = 'home';
@@ -69,6 +75,13 @@ const ctx = {
   context: () => contextFor(store.getState()),
   ui,
   getScreen: () => currentName,
+  /** Refresh the current screen's data after a change (social screens). */
+  reload: async () => {
+    const screen = SCREENS[currentName];
+    if (screen.reload) await screen.reload(ctx);
+    else render();
+  },
+  refreshAccountButton: () => refreshAccountButton(),
   navigate,
   rerender: render,
   announce,
@@ -134,6 +147,7 @@ function render() {
   view.innerHTML = String(screen.render(store.getState(), ctx));
   screen.afterRender?.(store.getState(), ctx);
   hydratePhotos(view, { announce });
+  hydrateJournalPhotos(view);
 
   if (focusKey || itemKey) {
     const target = view.querySelector(`[data-focus-key="${CSS.escape(focusKey || '')}"]`);
@@ -228,11 +242,30 @@ view.addEventListener('submit', (event) => {
   SCREENS[currentName].forms?.[form.dataset.form]?.(ctx, form);
 });
 
+/** The profile picture (or initial) in the header, linking to 계정. */
+function refreshAccountButton() {
+  const button = document.querySelector('[data-account-button]');
+  if (!button) return;
+  const profile = getMyProfile();
+  const fallbackSrc = avatarUrl(getUser()); // Kakao photo until a profile photo is set
+  button.innerHTML = String(avatar({ ...(profile || { nickname: '나' }), fallbackSrc }));
+  button.setAttribute('aria-label', profile ? `${profile.nickname} 계정` : '계정');
+}
+
+// an invite link (?friend= / ?group=) opens 함께 after signing in
+captureInvite();
+
+// coming back to the app (switched tabs/apps): refresh shared content
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !['together', 'day'].includes(currentName)) return;
+  if (SCREENS[currentName].reload && !ui.editor) SCREENS[currentName].reload(ctx);
+});
+
 store.subscribe(() => {
   refreshWeather();
   render();
 });
-taste.subscribe(() => currentName === 'day' && render());
+taste.subscribe(() => currentName === 'account' && render());
 refreshWeather();
 window.addEventListener('hashchange', handleRoute);
 handleRoute();
@@ -242,14 +275,19 @@ installErrorReporting(() => currentName || '');
 // Optional accounts (Supabase). Without configuration none of this runs.
 if (isBackendConfigured()) {
   // signing in or out swaps between the gate and the app
-  onAuthChange(() => {
+  onAuthChange((user) => {
     ui.history = null;
+    ui.myEntries = null;
+    ui.together = null;
+    if (user) loadMyProfile().catch(() => null);
+    refreshAccountButton();
     handleRoute();
   });
+  onProfileChange(() => refreshAccountButton());
   // update only the status line, so saving in the background never redraws
   // the screen under someone who is typing
   sync.onStatus(() => {
-    const line = currentName === 'day' && view.querySelector('.account-sync');
+    const line = currentName === 'account' && view.querySelector('.account-sync');
     if (line) line.innerHTML = String(syncLine(sync));
   });
   initAuth()

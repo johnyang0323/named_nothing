@@ -50,7 +50,7 @@ const errors = [];
     await p.waitForSelector('#explore-title');
     await p.click('[data-action="toggle-current-visited"]');
   }
-  await p.goto(APP + '#day');
+  await p.goto(APP + '#account');
   await p.waitForSelector('.taste');
   const tasteText = (await p.textContent('.taste')).replace(/\s+/g, ' ');
   assert(tasteText.includes('자주 고른 곳'), tasteText);
@@ -67,7 +67,7 @@ const errors = [];
   ok('taste saved to the account (', remote.taste.events, 'signals )');
 
   // toggle off + reset with undo
-  await p.goto(APP + '#day');
+  await p.goto(APP + '#account');
   await p.uncheck('[data-input="taste-enabled"]');
   assert(!(await p.isChecked('[data-input="taste-enabled"]')), 'off');
   await p.check('[data-input="taste-enabled"]');
@@ -81,7 +81,7 @@ const errors = [];
   const B = await browser.newContext({ ...devices['iPhone 13'], reducedMotion: 'reduce' });
   await wire(B, backend, { errors });
   const pb = await B.newPage();
-  await pb.goto(APP + '#day');
+  await pb.goto(APP + '#account');
   await pb.waitForSelector('.welcome');
   await pb.click('[data-action="auth-mode"]'); // already exists → sign in instead
   await pb.click('[data-action="auth-mode"]');
@@ -90,6 +90,7 @@ const errors = [];
   await pb.click('[data-form="email-auth"] button[type=submit]');
   await pb.waitForSelector('text=자주 고른 곳', { timeout: 10000 });
   ok('device B: taste restored from the account after sign-in');
+  await pb.goto(APP + '#account');
   await pb.click('[data-action="sign-out"]');
   await pb.waitForSelector('.welcome');
   assert((await pb.evaluate(() => localStorage.getItem('plannish-taste'))) === null, 'taste cleared on sign-out');

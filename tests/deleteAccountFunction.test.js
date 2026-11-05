@@ -25,6 +25,14 @@ async function load(env = ENV, { deleteStatus = 200 } = {}) {
         : new Response('{"msg":"invalid JWT"}', { status: 401 });
     }
     if (String(url).includes('/auth/v1/admin/users/')) return new Response('{}', { status: deleteStatus });
+    if (String(url).includes('/storage/v1/object/list/')) {
+      calls.at(-1).body = init.body;
+      return new Response(JSON.stringify([{ name: 'a.jpg' }, { name: 'b.jpg' }]), { status: 200 });
+    }
+    if (String(url).includes('/storage/v1/object/')) {
+      calls.at(-1).body = init.body;
+      return new Response('[]', { status: 200 });
+    }
     return new Response('{}', { status: 404 });
   };
   await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}#${Math.random()}`);
@@ -43,17 +51,21 @@ test('deletes exactly the signed-in user, checked with their own token', async (
   const res = await handler(post('good-token'));
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { deleted: true });
-  const del = calls.find((c) => c.method === 'DELETE');
+  const del = calls.find((c) => c.method === 'DELETE' && c.url.includes('/admin/users/'));
   assert.equal(del.url, 'https://proj.supabase.co/auth/v1/admin/users/user-123');
   assert.equal(del.auth, 'Bearer service-secret', 'admin call uses the server-only key');
   assert.equal(calls[0].auth, 'Bearer good-token', 'identity comes from the caller’s token');
+  const removed = calls.filter((c) => c.method === 'DELETE' && c.url.includes('/storage/'));
+  assert.equal(removed.length, 2, 'photos removed from both buckets');
+  assert.deepEqual(JSON.parse(removed[1].body).prefixes, ['user-123/a.jpg', 'user-123/b.jpg'], 'only their own folder');
+  assert.ok(calls.findIndex((c) => c.url.includes('/storage/')) < calls.findIndex((c) => c.url.includes('/admin/users/')), 'files first, then the account');
 });
 
 test('refuses without a valid session, from other sites, or without the service key', async () => {
   const a = await load();
   assert.equal((await a.handler(post(null))).status, 401);
   assert.equal((await a.handler(post('forged-token'))).status, 401);
-  assert.equal(a.calls.some((c) => c.method === 'DELETE'), false, 'nothing deleted');
+  assert.equal(a.calls.some((c) => c.method === 'DELETE'), false, 'nothing deleted (no files, no account)');
   assert.equal((await a.handler(post('good-token', 'https://evil.example'))).status, 403);
 
   const noKey = await load({ SUPABASE_URL: 'https://proj.supabase.co', ALLOWED_ORIGINS: SITE });

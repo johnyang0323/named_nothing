@@ -95,6 +95,7 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
   ok('typing a note while My Day loads keeps every character and the focus; saved, synced; earlier local day uploaded and listed in 지난 날들');
 
   // sign out → device cleared, gate back
+  await pa.goto(APP + '#account');
   await pa.click('[data-action="sign-out"]');
   await pa.waitForSelector('.welcome');
   const keys = await pa.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('plannish-day:')).map((k) => [k, JSON.parse(localStorage[k]).updatedAt]));
@@ -112,6 +113,7 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
   assert((await pa.inputValue('#journal-note')) === '', 'friend sees empty journal');
   assert(![...backend.db.keys()].some((k) => k.startsWith('user-2|')), 'nothing of user-1 uploaded to friend: ' + [...backend.db.keys()]);
   ok('another account on the same device starts clean; nothing leaks between accounts');
+  await pa.goto(APP + '#account');
   await pa.click('[data-action="sign-out"]');
   await pa.waitForSelector('.welcome');
 
@@ -126,7 +128,7 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
   await pb.waitForFunction((n) => document.querySelector('.stop-name')?.textContent === n, placeName, { timeout: 8000 });
   ok('device B: Kakao login returns to the requested #route with user-1’s route:', placeName);
   await pb.goto(APP + '#day');
-  await pb.waitForFunction(() => { const i = document.querySelector('.avatar-img'); return i && i.complete && i.naturalWidth > 0; });
+  await pb.waitForFunction(() => { const i = document.querySelector('[data-account-button] .avatar-img'); return i && i.complete && i.naturalWidth > 0; });
   assert((await pb.inputValue('#journal-note')) === '지도에서 고른 동네 산책', 'journal pulled');
   await pb.goto(APP + '#home');
   await pb.waitForSelector('.home-mood');
