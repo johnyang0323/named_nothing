@@ -3982,3 +3982,220 @@ input[type='checkbox'][role='switch']:focus-visible {
 .password-rule.is-ok {
   color: var(--forest-2);
 }
+
+/* =========================================================================
+   Bottom tab bar on every screen size (liquid glass capsule)
+   발견 · 경로 · [홈 로고] · 나의 하루 · 함께 — the logo in the middle is home.
+   The top keeps only a small wordmark and the account button.
+   ========================================================================= */
+.masthead,
+body[data-screen='home'] .masthead {
+  max-width: var(--content);
+  min-height: 52px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--forest);
+}
+
+.nav {
+  position: fixed;
+  z-index: 30;
+  top: auto;
+  right: auto;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(calc(100% - 24px), 440px);
+  padding: 6px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24) 60%, rgba(232, 220, 196, 0.32));
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  border: 0.5px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 16px 40px rgba(31, 61, 43, 0.2), 0 2px 6px rgba(31, 61, 43, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* the glassy sheen across the top half */
+.nav::before {
+  content: '';
+  position: absolute;
+  inset: 1px 1px 50% 1px;
+  border-radius: 999px 999px 40px 40px / 999px 999px 24px 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.nav ul {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto 1fr 1fr;
+  align-items: center;
+  gap: 2px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: 50px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--label-2);
+  text-decoration: none;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.nav-icon {
+  display: block;
+}
+
+.nav a[aria-current='page'] {
+  color: var(--tint);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.95), 0 2px 10px rgba(31, 61, 43, 0.1);
+}
+
+.nav a[aria-current='page']::after {
+  display: none;
+}
+
+.nav-count:not(:empty) {
+  position: absolute;
+  top: 3px;
+  left: calc(50% + 6px);
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--purple);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.nav-count:not(:empty)::before {
+  content: none;
+}
+
+/* the home logo: a raised glass coin in the middle */
+.nav .nav-home,
+.nav .nav-home[aria-current='page'] {
+  width: 60px;
+  height: 60px;
+  min-height: 0;
+  margin: -20px 8px 0;
+  padding: 3px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.35));
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(31, 61, 43, 0.25), inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.nav .nav-home img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nav .nav-home[aria-current='page'] {
+  box-shadow: 0 10px 24px rgba(31, 61, 43, 0.25), 0 0 0 2.5px var(--purple), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.nav .nav-home:active {
+  transform: scale(0.94);
+}
+
+.nav a:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+/* room for the floating bar under the content, on every screen size */
+.view {
+  padding-bottom: calc(var(--nav-height) + var(--space-7) + 16px + env(safe-area-inset-bottom));
+}
+
+body[data-screen='home'] .view {
+  padding-bottom: calc(var(--nav-height) + var(--space-3) + 16px + env(safe-area-inset-bottom));
+}
+
+.toast {
+  bottom: calc(var(--nav-height) + var(--space-6) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 860px) {
+  .masthead,
+  body[data-screen='home'] .masthead {
+    padding: var(--space-5) var(--space-6) 0;
+  }
+
+  .view {
+    padding-bottom: calc(var(--nav-height) + var(--space-8) + 16px);
+  }
+
+  body[data-screen='home'] .view {
+    padding-bottom: calc(var(--nav-height) + var(--space-4) + 16px);
+  }
+
+  .toast {
+    bottom: calc(var(--nav-height) + var(--space-6));
+  }
+
+  .nav a {
+    font-size: 0.6875rem;
+  }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .nav,
+  .nav .nav-home {
+    background: rgba(251, 247, 239, 0.96);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .nav,
+  .nav .nav-home {
+    background: #fffaf2;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .nav::before {
+    display: none;
+  }
+}
