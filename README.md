@@ -20,15 +20,15 @@ It isn't a productivity tracker, an itinerary planner or a navigation app. There
 
 ## Design
 
-Black, white and purple only, with no gradients. All depth comes from liquid glass.
+The page is black and lit by soft white gradients. It uses black, white and purple only, and whatever is selected is purple.
 
-- **Colors:** black `#000` is used for text and primary buttons, white `#FFF` for the page, and purple `#8B5CF6` for selected states, the main call to action and links. Greys are black at low opacity. The one exception is the Kakao login button, which has to be Kakao's yellow under Kakao's design guide.
-- **Liquid glass:** cards and grouped lists are clear panes (a faint black tint, a bright top edge and a soft shadow). The floating tab bar, home coin and toast are white glass with blur and saturation over the content.
+- **Colors:** the page is black `#000` with a few soft white radial gradients for light. Text is white `#FFF`. Purple `#8B5CF6` marks selected items (time budget, mood check, tabs, the current menu item, switches) and the main call to action. Greys are white or black at low opacity. The one exception is the Kakao login button, which has to be Kakao's yellow under Kakao's design guide.
+- **Liquid glass:** cards and grouped lists are panes of white at low opacity with blur, a bright top edge and a deep shadow. The floating tab bar, home coin and toast are the same glass over the content.
 - **iOS Settings layout:** large bold titles; small grey section headers above inset grouped blocks. Lists are a single glass block whose rows are divided by hairlines starting at the text. Rows have chevrons, iOS switches and segmented controls (time budget, sharing scope, 친구/단체방). The mood choice is a checkmark list. On every screen size the menu is a floating liquid-glass capsule at the bottom: 발견 · 경로 · [home logo] · 나의 하루 · 함께. The raised app logo in the middle goes home.
 - **Place photos:** user photos come first. These are journal photos the author chose to share as the place's photo (`supabase/place_photos.sql`; nickname only, the note stays private, can be reported). After them come only trustworthy web results: photos from posts whose title names the place, or ones people picked. Otherwise the card keeps its illustration and offers **카카오맵에서 실제 사진 보기**.
 - **Type:** San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices (system fonts). Elsewhere it uses the bundled open font Pretendard, drawn to match them.
 - **Fallbacks:** browsers without `backdrop-filter` and users who turn on "reduce transparency" get solid white surfaces.
-- All tokens live in `:root` in `src/style.css`. The last layer, "Black · white · purple only", sets the palette. `scripts/mono-palette.py` converted the older colors, and `scripts/make-icons.cjs` draws the icons.
+- All tokens live in `:root` in `src/style.css`. The last layer, "Black · white · purple only", sets the palette. `scripts/mono-palette.py` and `scripts/invert-mono.py` converted the older colors, and `scripts/make-icons.cjs` draws the icons.
 
 ## Tech stack
 

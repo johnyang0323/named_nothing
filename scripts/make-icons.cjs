@@ -17,11 +17,11 @@ function art(pad = 0, { rx = 0, bg = true } = {}) {
     <clipPath id="c"><rect x="${a}" y="${a}" width="${s}" height="${s}" rx="${rx}"/></clipPath>
   </defs>
   <g clip-path="url(#c)">
-    ${bg ? `<rect x="${a}" y="${a}" width="${s}" height="${s}" fill="#FFFFFF"/>` : ''}
+    ${bg ? `<rect x="${a}" y="${a}" width="${s}" height="${s}" fill="#000000"/>` : ''}
     <circle cx="60" cy="43" r="15" fill="#8B5CF6"/>
-    <path d="M${a} 66 Q36 50 ${e} 60 V${e} H${a} Z" fill="#000000" fill-opacity="0.3"/>
-    <path d="M${a} 80 Q56 62 ${e} 76 V${e} H${a} Z" fill="#000000"/>
-    <path d="M30 92 Q52 78 74 71" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 7"/>
+    <path d="M${a} 66 Q36 50 ${e} 60 V${e} H${a} Z" fill="#FFFFFF" fill-opacity="0.35"/>
+    <path d="M${a} 80 Q56 62 ${e} 76 V${e} H${a} Z" fill="#FFFFFF"/>
+    <path d="M30 92 Q52 78 74 71" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 7"/>
   </g>
 </svg>`;
 }
@@ -29,7 +29,7 @@ function art(pad = 0, { rx = 0, bg = true } = {}) {
 function splash(w, h) {
   const icon = Math.round(Math.min(w, h) * 0.28);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <rect width="${w}" height="${h}" fill="#FFFFFF"/>
+  <rect width="${w}" height="${h}" fill="#000000"/>
   <g transform="translate(${(w - icon) / 2} ${(h - icon) / 2})">
     <svg width="${icon}" height="${icon}">${art(0, { rx: 22 }).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>
   </g>
@@ -63,7 +63,7 @@ function splash(w, h) {
     await render(art(25), Math.round(px * 2.25), Math.round(px * 2.25), `${RES}/mipmap-${d}/ic_launcher_foreground.png`);
   }
   fs.writeFileSync(`${RES}/values/ic_launcher_background.xml`,
-    '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#FFFFFF</color>\n</resources>\n');
+    '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#000000</color>\n</resources>\n');
 
   // Android splash images, same sizes Capacitor generated
   const splashes = {
