@@ -74,13 +74,14 @@ test('taste shifts the first pick; a wild pick goes the other way', () => {
 });
 
 test('rain favours indoor places, 2 hours favours nearby ones', () => {
-  const rain = buildContext({ weather: classifyWeather(63, 12) });
+  const noon = new Date(2026, 10, 5, 13, 0);
+  const rain = buildContext({ weather: classifyWeather(63, 12), now: noon });
   assert.ok(rain.badWeather);
   const indoor = places.find((p) => isIndoor(p));
   const park = byCat('park');
   assert.ok(contextMultiplier(rain, indoor) > 1 && contextMultiplier(rain, park) < 0.5);
 
-  const twoHours = buildContext({ budget: '2h' });
+  const twoHours = buildContext({ budget: '2h', now: noon });
   const near = places.find((p) => p.walkingTime <= 8);
   const far = places.find((p) => p.walkingTime > 15);
   assert.ok(contextMultiplier(twoHours, near) > contextMultiplier(twoHours, far) * 2);
@@ -115,7 +116,7 @@ test('nearby discoveries keep one "새로운 발견" slot once taste is known', 
 test('reasons are short and honest', () => {
   let t = emptyTaste();
   for (let i = 0; i < 3; i += 1) t = applySignal(t, 'go', byCat('bookstore'));
-  const rain = buildContext({ weather: classifyWeather(61, 10) });
+  const rain = buildContext({ weather: classifyWeather(61, 10), now: new Date(2026, 10, 5, 13) });
   const r = explainPick(byCat('bookstore'), { taste: t, context: rain });
   assert.ok(r.some((x) => x.startsWith('취향 반영')));
   assert.ok(r.some((x) => x.includes('비가 와서')));
@@ -135,7 +136,7 @@ test('store sends the right signals and keeps time budget + wild flags', () => {
     now: () => new Date(2026, 10, 5, 12),
     random: seeded(5),
     personalize: {
-      bias: (state) => makeBias(taste, buildContext({ budget: state.timeBudget })),
+      bias: (state) => makeBias(taste, buildContext({ budget: state.timeBudget, now: new Date(2026, 10, 5, 13) })),
       signal: (event, place) => {
         signals.push(event);
         taste = applySignal(taste, event, place);
