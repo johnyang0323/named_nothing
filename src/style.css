@@ -3109,3 +3109,803 @@ h2 {
 .weather-badge {
   gap: 0.3em;
 }
+
+/* =========================================================================
+   iOS Settings style (on top of the liquid glass theme)
+   - Large bold titles, small grey section headers above grouped blocks.
+   - Inset grouped lists: one clear glass block per group, rows separated by
+     hairlines that start at the text, chevrons, switches, segmented controls.
+   - A floating glass tab bar with icons.
+   ========================================================================= */
+:root {
+  --glass: rgba(255, 255, 255, 0.3);
+  --glass-strong: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.62);
+  --glass-blur: blur(28px) saturate(185%);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 22px rgba(31, 61, 43, 0.07);
+  --group-radius: 24px;
+  --row-x: 16px;
+  --row-min: 48px;
+  --separator: rgba(31, 61, 43, 0.13);
+  --label-2: rgba(23, 39, 29, 0.6);
+  --label-3: rgba(23, 39, 29, 0.32);
+  --tint: var(--purple-deep);
+  --destructive: #d8392f;
+}
+
+/* ---- Titles and headers ------------------------------------------------- */
+.title,
+.flow-title {
+  font-size: clamp(1.85rem, 7.6vw, 2.125rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+  color: var(--text);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--label-2);
+}
+
+.section-label,
+.group-header {
+  display: block;
+  margin: 0 0 7px;
+  padding: 0 var(--row-x);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--label-2);
+}
+
+.group-footer {
+  margin: 7px 0 0;
+  padding: 0 var(--row-x);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--label-2);
+}
+
+.group-footer a {
+  color: var(--tint);
+}
+
+.block {
+  margin-top: 30px;
+}
+
+/* ---- Inset grouped lists ------------------------------------------------ */
+.group,
+.mood-grid,
+.stops,
+.discoveries,
+.activities,
+.history-list,
+.group-list,
+.visit-list,
+.replace-list,
+.memory-list,
+.people {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--group-radius);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.group + .group,
+.group + .group-footer + .group {
+  margin-top: 22px;
+}
+
+.group > *,
+.mood-grid > .mood,
+.stops > li,
+.discoveries > li,
+.activities > li,
+.history-list > li,
+.group-list > li,
+.visit-list > li,
+.replace-list > li,
+.memory-list > li,
+.people > li {
+  position: relative;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.stops > li,
+.discoveries > li,
+.activities > li,
+.history-list > li,
+.group-list > li,
+.visit-list > li,
+.replace-list > li,
+.memory-list > li,
+.people > li {
+  padding: 13px var(--row-x);
+}
+
+/* hairline separators, inset to where the text starts */
+.group > * + *::after,
+.mood-grid > .mood + .mood::after,
+.stops > li + li::after,
+.discoveries > li + li::after,
+.activities > li + li::after,
+.history-list > li + li::after,
+.group-list > li + li::after,
+.visit-list > li + li::after,
+.replace-list > li + li::after,
+.memory-list > li + li::after,
+.people > li + li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--row-x);
+  right: 0;
+  height: 0.5px;
+  background: var(--separator);
+  pointer-events: none;
+}
+
+.activities li::before {
+  display: none;
+}
+
+/* the old dash before each activity */
+.activities > li {
+  padding-left: var(--row-x);
+}
+
+/* ---- Rows ---------------------------------------------------------------- */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--row-min);
+  padding: 11px var(--row-x);
+}
+
+.row-text {
+  display: block;
+}
+
+.row-text p {
+  margin: 0;
+}
+
+.row-text p + p {
+  margin-top: 3px;
+}
+
+.row-button {
+  width: 100%;
+  font: inherit;
+  font-size: 1.0625rem;
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.row-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.row-button:active {
+  background: rgba(31, 61, 43, 0.07);
+}
+
+.row-button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.row-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--purple);
+}
+
+.row-muted {
+  color: var(--label-2);
+}
+
+.row-danger {
+  justify-content: center;
+  color: var(--destructive);
+}
+
+.row-value {
+  font-weight: 400;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 3px;
+  border-top: 2px solid var(--label-3);
+  border-right: 2px solid var(--label-3);
+  transform: rotate(45deg);
+}
+
+/* inline text field inside a group (닉네임) */
+.group-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--row-min);
+  padding: 0 6px 0 var(--row-x);
+}
+
+.group-inline:focus-within {
+  box-shadow: var(--glass-shadow), 0 0 0 2px rgba(139, 92, 246, 0.45);
+}
+
+.row-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0;
+  font: inherit;
+  font-size: 1.0625rem;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.row-inline-button {
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--tint);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.row-inline-button:disabled {
+  color: var(--label-3);
+  cursor: default;
+}
+
+/* ---- iOS switch ---------------------------------------------------------- */
+.toggle input[type='checkbox'],
+input[type='checkbox'][role='switch'] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 999px;
+  background: rgba(120, 120, 128, 0.24);
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease);
+}
+
+.toggle input[type='checkbox']::before,
+input[type='checkbox'][role='switch']::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+  transition: transform 0.2s var(--ease);
+}
+
+.toggle input[type='checkbox']:checked,
+input[type='checkbox'][role='switch']:checked {
+  background: var(--forest-2);
+}
+
+.toggle input[type='checkbox']:checked::before,
+input[type='checkbox'][role='switch']:checked::before {
+  transform: translateX(20px);
+}
+
+.toggle input[type='checkbox']:focus-visible,
+input[type='checkbox'][role='switch']:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+.row.toggle {
+  font-size: 1.0625rem;
+  cursor: pointer;
+}
+
+/* ---- Segmented control (쓸 수 있는 시간, 공개 범위) ----------------------- */
+.budget-options {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(120, 120, 128, 0.14);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
+}
+
+.budget-chip span,
+.budget-chip input:checked + span {
+  min-height: 32px;
+  padding: 0 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: background-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.budget-chip input:checked + span {
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 3px 8px rgba(31, 61, 43, 0.12), 0 0 0 0.5px rgba(31, 61, 43, 0.06);
+}
+
+.budget-chip input:focus-visible + span {
+  outline: 2px solid var(--purple);
+  outline-offset: 1px;
+}
+
+/* ---- Mood choice: a list with a checkmark, like iOS pickers -------------- */
+.mood-grid {
+  grid-template-columns: none;
+}
+
+.mood,
+.home-mood .mood {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 1px;
+  padding: 10px var(--row-x);
+  min-height: var(--row-min);
+  cursor: pointer;
+  transition: background-color 0.15s var(--ease);
+}
+
+.mood:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mood-label,
+.home-mood .mood-label {
+  grid-column: 1;
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+
+.mood-label::before,
+.mood:has(input:checked) .mood-label::before {
+  display: none;
+}
+
+.mood-hint {
+  grid-column: 1;
+  font-size: 0.8125rem;
+  color: var(--label-2);
+}
+
+.mood::before {
+  content: '';
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 7px;
+  height: 13px;
+  margin: 0 6px 4px 0;
+  border: solid var(--tint);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+  opacity: 0;
+}
+
+.mood:has(input:checked) {
+  background: rgba(255, 255, 255, 0.3);
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.mood:has(input:checked)::before {
+  opacity: 1;
+}
+
+.mood:has(input:focus-visible) {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--purple);
+}
+
+.home-mood .moods,
+.home-mood .mood-grid {
+  flex: 0 0 auto;
+  display: block;
+}
+
+.home-mood .cta-area {
+  margin-top: auto;
+}
+
+/* ---- Text buttons and links are tinted, not underlined ------------------ */
+.text-button,
+.text-button-muted {
+  color: var(--tint);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.text-button:hover {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+
+/* ---- Account screen ------------------------------------------------------ */
+.block.profile,
+.block.taste,
+.block.account,
+.block.diagnostics {
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.account-screen .block:first-of-type {
+  margin-top: 18px;
+}
+
+.profile-card .profile-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px var(--row-x);
+  margin: 0;
+}
+
+.profile-name {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.profile-sub {
+  margin: 2px 0 0;
+  font-size: 0.9375rem;
+  color: var(--label-2);
+}
+
+.profile-photo-actions {
+  display: block;
+  margin: 0;
+}
+
+.profile-photo-actions > .row {
+  position: relative;
+}
+
+.profile-photo-actions > .row::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--row-x);
+  right: 0;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.profile-form,
+.my-tag {
+  margin-top: 26px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.my-tag .row-value {
+  font-weight: 500;
+}
+
+.danger-zone {
+  padding: 14px var(--row-x);
+  background: rgba(216, 57, 47, 0.06);
+}
+
+.diag-result {
+  font-size: 0.9375rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.diag-result.is-ok p:first-child {
+  color: var(--forest-2);
+}
+
+.diag-result.is-bad p:first-child {
+  color: var(--destructive);
+}
+
+.legal-links {
+  margin: 0;
+}
+
+/* ---- Tab bar ------------------------------------------------------------- */
+.nav a {
+  position: relative;
+}
+
+.nav-icon {
+  display: none;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav a[aria-current='page']::after {
+  display: none;
+}
+
+@media (max-width: 859px) {
+  .nav ul {
+    justify-content: space-around;
+    gap: 0;
+  }
+
+  .nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 58px;
+    min-height: 50px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--label-2);
+    transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
+  }
+
+  .nav-icon {
+    display: block;
+  }
+
+  .nav a[aria-current='page'] {
+    color: var(--tint);
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.9), 0 2px 10px rgba(31, 61, 43, 0.1);
+  }
+
+  .nav-count:not(:empty) {
+    position: absolute;
+    top: 3px;
+    left: calc(50% + 6px);
+    display: grid;
+    place-items: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .nav-count:not(:empty)::before {
+    content: none;
+  }
+}
+
+@media (min-width: 860px) {
+  .nav a[aria-current='page'] {
+    color: var(--tint);
+  }
+
+  .mood-grid,
+  .home-mood .mood-grid {
+    max-width: 560px;
+  }
+}
+
+/* ---- Fallbacks ------------------------------------------------------------ */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list,
+  .replace-list, .memory-list, .people {
+    background: rgba(251, 247, 239, 0.94);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list,
+  .replace-list, .memory-list, .people {
+    background: #fffaf2;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* mood rows: one line each — title left, hint right (iOS "value" style), check */
+.mood,
+.home-mood .mood {
+  grid-template-columns: auto 1fr 20px;
+  padding: 0 var(--row-x);
+  line-height: 1.25;
+}
+.mood-label,
+.home-mood .mood-label {
+  grid-column: 1;
+  grid-row: 1;
+}
+.mood-hint {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mood::before {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  margin: 0 4px 3px 0;
+}
+
+/* blocks without a list (forms, name tag, empty states) become one glass
+   panel, with their header sitting just above it like an iOS section */
+.together .block:not(:has(.people, .group-list, .entry, .member-chips)),
+.myday .block.journal,
+.myday .block.reset {
+  position: relative;
+  margin-top: 54px;
+  padding: 14px var(--row-x) 16px;
+  border-radius: var(--group-radius);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.together .block:not(:has(.people, .group-list, .entry, .member-chips)) > .section-label:first-child,
+.myday .block.journal > .section-label:first-child,
+.myday .block.reset > .section-label:first-child {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin: 0 0 7px;
+}
+
+.together .block .empty-body,
+.together .block > p:last-child,
+.myday .block.reset > p {
+  margin-bottom: 0;
+}
+
+/* 친구 / 단체방 tabs → segmented control */
+.tabs {
+  display: flex;
+  gap: 0;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(120, 120, 128, 0.14);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.tabs .tab {
+  flex: 1;
+  min-height: 34px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text);
+  box-shadow: none;
+}
+
+.tabs .tab::after,
+.tabs .tab[aria-selected='true']::after {
+  display: none;
+}
+
+.tabs .tab[aria-selected='true'] {
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 3px 8px rgba(31, 61, 43, 0.12), 0 0 0 0.5px rgba(31, 61, 43, 0.06);
+}
+
+@media (min-width: 860px) {
+  .home-mood .cta-area {
+    margin-top: var(--space-3);
+  }
+  .home-mood .cta-area .button-wide {
+    max-width: 560px;
+    width: 100%;
+  }
+}
+
+/* very short phones (iPhone SE 1st gen): tighter rows so step 2 still fits */
+@media (max-width: 859px) and (max-height: 620px) {
+  .home-mood.home-flow {
+    gap: var(--space-2);
+  }
+  .home-mood .flow-title {
+    font-size: 1.6rem;
+  }
+  .home-mood .mood {
+    min-height: 38px;
+  }
+  .home-mood .context-row .place-chip,
+  .home-mood .weather-badge {
+    min-height: 30px;
+  }
+  .home-mood .mood-label {
+    font-size: 1rem;
+  }
+  .home-mood .mood-hint {
+    font-size: 0.8125rem;
+  }
+  .home-mood .budget-chip span {
+    min-height: 28px;
+    padding: 0 11px;
+  }
+}

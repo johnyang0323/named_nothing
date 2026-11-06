@@ -45,35 +45,43 @@ function profileSection(ui) {
   const changed = d.nickname.trim() !== profile.nickname || d.file || d.clear;
   return html`
     <section class="block profile" aria-labelledby="profile-title">
-      <h2 class="section-label" id="profile-title">프로필</h2>
-      <div class="profile-row">
-        <span class="avatar avatar-lg" aria-hidden="true">
-          <span class="avatar-initial">${Array.from(d.nickname || profile.nickname || '·')[0]}</span>
-          ${preview ? html`<img class="avatar-img" src="${preview}" alt="">` : ''}
-        </span>
+      <h2 class="visually-hidden" id="profile-title">프로필</h2>
+      <div class="group profile-card">
+        <div class="profile-row">
+          <span class="avatar avatar-lg" aria-hidden="true">
+            <span class="avatar-initial">${Array.from(d.nickname || profile.nickname || '·')[0]}</span>
+            ${preview ? html`<img class="avatar-img" src="${preview}" alt="">` : ''}
+          </span>
+          <div class="profile-id">
+            <p class="profile-name">${profile.nickname}</p>
+            <p class="profile-sub">${fullTag(profile)}</p>
+          </div>
+        </div>
         <div class="profile-photo-actions">
-          <label class="button button-ghost button-small file-button">
+          <label class="row row-button file-button">
             사진 바꾸기
             <input type="file" accept="image/*" class="visually-hidden" data-input="avatar-file" data-focus-key="avatar-file">
           </label>
-          ${preview ? html`<button type="button" class="text-button text-button-muted" data-action="avatar-clear">사진 지우기</button>` : ''}
+          ${preview ? html`<button type="button" class="row row-button row-muted" data-action="avatar-clear">사진 지우기</button>` : ''}
         </div>
       </div>
+
       <form class="profile-form" data-form="profile" novalidate>
-        <label class="note-label" for="nickname">닉네임</label>
-        <div class="area-form">
-          <input id="nickname" class="area-input" type="text" maxlength="${NICKNAME_MAX}" autocomplete="nickname" value="${d.nickname}" data-input="nickname" data-focus-key="nickname">
-          <button type="submit" class="button button-primary button-small" ${d.busy || !changed ? 'disabled' : ''}>${d.busy ? '저장 중…' : '저장'}</button>
+        <label class="group-header" for="nickname">닉네임</label>
+        <div class="group group-inline">
+          <input id="nickname" class="row-input" type="text" maxlength="${NICKNAME_MAX}" autocomplete="nickname" value="${d.nickname}" data-input="nickname" data-focus-key="nickname">
+          <button type="submit" class="row-inline-button" ${d.busy || !changed ? 'disabled' : ''}>${d.busy ? '저장 중…' : '저장'}</button>
         </div>
         ${d.error ? html`<p class="area-error" role="alert">${d.error}</p>` : ''}
       </form>
+
       <div class="my-tag">
-        <p>내 이름표 <strong class="tag-text">${fullTag(profile)}</strong></p>
-        <div class="actions actions-compact">
-          <button type="button" class="button button-secondary button-small" data-action="copy-tag">이름표 복사</button>
-          <button type="button" class="button button-ghost button-small" data-action="copy-invite">초대 링크 복사</button>
+        <p class="group-header">내 이름표</p>
+        <div class="group">
+          <button type="button" class="row row-button" data-action="copy-tag"><span>이름표 복사</span><strong class="row-value tag-text">${fullTag(profile)}</strong></button>
+          <button type="button" class="row row-button" data-action="copy-invite"><span>초대 링크 복사</span><span class="row-chevron" aria-hidden="true"></span></button>
         </div>
-        <p class="fine-print">친구가 이 이름표를 입력하거나 초대 링크를 열면 바로 친구가 돼요. 이름표를 아는 사람만 나를 친구로 추가할 수 있어요.</p>
+        <p class="group-footer">친구가 이 이름표를 입력하거나 초대 링크를 열면 바로 친구가 돼요. 이름표를 아는 사람만 나를 친구로 추가할 수 있어요.</p>
       </div>
     </section>`;
 }
@@ -94,17 +102,17 @@ function tasteSection(taste) {
   }
   return html`
     <section class="block taste" aria-labelledby="taste-title">
-      <h2 class="section-label" id="taste-title">나의 취향</h2>
-      ${body}
-      <p class="fine-print">고른 곳과 다녀온 곳, 그날의 기분으로만 배워요. 추천의 일부는 일부러 평소와 다른 곳으로 섞어요. 우연한 발견도 하루의 일부니까요.</p>
-      <p class="fine-print">날씨·시간대·쓸 수 있는 시간도 함께 반영해요. 날씨 정보: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0)</p>
-      <div class="taste-controls">
-        <label class="toggle">
-          <input type="checkbox" data-input="taste-enabled" data-focus-key="taste-enabled" ${t.enabled ? 'checked' : ''}>
+      <h2 class="group-header" id="taste-title">나의 취향</h2>
+      <div class="group">
+        <label class="row toggle">
           <span>추천에 취향 반영하기</span>
+          <input type="checkbox" role="switch" data-input="taste-enabled" data-focus-key="taste-enabled" ${t.enabled ? 'checked' : ''}>
         </label>
-        ${t.events ? html`<button type="button" class="text-button text-button-muted" data-action="taste-reset" data-focus-key="taste-reset">취향 초기화</button>` : ''}
+        <div class="row row-text">${body}</div>
+        ${t.events ? html`<button type="button" class="row row-button" data-action="taste-reset" data-focus-key="taste-reset">취향 초기화</button>` : ''}
       </div>
+      <p class="group-footer">고른 곳과 다녀온 곳, 그날의 기분으로만 배워요. 추천의 일부는 일부러 평소와 다른 곳으로 섞어요. 우연한 발견도 하루의 일부니까요.
+        날씨·시간대·쓸 수 있는 시간도 함께 반영해요. 날씨 정보: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0)</p>
     </section>`;
 }
 
@@ -119,21 +127,24 @@ function accountSection(sync, ui) {
   if (!isBackendConfigured() || !user) return '';
   return html`
     <section class="block account" aria-labelledby="account-title">
-      <h2 class="section-label" id="account-title">계정</h2>
-      <p class="account-line">${loginMethod(user)}</p>
-      <p class="account-sync" role="status">${syncLine(sync)}</p>
-      <div class="account-actions">
-        <button type="button" class="text-button text-button-muted" data-action="sign-out" data-focus-key="sign-out">로그아웃</button>
-        ${ui.confirmDelete ? '' : html`<button type="button" class="text-button text-button-muted" data-action="delete-account" data-focus-key="delete-account">계정 삭제</button>`}
+      <h2 class="group-header" id="account-title">계정</h2>
+      <div class="group">
+        <div class="row row-text">
+          <p class="account-line">${loginMethod(user)}</p>
+          <p class="account-sync" role="status">${syncLine(sync)}</p>
+        </div>
+        <button type="button" class="row row-button" data-action="sign-out" data-focus-key="sign-out">로그아웃</button>
       </div>
-      ${ui.confirmDelete ? deleteConfirm(ui) : ''}
+      <div class="group">
+        ${ui.confirmDelete ? deleteConfirm(ui) : html`<button type="button" class="row row-button row-danger" data-action="delete-account" data-focus-key="delete-account">계정 삭제</button>`}
+      </div>
     </section>`;
 }
 
 function deleteConfirm(ui) {
   const busy = ui.confirmDelete === 'busy';
   return html`
-    <div class="danger-zone" role="group" aria-labelledby="delete-title">
+    <div class="row row-text danger-zone" role="group" aria-labelledby="delete-title">
       <p class="danger-title" id="delete-title">계정을 삭제할까요?</p>
       <p class="fine-print">계정과 함께 프로필, 모든 하루 기록과 사진, 나의 취향, 친구 관계, 내가 만든 단체방, 댓글과 사진 투표가 <strong>영구히</strong> 지워져요. 되돌릴 수 없어요.</p>
       <div class="actions">
@@ -148,24 +159,24 @@ function diagnosticsSection(ui) {
   if (!isBackendConfigured()) return '';
   return html`
     <section class="block diagnostics" aria-labelledby="diag-title">
-      <h2 class="section-label" id="diag-title">연결 점검</h2>
-      <p class="fine-print">기능이 안 될 때 눌러보세요. 무엇이 문제인지 알려드려요. 점검은 아무것도 바꾸거나 지우지 않아요.</p>
-      <div class="actions actions-compact">
-        <button type="button" class="button button-ghost button-small" data-action="check-photos" data-focus-key="check-photos" ${ui.photoCheck === 'running' ? 'disabled' : ''}>
-          ${ui.photoCheck === 'running' ? '점검하는 중…' : '사진 기능 점검'}
+      <h2 class="group-header" id="diag-title">연결 점검</h2>
+      <div class="group">
+        <button type="button" class="row row-button" data-action="check-photos" data-focus-key="check-photos" ${ui.photoCheck === 'running' ? 'disabled' : ''}>
+          <span>${ui.photoCheck === 'running' ? '점검하는 중…' : '사진 기능 점검'}</span><span class="row-chevron" aria-hidden="true"></span>
         </button>
-        <button type="button" class="button button-ghost button-small" data-action="check-delete" data-focus-key="check-delete" ${ui.deleteCheck === 'running' ? 'disabled' : ''}>
-          ${ui.deleteCheck === 'running' ? '점검하는 중…' : '계정 삭제 기능 점검'}
+        <button type="button" class="row row-button" data-action="check-delete" data-focus-key="check-delete" ${ui.deleteCheck === 'running' ? 'disabled' : ''}>
+          <span>${ui.deleteCheck === 'running' ? '점검하는 중…' : '계정 삭제 기능 점검'}</span><span class="row-chevron" aria-hidden="true"></span>
         </button>
+        ${[ui.photoCheck, ui.deleteCheck]
+          .filter((r) => r && r !== 'running')
+          .map(
+            (r) => html`<div class="row row-text diag-result ${r.ok ? 'is-ok' : 'is-bad'}" role="status">
+              <p>${r.ok ? '✓ ' : '✕ '}${r.message}</p>
+              ${r.detail ? html`<p class="diag-detail">${r.detail}</p>` : ''}
+            </div>`,
+          )}
       </div>
-      ${[ui.photoCheck, ui.deleteCheck]
-        .filter((r) => r && r !== 'running')
-        .map(
-          (r) => html`<div class="diag-result ${r.ok ? 'is-ok' : 'is-bad'}" role="status">
-            <p>${r.ok ? '✓ ' : '✕ '}${r.message}</p>
-            ${r.detail ? html`<p class="diag-detail">${r.detail}</p>` : ''}
-          </div>`,
-        )}
+      <p class="group-footer">기능이 안 될 때 눌러보세요. 무엇이 문제인지 알려드려요. 점검은 아무것도 바꾸거나 지우지 않아요.</p>
     </section>`;
 }
 
@@ -184,17 +195,17 @@ export function onEnter(ctx) {
 export function render(_state, { ui, sync, taste }) {
   return html`
     <section class="screen account-screen" aria-labelledby="account-screen-title">
-      <p class="eyebrow">계정</p>
-      <h1 id="account-screen-title" class="title" tabindex="-1">${getMyProfile()?.nickname || '나'}의 계정</h1>
+      <h1 id="account-screen-title" class="title large-title" tabindex="-1">계정</h1>
       ${profileSection(ui)}
       ${tasteSection(taste)}
       ${accountSection(sync, ui)}
       ${diagnosticsSection(ui)}
-      <p class="legal-links">
-        <a href="./privacy.html" target="_blank" rel="noopener">개인정보 처리방침</a>
-        <span aria-hidden="true">·</span>
-        <a href="./terms.html" target="_blank" rel="noopener">이용약관</a>
-      </p>
+      <section class="block" aria-label="약관">
+        <div class="group legal-links">
+          <a class="row row-button" href="./privacy.html" target="_blank" rel="noopener"><span>개인정보 처리방침</span><span class="row-chevron" aria-hidden="true"></span></a>
+          <a class="row row-button" href="./terms.html" target="_blank" rel="noopener"><span>이용약관</span><span class="row-chevron" aria-hidden="true"></span></a>
+        </div>
+      </section>
     </section>`;
 }
 

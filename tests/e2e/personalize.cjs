@@ -11,6 +11,16 @@ const errors = [];
   const browser = await launch();
   const A = await browser.newContext({ ...devices['iPhone 13'], reducedMotion: 'reduce' });
   await wire(A, backend, { errors, weather: { weather_code: 63, temperature_2m: 12.4, precipitation: 2.1 } });
+  // Recommendations are random; a fixed seed keeps the share checks below stable.
+  await A.addInitScript(() => {
+    let t = 0x2f6b1d;
+    Math.random = () => {
+      t = (t + 0x6d2b79f5) | 0;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  });
   const p = await A.newPage();
   await p.goto(APP);
   await signUp(p);
