@@ -26,6 +26,7 @@ Liquid glass over soft gradients:
 - **Glass:** cards, chips, inputs, the floating bottom nav (phone) and the top bar (desktop) are translucent white with `backdrop-filter` blur and saturation, a bright edge and a soft shadow. They float over a fixed backdrop of forest and purple gradient blobs on sand.
 - **Gradients:** titles use a forest-to-purple gradient, and the main "오늘 시작하기" button runs from forest to purple.
 - **Fallbacks:** browsers without `backdrop-filter` and users who turn on "reduce transparency" get solid warm surfaces instead.
+- **Type:** San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices (system fonts). Apple's license doesn't allow bundling them, so Android, Windows and other devices get the bundled open font **Pretendard**, which is drawn to match them. It is split by character range, so a device downloads only the pieces it shows.
 - All tokens live in `:root` in `src/style.css`, and the glass layer is at the end of that file.
 
 ## Tech stack

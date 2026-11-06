@@ -36,10 +36,13 @@
   --grad-purple: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 55%, #6d3fe0 100%);
   --grad-title: linear-gradient(120deg, #1f3d2b 0%, #2e5a40 55%, #6d3fe0 115%);
 
-  --font-serif: 'Nanum Myeongjo', 'Noto Serif KR', 'Noto Serif CJK KR', 'AppleMyungjo', 'Batang', 'Source Han Serif K',
-    Georgia, 'Times New Roman', serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', 'Noto Sans KR', 'Noto Sans CJK KR',
-    'Malgun Gothic', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices.
+     Apple doesn't allow bundling those fonts, so other devices (Android,
+     Windows) get Pretendard, an open font drawn to match them (bundled). */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Apple SD Gothic Neo',
+    'Pretendard Variable', Pretendard, 'Noto Sans KR', 'Malgun Gothic', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Headings used a serif before; they now share the same family. */
+  --font-serif: var(--font-sans);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -3088,4 +3091,21 @@ body[data-screen='home'] .view {
   min-height: 34px;
   padding: 0 var(--space-3);
   border-radius: 999px;
+}
+
+/* Typography: SF / Apple SD Gothic Neo everywhere. Large headings get the
+   slightly tighter tracking Apple uses for display sizes. */
+.display,
+.flow-title,
+.title,
+h1,
+h2 {
+  letter-spacing: -0.02em;
+}
+.welcome .eyebrow,
+.colophon p:first-child {
+  letter-spacing: 0;
+}
+.weather-badge {
+  gap: 0.3em;
 }

@@ -42,5 +42,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Font pieces (Pretendard, only on non-Apple devices) are kept after first use.
+  if (url.pathname.endsWith('.woff2')) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(CACHE).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          }),
+      ),
+    );
+    return;
+  }
+
   event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
 });

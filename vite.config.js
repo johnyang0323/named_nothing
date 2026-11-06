@@ -13,7 +13,7 @@ function serviceWorker() {
     generateBundle(_options, bundle) {
       const files = ['./', ...Object.keys(bundle).map((f) => `./${f}`)];
       const publicFiles = ['manifest.webmanifest', 'favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'privacy.html', 'terms.html'];
-      const precache = [...new Set([...files, ...publicFiles.map((f) => `./${f}`)])].filter((f) => !f.endsWith('.html'));
+      const precache = [...new Set([...files, ...publicFiles.map((f) => `./${f}`)])].filter((f) => !f.endsWith('.html') && !f.endsWith('.woff2'));
       const source = readFileSync(new URL('./src/sw-template.js', import.meta.url), 'utf8')
         .replaceAll('__BUILD_VERSION__', Date.now().toString(36))
         .replaceAll('__PRECACHE__', JSON.stringify(precache));

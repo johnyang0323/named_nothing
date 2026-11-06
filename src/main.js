@@ -1,3 +1,6 @@
+// Pretendard: the stand-in for SF / Apple SD Gothic Neo on non-Apple devices.
+// Split by character range, so a device only downloads the pieces it shows.
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import './style.css';
 import { createStore } from './services/store.js';
 import * as home from './components/home.js';
