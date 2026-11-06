@@ -41,9 +41,11 @@ const IMAGES = [
 const BLOGS = [
   { title: '망원동 <b>작은</b> 카페 <b>소소</b> 다녀왔어요', url: 'https://blog.naver.com/walker/222', blogname: 'w' },
   { title: '[망원] 카페소소 솔직후기', url: 'https://blog.naver.com/cafe_lover/333', blogname: 'c' },
+  { title: '카페 소소 창가 자리', url: 'https://blog.naver.com/window/444', blogname: '창가', thumbnail: 'http://search1.kakaocdn.net/argon/130x130_85_c/ABC' },
+  { title: '카페 소소 또 갔다', url: 'https://blog.naver.com/walker/222', blogname: 'w', thumbnail: 'https://search1.kakaocdn.net/argon/130x130_85_c/DUP' },
   { title: '망원동 맛집 리스트 (소소 근처)', url: 'https://blog.naver.com/eater/111', blogname: 'e' },
 ];
-const kakaoOk = (url) => ({ body: { documents: url.includes('/search/blog') ? BLOGS : IMAGES } });
+const kakaoOk = (url) => ({ body: { documents: url.includes('/search/blog') ? BLOGS : url.includes('/search/cafe') ? [] : IMAGES } });
 const SECRETS = { KAKAO_REST_API_KEY: 'k', ALLOWED_ORIGINS: SITE };
 
 test('only photos from posts whose title names the place are returned', async () => {
@@ -52,9 +54,14 @@ test('only photos from posts whose title names the place are returned', async ()
   assert.equal(res.status, 200);
   const body = await res.json();
   const order = body.photos.map((p) => p.url.replace('https://img/', '').replace('.jpg', ''));
-  assert.deepEqual(order, ['real-1', 'real-2'], 'unrelated search results are left out');
+  assert.deepEqual(order.slice(0, 2), ['real-1', 'real-2'], 'image results from those posts first');
+  const preview = body.photos[2];
+  assert.equal(preview.url, 'https://search1.kakaocdn.net/argon/600x0_65_wr/ABC', 'then a larger version of a titled post’s preview');
+  assert.equal(preview.thumb, 'https://search1.kakaocdn.net/argon/130x130_85_c/ABC', 'original preview kept as fallback');
+  assert.equal(preview.site, '창가');
+  assert.equal(body.photos.length, 3, 'unrelated search results left out; a post already covered adds nothing');
   assert.ok(body.photos.every((p) => p.relevant));
-  assert.equal(body.relevantPosts, 2, 'a title that only mentions part of the name does not count');
+  assert.equal(body.relevantPosts, 3, 'a title that only mentions part of the name does not count (same post counted once)');
   assert.equal(body.photo.url, body.photos[0].url, 'older apps still get `photo`');
 });
 

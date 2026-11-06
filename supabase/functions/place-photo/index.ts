@@ -54,7 +54,7 @@ type KakaoImage = {
   datetime?: string;
 };
 
-type KakaoBlog = { title: string; url: string; blogname: string; datetime?: string };
+type KakaoBlog = { title: string; url: string; blogname?: string; cafename?: string; thumbnail?: string; datetime?: string };
 
 // ---- relevance helpers (A + C) ------------------------------------------------
 
@@ -109,7 +109,16 @@ export function scoreImage(d: KakaoImage, relevantPosts: Set<string>, now = Date
   return score;
 }
 
-async function kakaoSearch<T>(kind: 'image' | 'blog', query: string, size: number): Promise<{ ok: boolean; status: number; documents: T[] }> {
+/**
+ * Kakao's preview images are tiny crops (…/argon/130x130_85_c/ID). The same
+ * service resizes on request, so ask for a larger one; the app falls back to
+ * the original preview if that doesn't load.
+ */
+export function largerPreview(url: string) {
+  return url.replace(/\/argon\/\d+x\d+_\d+_[a-z]+\//, '/argon/600x0_65_wr/').replace(/^http:/, 'https:');
+}
+
+async function kakaoSearch<T>(kind: 'image' | 'blog' | 'cafe', query: string, size: number): Promise<{ ok: boolean; status: number; documents: T[] }> {
   const res = await fetch(`https://dapi.kakao.com/v2/search/${kind}?query=${encodeURIComponent(query)}&sort=accuracy&size=${size}`, {
     headers: { Authorization: `KakaoAK ${KAKAO_KEY}` },
   });
@@ -157,12 +166,15 @@ Deno.serve(async (req) => {
   if (query.length < 2 || query.length > 60) return json({ error: 'invalid query' }, 400, headers);
 
   // A: blog posts whose TITLE names the place; their photos are probably of it
-  const [images, blogs] = await Promise.all([
+  const none = Promise.resolve({ ok: true, status: 200, documents: [] as KakaoBlog[] });
+  const [images, blogs, cafes] = await Promise.all([
     kakaoSearch<KakaoImage>('image', query, 30),
-    name ? kakaoSearch<KakaoBlog>('blog', query, 30) : Promise.resolve({ ok: true, status: 200, documents: [] as KakaoBlog[] }),
+    name ? kakaoSearch<KakaoBlog>('blog', query, 30) : none,
+    name ? kakaoSearch<KakaoBlog>('cafe', query, 20) : none,
   ]);
   if (!images.ok) return json({ error: 'kakao search failed', status: images.status }, 502, headers);
-  const relevantPosts = new Set(blogs.documents.filter((b) => titleMentions(b.title, name)).map((b) => postKey(b.url)));
+  const posts = [...blogs.documents, ...cafes.documents].filter((b) => typeof b.title === 'string' && typeof b.url === 'string' && titleMentions(b.title, name));
+  const relevantPosts = new Set(posts.map((b) => postKey(b.url)));
 
   const seen = new Set<string>();
   const ranked = images.documents
@@ -175,13 +187,27 @@ Deno.serve(async (req) => {
   // link to the place's own photos on Kakao Map instead.
   const pool = ranked.filter(({ score }) => score >= 10);
 
-  const photos = pool.slice(0, 6).map(({ d, score }) => ({
+  const fromImages = pool.map(({ d, score }) => ({
     url: d.image_url,
     thumb: d.thumbnail_url,
     site: d.display_sitename,
     link: d.doc_url,
     relevant: score >= 10,
   }));
+  // B: the preview picture of each post titled with the place (usually a
+  // photo taken there), for posts the image search didn't already cover
+  const covered = new Set(pool.map(({ d }) => postKey(d.doc_url)));
+  const fromPosts = posts
+    .filter((b) => b.thumbnail && /^https?:\/\//.test(b.thumbnail) && !covered.has(postKey(b.url)))
+    .filter((b) => (seen.has(b.thumbnail!) ? false : (seen.add(b.thumbnail!), true)))
+    .map((b) => ({
+      url: largerPreview(b.thumbnail!),
+      thumb: b.thumbnail!.replace(/^http:/, 'https:'),
+      site: b.blogname || b.cafename || '블로그',
+      link: b.url,
+      relevant: true,
+    }));
+  const photos = [...fromImages, ...fromPosts].slice(0, 6);
   // `photo` keeps older app versions working
   return json({ photo: photos[0] ?? null, photos, relevantPosts: relevantPosts.size }, 200, headers, true);
 });

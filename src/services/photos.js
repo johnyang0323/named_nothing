@@ -581,7 +581,14 @@ export async function checkPhotoService() {
   }
 
   const photo = cleanPhoto(data?.photo);
-  if (!photo) return { ok: false, message: '함수는 동작하지만 검색 결과가 비어 있어요. 카카오 REST API 키의 검색 권한을 확인해 주세요.', detail: JSON.stringify(data).slice(0, 200) };
+  if (!photo && data?.relevantPosts > 0) {
+    return {
+      ok: false,
+      message: `함수와 카카오 검색은 정상이에요(장소 이름이 제목에 든 글 ${data.relevantPosts}개). 그런데 그 글들에서 사진을 고르지 못했어요. 사진 함수를 최신 코드로 다시 배포해 주세요.`,
+      detail: `함수: ${fnName}`,
+    };
+  }
+  if (!photo) return { ok: false, message: '함수는 동작하지만 검색 결과가 비어 있어요. 카카오 REST API 키의 검색 권한(다음 검색)을 확인해 주세요.', detail: `함수: ${fnName} · ${JSON.stringify(data).slice(0, 160)}` };
 
   const fullOk = await tryLoadImage(photo.url);
   const thumbOk = fullOk || (photo.thumb ? await tryLoadImage(photo.thumb) : false);
