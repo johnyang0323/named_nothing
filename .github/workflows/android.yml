@@ -35,7 +35,7 @@ jobs:
           VITE_KAKAO_MAP_KEY: ${{ vars.KAKAO_MAP_KEY || '620acc4efbe83de826d11c5d0efe947d' }}
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://pheawjaqtsifkmlsjhea.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_2h_vEGHjbvnC0kxSlUj7BA_C1WjxQCU' }}
-          VITE_PHOTO_FUNCTION: ${{ vars.PHOTO_FUNCTION || 'hyper-responder' }}
+          VITE_PHOTO_FUNCTION: ${{ vars.PHOTO_FUNCTION || 'place-photo' }}
           VITE_DELETE_FUNCTION: ${{ vars.DELETE_FUNCTION || 'delete-account' }}
       - name: Copy it into the Android project
         run: npx cap sync android

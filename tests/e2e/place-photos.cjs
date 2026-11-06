@@ -111,6 +111,25 @@ const photos = [
   assert((await shown(C)).endsWith('about.png') && (await C.locator('.gallery-count').isHidden()), 'only the post photo');
   ok('A switches it off → nobody else sees it any more');
 
+  // ── the photo function exists only under its older name ──
+  const old = createBackend({ photos, photoFunction: 'hyper-responder' });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], reducedMotion: 'reduce' });
+  await wire(ctx, old, { errors: [] });
+  await ctx.route('https://photo.test/**', (r) => r.fulfill({ contentType: 'image/png', body: IMG }));
+  const D = await ctx.newPage();
+  await D.goto(APP);
+  await signUp(D, 'd@test.com', 'password-d1');
+  await setArea(D);
+  await D.click('[data-action="start"]');
+  await D.waitForSelector('.destination-visual.has-photo');
+  const calls = old.log.filter((l) => l.includes('/functions/v1/'));
+  assert(calls.some((l) => l.endsWith('/place-photo')) && calls.some((l) => l.endsWith('/hyper-responder')), 'tried both names: ' + calls.join(', '));
+  await D.click('[data-action="another"]');
+  await D.waitForSelector('.destination-visual.has-photo');
+  const later = old.log.filter((l) => l.includes('/functions/v1/')).slice(calls.length);
+  assert(later.length && later.every((l) => l.endsWith('/hyper-responder')), 'then sticks with the one that answered: ' + later.join(', '));
+  ok('function found under its other name (place-photo → hyper-responder) and remembered');
+
   console.log('errors:', errors.length ? errors : 'none');
   await browser.close();
   if (errors.length) process.exit(1);

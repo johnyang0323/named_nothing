@@ -5,7 +5,7 @@ const FAKE_KAKAO = fs.readFileSync(__dirname + '/fake-kakao.js', 'utf8');
 const PNG = fs.readFileSync(ROOT + '/public/icons/icon-512.png');
 const SB = 'https://test.supabase.co';
 
-function createBackend({ photos } = {}) {
+function createBackend({ photos, photoFunction = null } = {}) {
   const db = new Map();
   const votes = new Map(); // place|url|user -> vote
   const prefs = new Map(); // user -> { taste, updated_at }
@@ -140,6 +140,8 @@ function createBackend({ photos } = {}) {
       return json({ deleted: true });
     }
     if (path.startsWith('/functions/v1/')) {
+      // like Supabase: an unknown function name is a 404 without CORS headers
+      if (photoFunction && path !== '/functions/v1/' + photoFunction) return route.fulfill({ status: 404, body: 'Requested function was not found' });
       const body = req.postDataJSON();
       fnBodies.push(body);
       return json({ photo: photoReply[0], photos: photoReply });

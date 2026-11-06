@@ -144,6 +144,35 @@ async function castVote(placeId, photo, vote) {
   return !error;
 }
 
+// ---- which photo function to call -----------------------------------------
+// The function's URL name (slug) is set when it's created in Supabase. Try the
+// configured one, then the usual names, and stick with whichever answers.
+const PHOTO_FUNCTIONS = [...new Set([PHOTO_FUNCTION, 'place-photo', 'hyper-responder'])];
+let workingFunction = null;
+
+/** Not deployed under this name (404), or unreachable as such (no CORS on a 404). */
+const notThere = (error) => Boolean(error) && (!(error.context instanceof Response) || error.context.status === 404);
+
+async function invokePhotoFunction(body) {
+  const supabase = await getSupabase();
+  let last = null;
+  for (const name of workingFunction ? [workingFunction] : PHOTO_FUNCTIONS) {
+    let result;
+    try {
+      result = await supabase.functions.invoke(name, { body });
+    } catch (error) {
+      result = { data: null, error };
+    }
+    last = { ...result, name };
+    if (!notThere(result.error)) {
+      workingFunction = name;
+      return last;
+    }
+  }
+  workingFunction = null;
+  return last;
+}
+
 export const photosEnabled = (place) => place?.source === 'kakao' && isBackendConfigured();
 
 export function photoQuery(place) {
@@ -179,8 +208,7 @@ function webPhotos(place) {
         ? Promise.resolve(fromCache(cached))
         : rescore(place, cached).catch(() => fromCache(cached));
   } else {
-    request = getSupabase()
-      .then((supabase) => supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: photoQuery(place), name: place.name } }))
+    request = invokePhotoFunction({ query: photoQuery(place), name: place.name })
       .then(async ({ data, error }) => {
         if (error) return null;
         const scores = await fetchScores(place.id).catch(() => null);
@@ -504,14 +532,8 @@ export function clearPhotoMisses() {
  */
 export async function checkPhotoService() {
   if (!isBackendConfigured()) return { ok: false, message: 'Supabase가 연결되지 않은 빌드예요.' };
-  const supabase = await getSupabase();
-  let result;
-  try {
-    result = await supabase.functions.invoke(PHOTO_FUNCTION, { body: { query: '남산서울타워 서울 용산구', name: '남산서울타워' } });
-  } catch (error) {
-    result = { error };
-  }
-  const { data, error } = result;
+  const { data, error, name: fnName } = await invokePhotoFunction({ query: '남산서울타워 서울 용산구', name: '남산서울타워' });
+  const tried = PHOTO_FUNCTIONS.map((n) => `${SUPABASE_URL}/functions/v1/${n}`).join(' , ');
 
   if (error) {
     const response = error.context instanceof Response ? error.context : null;
@@ -531,14 +553,14 @@ export async function checkPhotoService() {
         ok: false,
         message:
           '사진 함수에 연결하지 못했어요. 아래 주소를 새 탭에서 열어보세요. "Requested function was not found"가 나오면 함수가 배포되지 않은 것이고, "Missing authorization header"나 "Invalid JWT"가 나오면 함수 설정에서 Verify JWT를 꺼야 해요. "deployed": true가 보이면 최신 함수 코드로 다시 배포해 주세요.',
-        detail: `${SUPABASE_URL}/functions/v1/${PHOTO_FUNCTION}`,
+        detail: tried,
       };
     }
     if (status === 404) {
       return {
         ok: false,
-        message: `사진 함수를 찾지 못했어요. 앱은 ${SUPABASE_URL}/functions/v1/${PHOTO_FUNCTION} 주소를 부르고 있어요. Supabase 함수 개요(Overview)에 나오는 주소와 같은지 확인해 주세요.`,
-        detail,
+        message: `사진 함수를 찾지 못했어요. 앱은 ${PHOTO_FUNCTIONS.join(', ')} 이름으로 찾아봤어요. Supabase 함수 개요(Overview)에 나오는 주소 끝 이름과 같은지 확인해 주세요.`,
+        detail: `${detail} · ${tried}`,
       };
     }
     if (status === 401) return { ok: false, message: '함수가 로그인 토큰(JWT)을 요구하고 있어요. 함수 설정(Details)에서 Verify JWT(Enforce JWT)를 끄고 저장해 주세요.', detail };
@@ -565,7 +587,7 @@ export async function checkPhotoService() {
   const thumbOk = fullOk || (photo.thumb ? await tryLoadImage(photo.thumb) : false);
   clearPhotoMisses();
   if (!thumbOk) return { ok: false, message: '사진 주소는 받았지만 이 브라우저에서 이미지가 열리지 않아요(이미지 사이트가 외부 표시를 막는 경우).', detail: photo.url };
-  return { ok: true, message: fullOk ? '사진 기능이 정상이에요.' : '사진 기능이 동작해요(원본 대신 작은 미리보기 이미지로 표시돼요).', detail: photo.site };
+  return { ok: true, message: fullOk ? '사진 기능이 정상이에요.' : '사진 기능이 동작해요(원본 대신 작은 미리보기 이미지로 표시돼요).', detail: `함수: ${fnName} · 사진 출처: ${photo.site}` };
 }
 
 /**

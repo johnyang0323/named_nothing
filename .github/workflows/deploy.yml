@@ -53,8 +53,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://pheawjaqtsifkmlsjhea.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_2h_vEGHjbvnC0kxSlUj7BA_C1WjxQCU' }}
           # URL name of the photo Edge Function (the last part of its URL on the
-          # function's Overview page). The dashboard editor assigned this one.
-          VITE_PHOTO_FUNCTION: ${{ vars.PHOTO_FUNCTION || 'hyper-responder' }}
+          # function's Overview page). The app also tries place-photo and
+          # hyper-responder if this name isn't found.
+          VITE_PHOTO_FUNCTION: ${{ vars.PHOTO_FUNCTION || 'place-photo' }}
           # URL name of the account-deletion Edge Function.
           VITE_DELETE_FUNCTION: ${{ vars.DELETE_FUNCTION || 'delete-account' }}
       - uses: actions/upload-pages-artifact@v3
