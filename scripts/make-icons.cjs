@@ -1,4 +1,4 @@
-// Draws the app icon (forest / sand / purple) and writes every size the web
+// Draws the app icon (black / white / purple) and writes every size the web
 // app and the Android app need. Run: node scripts/make-icons.cjs
 // The artwork lives in a 100×100 box; `pad` extends the sky and hills
 // outwards so shapes that a launcher crops (maskable / adaptive) stay full.
@@ -11,25 +11,17 @@ const RES = path.join(ROOT, 'android/app/src/main/res');
 
 function art(pad = 0, { rx = 0, bg = true } = {}) {
   const a = -pad, s = 100 + pad * 2, e = 100 + pad;
+  // black · white · purple only, no gradients
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${a} ${a} ${s} ${s}">
   <defs>
-    <linearGradient id="sky" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#F5EFE3"/><stop offset="0.55" stop-color="#E8DCC4"/><stop offset="1" stop-color="#CDBDF3"/>
-    </linearGradient>
-    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#B9A2FB"/><stop offset="1" stop-color="#7C4DEB"/>
-    </linearGradient>
-    <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2E5A40"/><stop offset="1" stop-color="#1F3D2B"/>
-    </linearGradient>
     <clipPath id="c"><rect x="${a}" y="${a}" width="${s}" height="${s}" rx="${rx}"/></clipPath>
   </defs>
   <g clip-path="url(#c)">
-    ${bg ? `<rect x="${a}" y="${a}" width="${s}" height="${s}" fill="url(#sky)"/>` : ''}
-    <circle cx="60" cy="43" r="15" fill="url(#sun)"/>
-    <path d="M${a} 66 Q36 50 ${e} 60 V${e} H${a} Z" fill="#6F9A7E"/>
-    <path d="M${a} 80 Q56 62 ${e} 76 V${e} H${a} Z" fill="url(#hill)"/>
-    <path d="M30 92 Q52 78 74 71" fill="none" stroke="#F5EFE3" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 7"/>
+    ${bg ? `<rect x="${a}" y="${a}" width="${s}" height="${s}" fill="#FFFFFF"/>` : ''}
+    <circle cx="60" cy="43" r="15" fill="#8B5CF6"/>
+    <path d="M${a} 66 Q36 50 ${e} 60 V${e} H${a} Z" fill="#000000" fill-opacity="0.3"/>
+    <path d="M${a} 80 Q56 62 ${e} 76 V${e} H${a} Z" fill="#000000"/>
+    <path d="M30 92 Q52 78 74 71" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 7"/>
   </g>
 </svg>`;
 }
@@ -37,7 +29,7 @@ function art(pad = 0, { rx = 0, bg = true } = {}) {
 function splash(w, h) {
   const icon = Math.round(Math.min(w, h) * 0.28);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <rect width="${w}" height="${h}" fill="#E8DCC4"/>
+  <rect width="${w}" height="${h}" fill="#FFFFFF"/>
   <g transform="translate(${(w - icon) / 2} ${(h - icon) / 2})">
     <svg width="${icon}" height="${icon}">${art(0, { rx: 22 }).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</svg>
   </g>
@@ -71,7 +63,7 @@ function splash(w, h) {
     await render(art(25), Math.round(px * 2.25), Math.round(px * 2.25), `${RES}/mipmap-${d}/ic_launcher_foreground.png`);
   }
   fs.writeFileSync(`${RES}/values/ic_launcher_background.xml`,
-    '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#E8DCC4</color>\n</resources>\n');
+    '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#FFFFFF</color>\n</resources>\n');
 
   // Android splash images, same sizes Capacitor generated
   const splashes = {

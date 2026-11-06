@@ -13,29 +13,29 @@ export function photoSlot(place, { gallery = false } = {}) {
   return raw(` data-photo-for="${escapeHtml(place.id)}"${gallery ? ' data-photo-gallery' : ''}`);
 }
 
-// forest green (main) · sand beige (second) · electric purple (point)
+// black · white · purple only (greys are black at low opacity), no gradients
 const C = {
-  ivory: '#F5EFE3',
-  olive: '#3F6B50',
-  oliveDeep: '#1F3D2B',
-  oliveSoft: '#93B19C',
-  charcoal: '#1F2A23',
-  gray: '#7F8A82',
-  sand: '#D9C9A8',
-  clay: '#B9875F',
-  claySoft: '#E6CBA6',
+  ivory: '#FFFFFF',
+  olive: 'rgba(0,0,0,0.78)',
+  oliveDeep: '#000000',
+  oliveSoft: 'rgba(0,0,0,0.28)',
+  charcoal: '#000000',
+  gray: 'rgba(0,0,0,0.45)',
+  sand: 'rgba(0,0,0,0.1)',
+  clay: '#8B5CF6',
+  claySoft: 'rgba(139,92,246,0.45)',
   purple: '#8B5CF6',
-  purpleSoft: '#C4B0FA',
+  purpleSoft: 'rgba(139,92,246,0.3)',
   white: '#FFFFFF',
 };
 
 const BACKGROUNDS = {
-  restful: '#E8DCC4',
-  scenic: '#E3DDCB',
-  active: '#EADFC8',
-  enriching: '#EFE6D4',
-  creative: '#E6DDF3',
-  productive: '#DFE3D3',
+  restful: 'rgba(0,0,0,0.04)',
+  scenic: 'rgba(139,92,246,0.08)',
+  active: 'rgba(0,0,0,0.06)',
+  enriching: 'rgba(139,92,246,0.06)',
+  creative: 'rgba(139,92,246,0.12)',
+  productive: 'rgba(0,0,0,0.05)',
 };
 
 const W = 400;
@@ -201,13 +201,10 @@ const drawers = {
 /** Abstract composition for things that aren't places (e.g. today's small suggestion). */
 export function horizonVisual(seed = 0) {
   const r = rng(seed);
-  const id = `sky-${seed}`;
   return raw(`<svg class="visual" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#F5EFE3"/><stop offset="0.6" stop-color="#E8DCC4"/><stop offset="1" stop-color="${C.purpleSoft}"/>
-    </linearGradient></defs>
-    <rect width="${W}" height="${H}" fill="url(#${id})"/>
-    <circle cx="${140 + r(140)}" cy="${110 + r(30)}" r="46" fill="${C.claySoft}"/>
+    <rect width="${W}" height="${H}" fill="#FFFFFF"/>
+    <rect width="${W}" height="${H}" fill="${C.purpleSoft}" opacity=".35"/>
+    <circle cx="${140 + r(140)}" cy="${110 + r(30)}" r="46" fill="${C.purple}"/>
     <path d="M0 180 Q120 ${150 + r(20)} 240 176 T400 168 V260 H0 Z" fill="${C.oliveSoft}"/>
     <path d="M0 214 Q180 190 400 212 V260 H0 Z" fill="${C.olive}"/>
     <path d="M60 240 L200 196" stroke="${C.ivory}" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round"/>

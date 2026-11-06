@@ -5,36 +5,36 @@
 
 :root {
   /* brand palette */
-  --forest: #1f3d2b; /* main */
-  --forest-2: #2e5a40;
-  --forest-3: #4f7a5e;
-  --sand: #e8dcc4; /* second main */
-  --sand-light: #f5efe3;
+  --forest: #000; /* main */
+  --forest-2: rgba(0, 0, 0, 0.691);
+  --forest-3: rgba(0, 0, 0, 0.565);
+  --sand: #fff; /* second main */
+  --sand-light: #fff;
   --purple: #8b5cf6; /* point */
-  --purple-deep: #6d3fe0;
+  --purple-deep: #8b5cf6;
   --purple-soft: rgba(139, 92, 246, 0.14);
 
   /* roles */
-  --bg: #efe6d4;
-  --text: #17271d;
-  --text-secondary: #4c5c52;
-  --muted: #7f8a82;
+  --bg: #fff;
+  --text: #000;
+  --text-secondary: rgba(0, 0, 0, 0.655);
+  --muted: rgba(0, 0, 0, 0.47);
   --accent: var(--purple);
   --accent-deep: var(--forest-2);
   --surface: rgba(255, 255, 255, 0.4);
   --white: rgba(255, 255, 255, 0.64);
-  --line: rgba(31, 61, 43, 0.13);
+  --line: rgba(0, 0, 0, 0.13);
 
   /* liquid glass */
   --glass: rgba(255, 255, 255, 0.5);
   --glass-strong: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.7);
   --glass-blur: blur(18px) saturate(170%);
-  --glass-shadow: 0 10px 30px rgba(31, 61, 43, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75);
-  --grad-forest: linear-gradient(135deg, #3a6d4f 0%, #2e5a40 40%, #1f3d2b 100%);
-  --grad-cta: linear-gradient(120deg, #1f3d2b 0%, #2e5a40 50%, #6d3fe0 125%);
-  --grad-purple: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 55%, #6d3fe0 100%);
-  --grad-title: linear-gradient(120deg, #1f3d2b 0%, #2e5a40 55%, #6d3fe0 115%);
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --grad-forest: rgba(0, 0, 0, 0.624);
+  --grad-cta: #000;
+  --grad-purple: #8b5cf6;
+  --grad-title: #000;
 
   /* San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices.
      Apple doesn't allow bundling those fonts, so other devices (Android,
@@ -797,7 +797,7 @@ h1[tabindex='-1']:focus {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3);
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .gallery[hidden] {
@@ -812,7 +812,7 @@ h1[tabindex='-1']:focus {
   border: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
-  color: #252525;
+  color: #000;
   font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
@@ -844,7 +844,7 @@ h1[tabindex='-1']:focus {
   border: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
-  color: #252525;
+  color: #000;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -1331,7 +1331,7 @@ h1[tabindex='-1']:focus {
 .area-error {
   margin-top: var(--space-3);
   font-size: 0.88rem;
-  color: #8a4b2f;
+  color: rgba(0, 0, 0, 0.661);
 }
 
 /* ---- Home: two one-screen steps ------------------------------------------ */
@@ -1436,7 +1436,7 @@ body[data-screen='home'] .view {
   transform: translateX(-50%);
   padding: var(--space-1) var(--space-3);
   border-radius: 999px;
-  background: rgba(37, 37, 37, 0.72);
+  background: rgba(0, 0, 0, 0.72);
   color: #fff;
   font-size: 0.78rem;
   white-space: nowrap;
@@ -1611,7 +1611,7 @@ body[data-screen='home'] .view {
   border: 0;
   border-radius: 12px;
   /* Kakao brand colours, as required by Kakao's login button guide */
-  background: #fee500;
+  background: #fff;
   color: rgba(0, 0, 0, 0.85);
   font-size: 0.98rem;
   font-weight: 600;
@@ -1958,14 +1958,14 @@ body.is-gated .view {
 .danger-zone {
   margin-top: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid #d9b8a8;
+  border: 1px solid rgba(0, 0, 0, 0.255);
   border-radius: var(--radius-small);
-  background: #fbf1ec;
+  background: #fff;
 }
 
 .danger-title {
   font-weight: 600;
-  color: #8a4b2f;
+  color: rgba(0, 0, 0, 0.661);
 }
 
 .danger-zone .actions {
@@ -1974,12 +1974,12 @@ body.is-gated .view {
 }
 
 .button-danger {
-  background: #8a4b2f;
+  background: rgba(0, 0, 0, 0.661);
   color: #fff;
 }
 
 .button-danger:hover {
-  background: #6f3a23;
+  background: rgba(0, 0, 0, 0.735);
 }
 
 /* ---- Header account button -------------------------------------------- */
@@ -2433,7 +2433,7 @@ body.is-gated .account-button {
 }
 
 .diag-result.is-bad {
-  color: #8a4b2f;
+  color: rgba(0, 0, 0, 0.661);
 }
 
 .diag-detail {
@@ -2634,11 +2634,11 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(55% 40% at 100% 0%, rgba(46, 90, 64, 0.38), transparent 70%),
-    radial-gradient(45% 35% at 0% 30%, rgba(139, 92, 246, 0.26), transparent 70%),
-    radial-gradient(60% 45% at 15% 100%, rgba(31, 61, 43, 0.34), transparent 70%),
-    radial-gradient(40% 35% at 95% 80%, rgba(139, 92, 246, 0.2), transparent 70%),
-    linear-gradient(165deg, var(--sand-light) 0%, var(--sand) 55%, #e0d0b1 100%);
+    rgba(0, 0, 0, 0.263),
+    rgba(139, 92, 246, 0.26),
+    rgba(0, 0, 0, 0.34),
+    rgba(139, 92, 246, 0.2),
+    #fff;
 }
 
 /* ---- the glass recipe -------------------------------------------------- */
@@ -2719,7 +2719,7 @@ body::before {
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(31, 61, 43, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.06);
   color: var(--text);
 }
 
@@ -2771,7 +2771,7 @@ a {
 
 .text-button {
   color: var(--forest);
-  text-decoration-color: rgba(31, 61, 43, 0.35);
+  text-decoration-color: rgba(0, 0, 0, 0.35);
 }
 
 .text-button:hover {
@@ -2783,24 +2783,24 @@ a {
   background: var(--grad-forest);
   color: var(--sand-light);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 22px rgba(31, 61, 43, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 22px rgba(0, 0, 0, 0.28);
 }
 
 .button-primary:hover {
-  background: linear-gradient(135deg, #46805e 0%, #34654a 40%, #224530 100%);
+  background: rgba(0, 0, 0, 0.556);
 }
 
 .button-wide.button-primary,
 .cta-area .button-primary {
   background: var(--grad-cta);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 28px rgba(76, 52, 160, 0.28), 0 4px 12px rgba(31, 61, 43, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 28px rgba(139, 92, 246, 0.28), 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .button-secondary {
   background: rgba(255, 255, 255, 0.5);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
-  border: 1px solid rgba(31, 61, 43, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.35);
   color: var(--forest);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
@@ -2815,7 +2815,7 @@ a {
   backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.75);
   color: var(--forest);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(31, 61, 43, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .button-ghost:hover {
@@ -2882,7 +2882,7 @@ a {
 }
 
 .stop.is-visited {
-  background: rgba(232, 220, 196, 0.6);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .is-visited .stop-status {
@@ -2934,7 +2934,7 @@ a {
   background: rgba(255, 255, 255, 0.55);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
-  box-shadow: 0 12px 32px rgba(31, 61, 43, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .nav a {
@@ -2969,12 +2969,12 @@ body[data-screen='home'] .view {
 
 .toast {
   bottom: calc(var(--nav-height) + var(--space-5) + env(safe-area-inset-bottom));
-  background: rgba(31, 61, 43, 0.82);
+  background: rgba(0, 0, 0, 0.82);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   backdrop-filter: blur(16px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: var(--sand-light);
-  box-shadow: 0 12px 30px rgba(31, 61, 43, 0.3);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 }
 
 .toast-action {
@@ -2982,7 +2982,7 @@ body[data-screen='home'] .view {
 }
 
 .map-hint {
-  background: rgba(31, 61, 43, 0.72);
+  background: rgba(0, 0, 0, 0.72);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -3002,7 +3002,7 @@ body[data-screen='home'] .view {
 .stop-visual,
 .entry-photos,
 .welcome-visual {
-  box-shadow: 0 10px 28px rgba(31, 61, 43, 0.16);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
 }
 
 .destination-visual {
@@ -3055,7 +3055,7 @@ body[data-screen='home'] .view {
   .replace-option, .member-chip, .diag-result, .discovery, .auth-panel, .area-map-wrap, .kakao-map,
   .place-chip, .weather-badge, .facts, .account, .taste, .profile, .history-item, .visit, .tabs, .nav,
   .area-input, .note, .chip, .budget-chip span, .icon-button, .button-secondary, .button-ghost, .masthead {
-    background-color: #fbf7ef;
+    background-color: #fff;
   }
 }
 
@@ -3076,7 +3076,7 @@ body[data-screen='home'] .view {
   .replace-option, .member-chip, .diag-result, .discovery, .auth-panel, .area-map-wrap, .kakao-map,
   .place-chip, .weather-badge, .facts, .account, .taste, .profile, .history-item, .visit, .tabs, .nav,
   .area-input, .note, .chip, .budget-chip span, .icon-button, .button-secondary, .button-ghost, .masthead {
-    background: #fffaf2;
+    background: #fff;
   }
 
   .toast {
@@ -3123,15 +3123,15 @@ h2 {
   --glass-border: rgba(255, 255, 255, 0.62);
   --glass-blur: blur(28px) saturate(185%);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(255, 255, 255, 0.18),
-    0 6px 22px rgba(31, 61, 43, 0.07);
+    0 6px 22px rgba(0, 0, 0, 0.07);
   --group-radius: 24px;
   --row-x: 16px;
   --row-min: 48px;
-  --separator: rgba(31, 61, 43, 0.13);
-  --label-2: rgba(23, 39, 29, 0.6);
-  --label-3: rgba(23, 39, 29, 0.32);
+  --separator: rgba(0, 0, 0, 0.13);
+  --label-2: rgba(0, 0, 0, 0.6);
+  --label-3: rgba(0, 0, 0, 0.32);
   --tint: var(--purple-deep);
-  --destructive: #d8392f;
+  --destructive: rgba(0, 0, 0, 0.647);
 }
 
 /* ---- Titles and headers ------------------------------------------------- */
@@ -3317,7 +3317,7 @@ h2 {
 }
 
 .row-button:active {
-  background: rgba(31, 61, 43, 0.07);
+  background: rgba(0, 0, 0, 0.07);
 }
 
 .row-button:disabled {
@@ -3407,7 +3407,7 @@ input[type='checkbox'][role='switch'] {
   height: 31px;
   margin: 0;
   border-radius: 999px;
-  background: rgba(120, 120, 128, 0.24);
+  background: rgba(0, 0, 0, 0.127);
   cursor: pointer;
   transition: background-color 0.2s var(--ease);
 }
@@ -3454,7 +3454,7 @@ input[type='checkbox'][role='switch']:focus-visible {
   gap: 0;
   padding: 2px;
   border-radius: 999px;
-  background: rgba(120, 120, 128, 0.14);
+  background: rgba(0, 0, 0, 0.074);
   border: 0.5px solid rgba(255, 255, 255, 0.55);
 }
 
@@ -3477,7 +3477,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 .budget-chip input:checked + span {
   font-weight: 600;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 3px 8px rgba(31, 61, 43, 0.12), 0 0 0 0.5px rgba(31, 61, 43, 0.06);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
 
 .budget-chip input:focus-visible + span {
@@ -3651,7 +3651,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 
 .danger-zone {
   padding: 14px var(--row-x);
-  background: rgba(216, 57, 47, 0.06);
+  background: rgba(0, 0, 0, 0.039);
 }
 
 .diag-result {
@@ -3722,7 +3722,7 @@ input[type='checkbox'][role='switch']:focus-visible {
   .nav a[aria-current='page'] {
     color: var(--tint);
     background: rgba(255, 255, 255, 0.6);
-    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.9), 0 2px 10px rgba(31, 61, 43, 0.1);
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.9), 0 2px 10px rgba(0, 0, 0, 0.1);
   }
 
   .nav-count:not(:empty) {
@@ -3762,14 +3762,14 @@ input[type='checkbox'][role='switch']:focus-visible {
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list,
   .replace-list, .memory-list, .people {
-    background: rgba(251, 247, 239, 0.94);
+    background: rgba(255, 255, 255, 0.94);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list,
   .replace-list, .memory-list, .people {
-    background: #fffaf2;
+    background: #fff;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -3840,7 +3840,7 @@ input[type='checkbox'][role='switch']:focus-visible {
   gap: 0;
   padding: 2px;
   border-radius: 999px;
-  background: rgba(120, 120, 128, 0.14);
+  background: rgba(0, 0, 0, 0.074);
   border: 0.5px solid rgba(255, 255, 255, 0.55);
   box-shadow: none;
   -webkit-backdrop-filter: none;
@@ -3870,7 +3870,7 @@ input[type='checkbox'][role='switch']:focus-visible {
   font-weight: 600;
   color: var(--text);
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 3px 8px rgba(31, 61, 43, 0.12), 0 0 0 0.5px rgba(31, 61, 43, 0.06);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
 
 @media (min-width: 860px) {
@@ -3950,7 +3950,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 
 .vis-place {
   color: var(--forest-2);
-  background: rgba(46, 90, 64, 0.1);
+  background: rgba(0, 0, 0, 0.069);
 }
 
 /* sign-up / new password: "같아요 / 달라요" under the second box */
@@ -4025,11 +4025,11 @@ body[data-screen='home'] .masthead {
   width: min(calc(100% - 24px), 440px);
   padding: 6px;
   border-radius: 999px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24) 60%, rgba(232, 220, 196, 0.32));
+  background: rgba(255, 255, 255, 0.58);
   -webkit-backdrop-filter: blur(26px) saturate(190%);
   backdrop-filter: blur(26px) saturate(190%);
   border: 0.5px solid rgba(255, 255, 255, 0.78);
-  box-shadow: 0 16px 40px rgba(31, 61, 43, 0.2), 0 2px 6px rgba(31, 61, 43, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95),
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 -1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -4039,7 +4039,7 @@ body[data-screen='home'] .masthead {
   position: absolute;
   inset: 1px 1px 50% 1px;
   border-radius: 999px 999px 40px 40px / 999px 999px 24px 24px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  background: rgba(255, 255, 255, 0.55);
   pointer-events: none;
 }
 
@@ -4079,7 +4079,7 @@ body[data-screen='home'] .masthead {
 .nav a[aria-current='page'] {
   color: var(--tint);
   background: rgba(255, 255, 255, 0.62);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.95), 0 2px 10px rgba(31, 61, 43, 0.1);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.95), 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .nav a[aria-current='page']::after {
@@ -4116,11 +4116,11 @@ body[data-screen='home'] .masthead {
   margin: -20px 8px 0;
   padding: 3px;
   border-radius: 50%;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.35));
+  background: rgba(255, 255, 255, 0.85);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   backdrop-filter: blur(16px) saturate(180%);
   border: 0.5px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 24px rgba(31, 61, 43, 0.25), inset 0 1px 0 rgba(255, 255, 255, 1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 #fff;
   transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 
@@ -4133,7 +4133,7 @@ body[data-screen='home'] .masthead {
 }
 
 .nav .nav-home[aria-current='page'] {
-  box-shadow: 0 10px 24px rgba(31, 61, 43, 0.25), 0 0 0 2.5px var(--purple), inset 0 1px 0 rgba(255, 255, 255, 1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25), 0 0 0 2.5px var(--purple), inset 0 1px 0 #fff;
 }
 
 .nav .nav-home:active {
@@ -4184,18 +4184,202 @@ body[data-screen='home'] .view {
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .nav,
   .nav .nav-home {
-    background: rgba(251, 247, 239, 0.96);
+    background: rgba(255, 255, 255, 0.96);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .nav,
   .nav .nav-home {
-    background: #fffaf2;
+    background: #fff;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
   .nav::before {
     display: none;
   }
+}
+
+/* =========================================================================
+   Black · white · purple only. No gradients — depth comes from liquid glass
+   (translucency, blur, a bright edge and soft shadow), never from colour.
+   Greys are black at low opacity; the one exception is the Kakao login
+   button, whose yellow is required by Kakao's design guide.
+   ========================================================================= */
+:root {
+  --black: #000;
+  --white: #fff;
+  --purple: #8b5cf6;
+  --purple-deep: #8b5cf6;
+  --purple-soft: rgba(139, 92, 246, 0.12);
+  --tint: #8b5cf6;
+  --accent: #8b5cf6;
+  --accent-deep: #000;
+  --forest: #000;
+  --forest-2: #000;
+  --forest-3: rgba(0, 0, 0, 0.6);
+  --sand: #fff;
+  --sand-light: #fff;
+  --bg: #fff;
+  --text: #000;
+  --text-secondary: rgba(0, 0, 0, 0.62);
+  --muted: rgba(0, 0, 0, 0.42);
+  --label-2: rgba(0, 0, 0, 0.55);
+  --label-3: rgba(0, 0, 0, 0.25);
+  --line: rgba(0, 0, 0, 0.1);
+  --separator: rgba(0, 0, 0, 0.1);
+  --surface: rgba(0, 0, 0, 0.035);
+  --destructive: #8b5cf6;
+  --grad-forest: #000;
+  --grad-cta: #8b5cf6;
+  --grad-purple: #8b5cf6;
+  --grad-title: #000;
+  /* cards and groups: a clear pane on white */
+  --glass: rgba(0, 0, 0, 0.035);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-blur: blur(28px) saturate(180%);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
+  /* floating things (tab bar, toast, home coin): white glass over content */
+  --float-glass: rgba(255, 255, 255, 0.72);
+  --float-border: rgba(0, 0, 0, 0.08);
+  --float-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+html,
+body {
+  background: #fff;
+  color: #000;
+}
+
+body::before {
+  display: none;
+}
+
+.display,
+.title,
+.flow-title {
+  color: #000;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+/* buttons */
+.button-primary,
+.button-primary:hover {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.button-wide.button-primary,
+.cta-area .button-primary,
+.cta-area .button-primary:hover {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(139, 92, 246, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.button-secondary,
+.button-ghost {
+  color: #000;
+  background: rgba(255, 255, 255, 0.7);
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), inset 0 1px 0 #fff;
+}
+
+.button-danger {
+  background: #000;
+  color: #fff;
+}
+
+/* the photo gallery bar: glass buttons on the photo, no dark fade */
+.gallery {
+  background: none;
+}
+
+/* floating glass: tab bar, home coin, toast, map chips */
+.nav {
+  background: var(--float-glass);
+  border: 0.5px solid var(--float-border);
+  box-shadow: var(--float-shadow);
+}
+
+.nav::before {
+  background: rgba(255, 255, 255, 0.4);
+  inset: 1px 1px 55% 1px;
+}
+
+.nav a {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.nav a[aria-current='page'] {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  box-shadow: inset 0 0 0 0.5px rgba(139, 92, 246, 0.2);
+}
+
+.nav .nav-home,
+.nav .nav-home[aria-current='page'] {
+  background: rgba(255, 255, 255, 0.85);
+  border: 0.5px solid var(--float-border);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 #fff;
+}
+
+.nav .nav-home[aria-current='page'] {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18), 0 0 0 2.5px #8b5cf6, inset 0 1px 0 #fff;
+}
+
+.toast {
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+}
+
+/* states */
+.password-match.is-ok,
+.password-rule.is-ok,
+.diag-result.is-ok p:first-child {
+  color: #000;
+}
+
+.password-match.is-bad,
+.diag-result.is-bad p:first-child,
+.area-error {
+  color: #8b5cf6;
+}
+
+/* Kakao requires its own yellow login button (Kakao Login design guide) */
+.kakao-login {
+  background: #fee500;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .nav,
+  .nav .nav-home {
+    background: rgba(255, 255, 255, 0.97);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .nav,
+  .nav .nav-home {
+    background: #fff;
+  }
+}
+
+/* initials avatar: a small glass disc so it shows on white */
+.avatar {
+  background: rgba(0, 0, 0, 0.05);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 6px rgba(0, 0, 0, 0.06);
+  color: #000;
+}
+
+.account-button[aria-current='page'] .avatar {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #8b5cf6;
 }
