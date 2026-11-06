@@ -4,6 +4,7 @@
  * Account settings live on the 계정 screen.
  */
 import { getPlaceById } from '../services/placeRepository.js';
+import { refreshCommunityPhotos } from '../services/photos.js';
 import { FEELINGS, NOTE_MAX_LENGTH } from '../services/store.js';
 import { formatKoreanDate } from '../utils/date.js';
 import { html } from '../utils/dom.js';
@@ -65,6 +66,15 @@ function editorForm(ui) {
           : ''}
       </div>
       <p class="fine-print">사진은 ${PHOTOS_MAX}장까지, 크기를 줄이고 위치 정보(GPS)를 지운 뒤 올려요.</p>
+      ${total && canSharePlace(e.placeId)
+        ? html`<label class="row toggle share-place">
+            <span class="share-place-text">
+              <span>장소 사진으로 함께 보여주기</span>
+              <span class="share-place-hint">이 장소를 보는 다른 사용자에게 사진과 닉네임만 보여요. 소감은 보이지 않아요.</span>
+            </span>
+            <input type="checkbox" role="switch" data-input="entry-share-place" data-focus-key="entry-share-place" ${e.sharePlace ? 'checked' : ''}>
+          </label>`
+        : ''}
 
       <fieldset class="visibility">
         <legend class="note-label">누구에게 보일까요?</legend>
@@ -94,6 +104,11 @@ function editorForm(ui) {
     </form>`;
 }
 
+/** Only real (Kakao) places have a card other people can see the photo on. */
+function canSharePlace(placeId) {
+  return getPlaceById(placeId)?.source === 'kakao';
+}
+
 function openEditor(ui, { placeId, entry = null }) {
   closeEditor(ui);
   ui.editor = {
@@ -103,6 +118,7 @@ function openEditor(ui, { placeId, entry = null }) {
     keepPaths: [...(entry?.photo_paths || [])],
     files: [],
     visibility: entry?.visibility || 'private', // 기본: 나만 보기
+    sharePlace: entry?.share_place_photos === true, // 기본: 꺼짐
     groupId: entry?.group_id || ui.myGroups?.[0]?.id || null,
     busy: false,
     error: '',
@@ -389,6 +405,9 @@ export const inputs = {
   'entry-group': ({ ui }, el) => {
     if (ui.editor) ui.editor.groupId = el.value;
   },
+  'entry-share-place': ({ ui }, el) => {
+    if (ui.editor) ui.editor.sharePlace = el.checked;
+  },
 };
 
 export const forms = {
@@ -407,7 +426,7 @@ export const forms = {
     e.error = '';
     ctx.rerender();
     try {
-      await saveEntry({
+      const saved = await saveEntry({
         entry: e.entryId ? ctx.ui.entryIndex?.get(e.entryId) : null,
         date: e.entryId ? ctx.ui.entryIndex?.get(e.entryId)?.date || state.date : state.date,
         place,
@@ -417,9 +436,12 @@ export const forms = {
         newFiles: e.files.map((f) => f.file),
         visibility: e.visibility,
         groupId: e.groupId,
+        sharePlacePhotos: e.sharePlace && canSharePlace(e.placeId),
       });
       closeEditor(ctx.ui);
-      ctx.toast(e.visibility === 'private' ? '소감을 남겼어요.' : e.visibility === 'friends' ? '소감을 친구들과 나눴어요.' : '단체방에 소감을 올렸어요.');
+      refreshCommunityPhotos();
+      if (saved?.sharingUnavailable) ctx.toast('소감은 남겼어요. 장소 사진 공유는 아직 준비 중이에요.');
+      else ctx.toast(e.visibility === 'private' ? '소감을 남겼어요.' : e.visibility === 'friends' ? '소감을 친구들과 나눴어요.' : '단체방에 소감을 올렸어요.');
       await reload(ctx);
     } catch (error) {
       e.busy = false;

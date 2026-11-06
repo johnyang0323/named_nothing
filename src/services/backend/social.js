@@ -130,7 +130,12 @@ export async function photoUrls(paths) {
   return new Map(paths.map((p) => [p, signed.get(p)?.url || null]));
 }
 
-const ENTRY_FIELDS = 'id, user_id, date, place_id, place_name, place_category, area_label, note, photo_paths, visibility, group_id, created_at, updated_at';
+// Every column, so share_place_photos comes along once place_photos.sql has run
+// (and nothing breaks before that).
+const ENTRY_FIELDS = '*';
+
+/** PostgREST / Postgres "no such column" (place_photos.sql not run yet). */
+const missingColumn = (error) => /share_place_photos/.test(`${error?.message || ''} ${error?.details || ''}`) || error?.code === 'PGRST204' || error?.code === '42703';
 
 export async function myEntries({ date = null, limit = 200 } = {}) {
   const { supabase, user } = await client();
@@ -145,7 +150,7 @@ export async function myEntries({ date = null, limit = 200 } = {}) {
  * Create or update an entry. New photos are resized (location data
  * removed) and uploaded; photos taken out of the entry are deleted.
  */
-export async function saveEntry({ entry = null, date, place, areaLabel = null, note = '', keepPaths = [], newFiles = [], visibility = 'private', groupId = null }) {
+export async function saveEntry({ entry = null, date, place, areaLabel = null, note = '', keepPaths = [], newFiles = [], visibility = 'private', groupId = null, sharePlacePhotos = false }) {
   const text = String(note || '').trim();
   if (text.length > NOTE_MAX) throw new SocialError(`소감은 ${NOTE_MAX}자까지 쓸 수 있어요.`);
   if (keepPaths.length + newFiles.length > PHOTOS_MAX) throw new SocialError(`사진은 ${PHOTOS_MAX}장까지 올릴 수 있어요.`);
@@ -177,17 +182,43 @@ export async function saveEntry({ entry = null, date, place, areaLabel = null, n
     group_id: visibility === 'group' ? groupId : null,
     updated_at: new Date().toISOString(),
   };
-  const request = entry
-    ? supabase.from('journal_entries').update(row).eq('id', entry.id).select(ENTRY_FIELDS).single()
-    : supabase.from('journal_entries').insert({ ...row, user_id: user.id }).select(ENTRY_FIELDS).single();
-  const { data, error } = await request;
+  // Only send the column when it matters, so saving works before place_photos.sql.
+  const share = Boolean(sharePlacePhotos && place?.id && row.photo_paths.length);
+  if (share || entry?.share_place_photos) row.share_place_photos = share;
+  const write = (values) =>
+    entry
+      ? supabase.from('journal_entries').update(values).eq('id', entry.id).select(ENTRY_FIELDS).single()
+      : supabase.from('journal_entries').insert({ ...values, user_id: user.id }).select(ENTRY_FIELDS).single();
+  let { data, error } = await write(row);
+  let sharingUnavailable = false;
+  if (error && 'share_place_photos' in row && missingColumn(error)) {
+    delete row.share_place_photos;
+    sharingUnavailable = share;
+    ({ data, error } = await write(row));
+  }
   if (error) {
     if (uploaded.length) supabase.storage.from('journal').remove(uploaded).catch(() => {});
     throw new SocialError('기록을 저장하지 못했어요.');
   }
   const removed = (entry?.photo_paths || []).filter((p) => !keepPaths.includes(p));
   if (removed.length) supabase.storage.from('journal').remove(removed).catch(() => {});
-  return data;
+  return sharingUnavailable ? { ...data, sharingUnavailable } : data;
+}
+
+/**
+ * Photos people chose to share for this place ("장소 사진으로 함께 보여주기"),
+ * newest first, as short-lived links with the author's nickname. Empty when
+ * nobody shared any, or place_photos.sql hasn't been run.
+ */
+export async function placePhotos(placeId, limit = 8) {
+  if (!placeId) return [];
+  const { supabase } = await client();
+  const { data, error } = await supabase.rpc('place_photos', { p_place_id: String(placeId), p_limit: limit });
+  if (error || !Array.isArray(data) || !data.length) return [];
+  const urls = await photoUrls(data.map((r) => r.path));
+  return data
+    .map((r) => ({ path: r.path, url: urls.get(r.path), nickname: r.nickname || '사용자', entryId: r.entry_id }))
+    .filter((p) => p.url);
 }
 
 export async function deleteEntry(entry) {

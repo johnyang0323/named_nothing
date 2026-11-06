@@ -6,7 +6,7 @@ const FAKE = fs.readFileSync(__dirname + '/fake-kakao.js', 'utf8');
 const IMG = { a: fs.readFileSync(ROOT + '/public/icons/icon-512.png'), b: fs.readFileSync(ROOT + '/brand/app-icon-256.png') };
 const ok = (...a) => console.log('✔', ...a);
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
-const photos = ['p0', 'blocked', 'p2', 'p3'].map((k) => ({ url: `https://photo.test/${k}.png`, thumb: k === 'blocked' ? 'https://photo.test/blocked-thumb.png' : null, site: '블로그 ' + k, link: 'https://blog.test/' + k }));
+const photos = ['p0', 'blocked', 'p2', 'p3'].map((k) => ({ url: `https://photo.test/${k}.png`, thumb: k === 'blocked' ? 'https://photo.test/blocked-thumb.png' : null, site: '블로그 ' + k, link: 'https://blog.test/' + k, relevant: true }));
 
 async function setup(browser, opts) {
   const c = await browser.newContext({ reducedMotion: 'reduce', ...opts });

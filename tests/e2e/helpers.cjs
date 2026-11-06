@@ -29,7 +29,7 @@ function createBackend({ photos } = {}) {
   const userFor = (email, meta = {}) => ({ id: accounts.get(email)?.id || 'kakao-user', aud: 'authenticated', role: 'authenticated', email, app_metadata: { provider: 'email' }, user_metadata: meta, created_at: '2026-01-01T00:00:00Z' });
   const session = (user) => ({ access_token: 'at-' + user.id, token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'rt', user });
   const kakaoUser = { id: 'user-1', aud: 'authenticated', role: 'authenticated', app_metadata: { provider: 'kakao' }, user_metadata: { name: '산책하는 사람', avatar_url: 'http://k.kakaocdn.net/dn/profile.png' }, created_at: '2026-01-01T00:00:00Z' };
-  const photoReply = photos || [{ url: 'https://photos.example.com/a.png', thumb: null, site: '예시 블로그', link: 'https://blog.example.com/post' }];
+  const photoReply = photos || [{ url: 'https://photos.example.com/a.png', thumb: null, site: '예시 블로그', link: 'https://blog.example.com/post', relevant: true }];
 
   async function handle(route) {
     const req = route.request();
@@ -241,7 +241,7 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
     if (kind === 'sign/' && method === 'POST' && !rest) {
       const { paths = [] } = body() || {};
       return json(paths.map((p) => {
-        const readable = p.startsWith(me + '/') || [...S.entries.values()].some((e) => e.photo_paths.includes(p) && canRead(S, e, me));
+        const readable = p.startsWith(me + '/') || [...S.entries.values()].some((e) => e.photo_paths.includes(p) && (canRead(S, e, me) || (e.share_place_photos && e.place_id && !blocked(S, me, e.user_id))));
         return readable && S.files.has(`${bucket}/${p}`) ? { path: p, signedURL: `/object/sign/${bucket}/${p}?token=t-${me}`, error: null } : { path: p, signedURL: null, error: 'not allowed' };
       }));
     }
@@ -308,6 +308,15 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
         if (!g || blocked(S, me, g.owner_id)) return err('not found');
         if (!isMember(S, g.id, me)) S.members.push({ group_id: g.id, user_id: me, joined_at: new Date().toISOString() });
         return json(g);
+      }
+      case 'place_photos': {
+        // mirrors supabase/place_photos.sql: shared entries for the place, paths + nickname only
+        if (!me) return json([]);
+        const rows = [...S.entries.values()]
+          .filter((e) => e.share_place_photos && e.place_id === b.p_place_id && !blocked(S, me, e.user_id))
+          .sort((x, y) => y.created_at.localeCompare(x.created_at))
+          .flatMap((e) => e.photo_paths.map((path) => ({ path, nickname: profileOf(e.user_id)?.nickname || '사용자', entry_id: e.id, created_at: e.created_at })));
+        return json(rows.slice(0, Math.min(Math.max(b.p_limit || 8, 1), 20)));
       }
       default:
         return null;

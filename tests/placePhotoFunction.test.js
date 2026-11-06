@@ -46,18 +46,23 @@ const BLOGS = [
 const kakaoOk = (url) => ({ body: { documents: url.includes('/search/blog') ? BLOGS : IMAGES } });
 const SECRETS = { KAKAO_REST_API_KEY: 'k', ALLOWED_ORIGINS: SITE };
 
-test('photos from posts whose title names the place come first; shops/news/odd shapes sink', async () => {
+test('only photos from posts whose title names the place are returned', async () => {
   const { handler } = await loadFunction(SECRETS, kakaoOk);
   const res = await handler(post({ query: '카페 소소 서울 마포구', name: '카페 소소' }));
   assert.equal(res.status, 200);
   const body = await res.json();
   const order = body.photos.map((p) => p.url.replace('https://img/', '').replace('.jpg', ''));
-  assert.deepEqual(order.slice(0, 2), ['real-1', 'real-2']);
-  assert.ok(body.photos[0].relevant && body.photos[1].relevant && !body.photos[2].relevant);
-  assert.ok(!order.includes('tiny') && !order.includes('news'));
-  assert.ok(order.indexOf('shop') > order.indexOf('food-closeup'));
+  assert.deepEqual(order, ['real-1', 'real-2'], 'unrelated search results are left out');
+  assert.ok(body.photos.every((p) => p.relevant));
   assert.equal(body.relevantPosts, 2, 'a title that only mentions part of the name does not count');
   assert.equal(body.photo.url, body.photos[0].url, 'older apps still get `photo`');
+});
+
+test('no matching post → no photos (the app keeps its illustration)', async () => {
+  const { handler } = await loadFunction(SECRETS, kakaoOk);
+  const body = await (await handler(post({ query: '이름없는 곳 서울', name: '이름없는 곳' }))).json();
+  assert.deepEqual(body.photos, []);
+  assert.equal(body.photo, null);
 });
 
 test('blog URL forms and title matching', async () => {

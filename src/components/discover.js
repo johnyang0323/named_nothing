@@ -31,6 +31,9 @@ export function render(state, { ui, taste, context }) {
         <figure class="destination-figure">
           <div class="destination-visual"${photoSlot(place, { gallery: true })}>${placeVisual(place)}</div>
           <figcaption class="photo-credit fine-print" data-photo-credit-for="${place.id}" hidden></figcaption>
+          ${place.placeUrl
+            ? html`<a class="kakao-photos-link" href="${place.placeUrl}" target="_blank" rel="noopener noreferrer">카카오맵에서 실제 사진 보기<span aria-hidden="true"> ↗</span></a>`
+            : ''}
         </figure>
         <div class="destination-body">
           <p class="kicker">${categoryLabel(place)}</p>

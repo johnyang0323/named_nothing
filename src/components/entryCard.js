@@ -44,6 +44,7 @@ export function entryCard(entry, { me, author = null, comments = [], profiles = 
       <p class="kicker">
         ${when(entry)} · ${CATEGORY_LABELS[entry.place_category] || '어딘가'}${entry.area_label ? ` · ${entry.area_label}` : ''}
         <span class="vis-badge vis-${entry.visibility}">${entry.visibility === 'group' && groupName ? groupName : VIS_LABEL[entry.visibility]}</span>
+        ${entry.share_place_photos ? html`<span class="vis-badge vis-place" title="이 장소를 보는 다른 사용자에게 사진이 보여요">장소 사진</span>` : ''}
       </p>
       <h3 class="entry-place">${entry.place_name}</h3>
       ${entry.photo_paths?.length

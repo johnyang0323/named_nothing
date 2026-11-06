@@ -9,14 +9,24 @@
  * for everyone at a net score of -2 or lower, and right away for the
  * person who voted it down. Upvoted photos come first for everyone.
  *
- * These are still web search results, so the UI always credits the source.
- * The illustration stays underneath as a placeholder and fallback.
+ * Only trustworthy search results are shown: photos from a post whose title
+ * names the place, or ones people picked. With nothing like that, the place
+ * keeps its illustration (and a link to its photos on Kakao Map) rather
+ * than a random picture.
+ *
+ * Before all of those come photos people took there themselves and chose to
+ * share as place photos (journal entries with share_place_photos), credited
+ * with their nickname. They can be reported, which also hides them here.
+ *
+ * Search results are credited with their source. The illustration stays
+ * underneath as a placeholder and fallback.
  */
 import { getSupabase } from './backend/client.js';
 import { isBackendConfigured, SUPABASE_URL, SUPABASE_ANON_KEY, PHOTO_FUNCTION, DELETE_FUNCTION } from './backend/config.js';
 import { getUser } from './backend/auth.js';
 import { getPlaceById } from './placeRepository.js';
 import { escapeHtml } from '../utils/dom.js';
+import { placePhotos, report } from './backend/social.js';
 
 const CACHE_KEY = 'plannish-photos';
 const TTL_MS = 14 * 24 * 60 * 60 * 1000;
@@ -72,6 +82,13 @@ function photoList(data) {
     .filter((p) => p && !seen.has(p.url) && seen.add(p.url))
     .slice(0, MAX_PHOTOS);
 }
+
+/**
+ * Is this search result likely to be of the place? From a post whose title
+ * names it, or picked by people. Everything else (the rest of a keyword image
+ * search) is too often unrelated, so it isn't shown.
+ */
+export const isTrusted = (photo) => Boolean(photo && (photo.relevant || photo.score >= 1));
 
 /** Cached entry → { photos, chosen }. Also reads the older formats. */
 function fromCache(entry) {
@@ -152,8 +169,7 @@ async function rescore(place, entry) {
  * cached for two weeks (including "no photos"); community scores are
  * refreshed every few hours. Failures aren't cached.
  */
-export function getPhotos(place) {
-  if (!photosEnabled(place)) return Promise.resolve(null);
+function webPhotos(place) {
   if (inflight.has(place.id)) return inflight.get(place.id);
   const cached = readCache()[place.id];
   let request;
@@ -174,9 +190,77 @@ export function getPhotos(place) {
       })
       .catch(() => null);
   }
-  request = request.finally(() => inflight.delete(place.id));
+  request = request
+    .then((r) => {
+      if (!r) return r;
+      const chosenUrl = r.photos[r.chosen]?.url;
+      const photos = r.photos.filter(isTrusted);
+      return { photos, chosen: Math.max(0, photos.findIndex((p) => p.url === chosenUrl)), pinned: Boolean(chosenUrl && photos[0] && chosenUrl !== photos[0].url && photos.some((p) => p.url === chosenUrl)) };
+    })
+    .finally(() => inflight.delete(place.id));
   inflight.set(place.id, request);
   return request;
+}
+
+// ---- photos people shared (journal → "장소 사진으로 함께 보여주기") ------------
+
+const HIDDEN_KEY = 'plannish-hidden-place-photos';
+const communityCache = new Map(); // place id → { at, photos }
+const COMMUNITY_TTL_MS = 5 * 60 * 1000;
+
+function hiddenSet() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+function hideCommunity(path) {
+  try {
+    const set = hiddenSet();
+    set.add(path);
+    localStorage.setItem(HIDDEN_KEY, JSON.stringify([...set].slice(-500)));
+  } catch {
+    /* ignore */
+  }
+  communityCache.forEach((entry) => {
+    entry.photos = entry.photos.filter((p) => p.path !== path);
+  });
+}
+
+async function communityPhotos(place) {
+  if (!getUser()) return [];
+  const cached = communityCache.get(place.id);
+  if (cached && Date.now() - cached.at < COMMUNITY_TTL_MS) return cached.photos;
+  const hidden = hiddenSet();
+  const rows = await placePhotos(place.id).catch(() => []);
+  const photos = rows
+    .filter((r) => !hidden.has(r.path))
+    .map((r) => ({ url: r.url, thumb: null, site: r.nickname, link: null, relevant: true, score: 0, community: true, path: r.path, entryId: r.entryId }));
+  communityCache.set(place.id, { at: Date.now(), photos });
+  return photos;
+}
+
+/** Forget shared-photo lookups (e.g. after saving an entry that shares one). */
+export function refreshCommunityPhotos() {
+  communityCache.clear();
+}
+
+/**
+ * All photo candidates for a place and which one is shown first:
+ * photos people shared there, then trustworthy search results (a photo this
+ * person pinned stays first). Resolves { photos, chosen } or null.
+ */
+export function getPhotos(place) {
+  if (!photosEnabled(place)) return Promise.resolve(null);
+  return Promise.all([webPhotos(place).catch(() => null), communityPhotos(place).catch(() => [])]).then(([web, mine]) => {
+    if (!web && !mine.length) return null;
+    const searched = web?.photos || [];
+    const photos = [...mine, ...searched];
+    const chosen = web?.pinned ? mine.length + web.chosen : 0;
+    return { photos, chosen };
+  });
 }
 
 /** The first (pinned / best) photo, for thumbnails. */
@@ -186,6 +270,7 @@ export function getPhoto(place) {
 
 /** "이 사진으로 정하기": remember it here and vote it up for everyone. */
 export function pinPhoto(id, photo) {
+  if (photo.community) return Promise.resolve(false);
   const cached = readCache()[id];
   if (cached && !cached.none) {
     const current = fromCache(cached);
@@ -206,11 +291,17 @@ function dropPhoto(id, url) {
 
 /** "이 사진 아니에요": hide it here now, and count a vote against it for everyone. */
 export function rejectPhoto(id, photo) {
+  if (photo.community) {
+    // someone's own photo: report it (the operator reviews) and hide it here
+    hideCommunity(photo.path);
+    return photo.entryId ? report('entry', photo.entryId, '장소 사진 신고').then(() => true, () => false) : Promise.resolve(false);
+  }
   dropPhoto(id, photo.url);
   return castVote(id, photo, -1);
 }
 
 function creditNote(photo, place) {
+  if (photo.community) return '다녀온 사람이 직접 찍어 공유한 사진이에요.';
   if (photo.score >= 1) return '다른 사람들이 이 장소의 사진으로 고른 사진이에요.';
   if (photo.relevant) return `‘${place.name}’을(를) 다룬 글에 실린 사진이에요.`;
   return '검색 결과라 실제 장소와 다를 수 있어요.';
@@ -220,6 +311,11 @@ function showCredit(root, place, photo) {
   root.querySelectorAll(`[data-photo-credit-for="${CSS.escape(place.id)}"]`).forEach((el) => {
     if (!photo) {
       el.hidden = true;
+      return;
+    }
+    if (photo.community) {
+      el.innerHTML = `사진: ${escapeHtml(photo.site)}님 · ${escapeHtml(creditNote(photo, place))}`;
+      el.hidden = false;
       return;
     }
     const source = photo.link
@@ -282,8 +378,9 @@ function buildGallery(slot, place, state, { show, removeCurrent, announce }) {
     update();
   });
   reject.addEventListener('click', () => {
-    rejectPhoto(place.id, state.photos[state.index]);
-    announce?.('이 사진을 뺐어요. 알려주셔서 고마워요.');
+    const photo = state.photos[state.index];
+    rejectPhoto(place.id, photo);
+    announce?.(photo.community ? '신고했어요. 이 사진은 이제 보이지 않아요.' : '이 사진을 뺐어요. 알려주셔서 고마워요.');
     removeCurrent();
   });
 
@@ -294,10 +391,14 @@ function buildGallery(slot, place, state, { show, removeCurrent, announce }) {
       el.hidden = n < 2;
     });
     count.textContent = `${state.index + 1} / ${n}`;
+    const current = state.photos[state.index];
     const pinned = state.index === state.chosen;
+    pin.hidden = Boolean(current?.community);
     pin.textContent = pinned ? '✓ 대표 사진' : '이 사진으로 정하기';
     pin.setAttribute('aria-pressed', String(pinned));
     pin.classList.toggle('is-pinned', pinned);
+    reject.textContent = current?.community ? '신고' : '아니에요';
+    reject.setAttribute('aria-label', current?.community ? '이 사진 신고하기' : '이 사진은 이 장소가 아니에요');
   }
   slot.append(bar);
   return { update, remove: () => bar.remove() };
@@ -357,7 +458,7 @@ export function hydratePhotos(root, { announce } = {}) {
             gallery?.update();
           },
           () => {
-            dropPhoto(id, photo.url);
+            if (!photo.community) dropPhoto(id, photo.url);
             removeCurrent();
           },
         );

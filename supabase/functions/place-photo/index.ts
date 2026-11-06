@@ -170,7 +170,10 @@ Deno.serve(async (req) => {
     .filter((d) => (seen.has(d.image_url) ? false : (seen.add(d.image_url), true)))
     .map((d) => ({ d, score: scoreImage(d, relevantPosts) }))
     .sort((a, b) => b.score - a.score);
-  const pool = ranked.length ? ranked : images.documents.filter((d) => d.image_url).map((d) => ({ d, score: 0 }));
+  // Only photos from a post whose title names the place. The rest of a keyword
+  // image search is too often unrelated; the app shows its illustration and a
+  // link to the place's own photos on Kakao Map instead.
+  const pool = ranked.filter(({ score }) => score >= 10);
 
   const photos = pool.slice(0, 6).map(({ d, score }) => ({
     url: d.image_url,

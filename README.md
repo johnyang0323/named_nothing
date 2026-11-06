@@ -27,6 +27,7 @@ Liquid glass over soft gradients:
 - **Gradients:** titles use a forest-to-purple gradient, and the main "오늘 시작하기" button runs from forest to purple.
 - **Fallbacks:** browsers without `backdrop-filter` and users who turn on "reduce transparency" get solid warm surfaces instead.
 - **iOS Settings layout:** large bold titles; small grey section headers above inset grouped blocks. Lists are a single clear glass block whose rows are divided by hairlines starting at the text. Rows have chevrons, iOS switches and segmented controls (time budget, sharing scope, 친구/단체방). The mood choice is a checkmark list. The phone tab bar is a floating glass capsule with icons, and the selected tab sits on a glass pill.
+- **Place photos:** user photos come first. These are journal photos the author chose to share as the place's photo (`supabase/place_photos.sql`; nickname only, the note stays private, can be reported). After them come only trustworthy web results: photos from posts whose title names the place, or ones people picked. Otherwise the card keeps its illustration and offers **카카오맵에서 실제 사진 보기**.
 - **Type:** San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices (system fonts). Apple's license doesn't allow bundling them, so Android, Windows and other devices get the bundled open font **Pretendard**, which is drawn to match them. It is split by character range, so a device downloads only the pieces it shows.
 - All tokens live in `:root` in `src/style.css`, and the glass layer is at the end of that file.
 

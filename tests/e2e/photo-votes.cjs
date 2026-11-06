@@ -9,8 +9,9 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 const photos = [
   { url: 'https://photo.test/p0.png', site: '블로그 p0', link: 'https://b/p0', relevant: true },
   { url: 'https://photo.test/p1.png', site: '블로그 p1', link: 'https://b/p1', relevant: true },
-  { url: 'https://photo.test/p2.png', site: '블로그 p2', link: 'https://b/p2', relevant: false },
-  { url: 'https://photo.test/p3.png', site: '블로그 p3', link: 'https://b/p3', relevant: false },
+  { url: 'https://photo.test/p2.png', site: '블로그 p2', link: 'https://b/p2', relevant: true },
+  // not from a post about the place: never shown
+  { url: 'https://photo.test/p3.png', site: '쇼핑몰 p3', link: 'https://b/p3', relevant: false },
 ];
 const backend = createBackend({ photos });
 const errors = [];
@@ -43,10 +44,11 @@ async function openAs(browser, email, targetPlace) {
   assert(backend.fnBodies.at(-1).name === place, 'function receives the place name: ' + JSON.stringify(backend.fnBodies.at(-1)));
   assert((await shown(A.p)).endsWith('p0.png'), 'p0 first');
   assert((await A.p.textContent('.photo-credit')).includes(`‘${place}’을(를) 다룬 글에 실린 사진`), 'relevant credit');
-  ok('A: function gets the place name; first photo is from a post titled with it; credit says so');
+  assert((await A.p.textContent('.gallery-count')) === '1 / 3', 'untrusted p3 left out');
+  ok('A: function gets the place name; first photo is from a post titled with it; credit says so; unrelated p3 not shown');
 
   await A.p.click('.gallery-reject');
-  await A.p.waitForFunction(() => document.querySelector('.gallery-count').textContent === '1 / 3');
+  await A.p.waitForFunction(() => document.querySelector('.gallery-count').textContent === '1 / 2');
   assert((await shown(A.p)).endsWith('p1.png'), 'A no longer sees p0');
   await A.p.click('.gallery-next');
   await A.p.waitForFunction(() => document.querySelector('.destination-visual .photo').src.endsWith('p2.png'));
@@ -57,12 +59,12 @@ async function openAs(browser, email, targetPlace) {
   assert(votesA.includes('p0.png:-1') && votesA.includes('p2.png:1'), 'votes stored ' + votesA);
   await A.p.reload(); await A.p.waitForSelector('.destination-visual.has-photo');
   assert((await shown(A.p)).endsWith('p2.png'), 'A pin survives reload');
-  ok('A: "아니에요" hides p0 at once (1/3), pin p2 → votes', votesA.join(' '), '; pin kept after reload');
+  ok('A: "아니에요" hides p0 at once (1/2), pin p2 → votes', votesA.join(' '), '; pin kept after reload');
 
   const B = await openAs(browser, 'b@test.com', place);
   assert((await shown(B.p)).endsWith('p2.png'), 'B sees community pick first');
   assert((await B.p.textContent('.photo-credit')).includes('다른 사람들이'), 'community credit');
-  assert((await B.p.textContent('.gallery-count')) === '1 / 4', 'B still has p0 (score -1)');
+  assert((await B.p.textContent('.gallery-count')) === '1 / 3', 'B still has p0 (score -1)');
   ok('B: community pick p2 shown first with "다른 사람들이 고른 사진"; p0 still there (one down-vote isn’t enough)');
 
   await B.p.click('.gallery-prev'); // p0 (score -1) sorts last → wrap back to it
