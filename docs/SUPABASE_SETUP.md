@@ -172,12 +172,12 @@ Supabase 기본 메일은 본인 주소로만 보낼 수 있어요. 비밀번호
 1. 보낼 Gmail 계정에서 **2단계 인증**을 켜요.
 2. https://myaccount.google.com/apppasswords 에서 **앱 비밀번호**를 만들어요(16자리). 이 값도 다른 곳에 보내지 마세요.
 3. Supabase **Authentication → Emails → SMTP Settings**에서 **Enable custom SMTP**를 켜고 입력해요.
-   - Sender email: 그 Gmail 주소 · Sender name: `계획 있는 하루`
+   - Sender email: 그 Gmail 주소 · Sender name: `계획 있는 척.`
    - Host: `smtp.gmail.com` · Port: `465`
    - Username: 그 Gmail 주소 · Password: 2번의 앱 비밀번호
 4. 이제 템플릿을 고칠 수 있어요. **Authentication → Emails → Templates → Reset Password** 본문을 아래처럼 바꾸고 저장해요. 앱은 링크가 아니라 숫자 코드를 받아요.
    ```html
-   <h2>계획 있는 것처럼 사는 하루</h2>
+   <h2>계획 있는 척.</h2>
    <p>비밀번호 재설정 코드: <strong>{{ .Token }}</strong></p>
    <p>앱의 "비밀번호를 잊었어요" 화면에 이 숫자와 새 비밀번호를 입력해 주세요. 직접 요청하지 않았다면 이 메일은 무시하셔도 돼요.</p>
    ```

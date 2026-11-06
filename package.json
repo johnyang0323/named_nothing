@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "계획 있는 것처럼 사는 하루 — a spontaneous day-discovery companion (MVP)",
+  "description": "계획 있는 척. — a spontaneous day-discovery companion (MVP)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

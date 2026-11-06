@@ -79,6 +79,7 @@ const photos = [
   for (let i = 0; i < 60 && (await B.textContent('#discover-title')) !== place; i += 1) await B.click('[data-action="another"]');
   assert((await B.textContent('#discover-title')) === place, 'B reached the same place');
   await B.waitForFunction(() => document.querySelector('.destination-visual .photo')?.src.includes('/object/sign/journal/'));
+  await B.waitForFunction(() => document.querySelector('.photo-credit:not([hidden])')?.textContent.includes('님'));
   const credit = await B.textContent('.photo-credit');
   assert(credit.includes('찍는사람님') && credit.includes('직접 찍어'), 'credited to the nickname: ' + credit);
   assert(!(await B.content()).includes('비밀 메모'), "A's note is not exposed");

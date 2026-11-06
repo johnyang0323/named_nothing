@@ -1,4 +1,4 @@
-# 계획 있는 것처럼 사는 하루
+# 계획 있는 척.
 
 > Not every day needs a plan. Every day can have a story.
 

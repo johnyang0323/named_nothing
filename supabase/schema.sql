@@ -1,4 +1,4 @@
--- 계획 있는 것처럼 사는 하루 — account storage
+-- 계획 있는 척. — account storage
 -- Paste into Supabase dashboard → SQL Editor → New query → Run.
 
 create table if not exists public.days (

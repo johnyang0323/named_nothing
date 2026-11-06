@@ -1,4 +1,4 @@
--- 계획 있는 것처럼 사는 하루 — profiles, photo journal, friends, groups, comments, reports.
+-- 계획 있는 척. — profiles, photo journal, friends, groups, comments, reports.
 -- Paste into Supabase dashboard → SQL Editor → New query → Run. Safe to run again.
 --
 -- Who can see what is decided HERE, by Row Level Security, not by the app:
