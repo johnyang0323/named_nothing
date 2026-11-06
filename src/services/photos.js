@@ -500,7 +500,12 @@ export async function checkDeleteFunction() {
         detail,
       };
     }
-    return { ok: true, message: body.kakaoAdminKeySet ? '계정 삭제 기능이 준비됐어요 (카카오 연결 끊기 포함).' : '계정 삭제 기능이 준비됐어요.', detail };
+    return {
+      ok: true,
+      message: body.kakaoAdminKeySet ? '계정 삭제 기능이 준비됐어요 (카카오 연결 끊기 포함).' : '계정 삭제 기능이 준비됐어요.',
+      // The probe is sent without a login on purpose, so a refusal is the healthy answer.
+      detail: '점검은 로그인 없이 보내서, 함수가 "로그인 필요"라고 거절하면 정상이에요.',
+    };
   }
   if (res.status === 500 && /service role/i.test(body?.error || '')) {
     return { ok: false, message: '함수에 서비스 키가 없어요. Project Settings → API Keys의 service_role(secret) 키를 Edge Functions → Secrets에 SERVICE_ROLE_KEY라는 이름으로 추가해 주세요.', detail };
