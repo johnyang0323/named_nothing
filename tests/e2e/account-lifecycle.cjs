@@ -24,8 +24,23 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   }
   ok('welcome links to 이용약관 and 개인정보 처리방침; both pages load');
 
+  // ---- sign-up asks for the password twice ----
+  await p.click('[data-action="auth-mode"]');
+  await p.fill('#auth-email', 'reset@test.com');
+  await p.fill('#auth-password', 'first-password');
+  await p.fill('#auth-password2', 'first-passw0rd');
+  await p.waitForSelector('.password-match.is-bad');
+  await p.click('[data-form="email-auth"] button[type=submit]');
+  await p.waitForSelector('.welcome .area-error');
+  assert((await p.textContent('.area-error')).includes('서로 달라요') && !backend.accounts.has('reset@test.com'), 'mismatch refused, no account made');
+  await p.fill('#auth-password2', 'first-password');
+  await p.waitForSelector('.password-match.is-ok');
+  await p.click('[data-form="email-auth"] button[type=submit]');
+  await p.waitForFunction(() => !document.body.classList.contains('is-gated'));
+  assert(backend.accounts.get('reset@test.com')?.password === 'first-password', 'account created');
+  ok('가입: password typed twice; a mismatch is shown while typing and refused; matching → account created');
+
   // ---- password reset with an emailed code ----
-  await signUp(p, 'reset@test.com', 'first-password');
   await p.goto(APP + '#account');
   await p.click('[data-action="sign-out"]');
   await p.waitForSelector('.welcome');
@@ -37,18 +52,35 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert(backend.resetCodes.get('reset@test.com') === '654321', 'code issued');
   await p.fill('#auth-code', '000000');
   await p.fill('#auth-password', 'new-password-1');
+  await p.fill('#auth-password2', 'new-password-1');
   await p.click('[data-form="reset-confirm"] button[type=submit]');
   await p.waitForSelector('.welcome .area-error');
   assert((await p.textContent('.area-error')).includes('코드가 맞지 않거나'), 'wrong code');
   await p.fill('#auth-code', '654321');
   await p.fill('#auth-password', 'short');
+  await p.fill('#auth-password2', 'short');
   await p.click('[data-form="reset-confirm"] button[type=submit]');
   await p.waitForSelector('text=8자 이상');
   await p.fill('#auth-password', 'new-password-1');
+  await p.fill('#auth-password2', 'new-password-2');
   await p.click('[data-form="reset-confirm"] button[type=submit]');
-  await p.waitForFunction(() => !document.body.classList.contains('is-gated'));
+  await p.waitForSelector('text=새 비밀번호가 서로 달라요');
+  assert(backend.accounts.get('reset@test.com').password === 'first-password', 'nothing changed on a mismatch');
+  await p.fill('#auth-password2', 'new-password-1');
+  await p.click('[data-form="reset-confirm"] button[type=submit]');
+  await p.waitForSelector('text=새 비밀번호로 로그인해 주세요');
   assert(backend.accounts.get('reset@test.com').password === 'new-password-1', 'password changed');
-  ok('비밀번호를 잊었어요 → code by email → wrong code / short password refused → new password set and signed in');
+  assert(await p.evaluate(() => document.body.classList.contains('is-gated')), 'still signed out');
+  assert(await p.isVisible('[data-form="email-auth"]') && (await p.inputValue('#auth-email')) === 'reset@test.com', 'back on sign-in with the email filled in');
+  assert(backend.logouts.includes('global'), 'sessions ended everywhere: ' + backend.logouts);
+  assert(!(await p.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith('sb-') && localStorage.getItem(k).includes('access_token')))), 'no session left on this device');
+  await p.fill('#auth-password', 'first-password');
+  await p.click('[data-form="email-auth"] button[type=submit]');
+  await p.waitForSelector('.welcome .area-error');
+  await p.fill('#auth-password', 'new-password-1');
+  await p.click('[data-form="email-auth"] button[type=submit]');
+  await p.waitForFunction(() => !document.body.classList.contains('is-gated'));
+  ok('비밀번호를 잊었어요 → code → wrong code / short / mismatched refused → changed, then signed out everywhere; old password fails, new one signs in');
 
   // ---- error reports ----
   await p.goto(APP + '#home');

@@ -15,7 +15,7 @@ import {
 } from '../services/backend/auth.js';
 
 export function authUi(ui) {
-  if (!ui.auth) ui.auth = { mode: 'signin', email: '', password: '', code: '', busy: false, error: '', info: '' };
+  if (!ui.auth) ui.auth = { mode: 'signin', email: '', password: '', password2: '', code: '', busy: false, error: '', info: '' };
   return ui.auth;
 }
 
@@ -31,6 +31,15 @@ function passwordField(a, { autocomplete, placeholder }) {
   return html`
     <label class="visually-hidden" for="auth-password">${placeholder}</label>
     <input id="auth-password" class="area-input" type="password" autocomplete="${autocomplete}" placeholder="${placeholder}" minlength="${PASSWORD_MIN}" value="${a.password}" data-input="auth-password" data-focus-key="auth-password">`;
+}
+
+/** Second password box, to catch typos in a new password. */
+function confirmField(a) {
+  const mismatch = a.password2 && a.password && a.password2 !== a.password;
+  return html`
+    <label class="visually-hidden" for="auth-password2">비밀번호 확인</label>
+    <input id="auth-password2" class="area-input" type="password" autocomplete="new-password" placeholder="비밀번호 한 번 더" minlength="${PASSWORD_MIN}" value="${a.password2}" data-input="auth-password2" data-focus-key="auth-password2" aria-describedby="auth-password2-hint" ${mismatch ? 'aria-invalid="true"' : ''}>
+    <p id="auth-password2-hint" class="password-match ${mismatch ? 'is-bad' : a.password2 && a.password2 === a.password ? 'is-ok' : ''}" aria-live="polite">${mismatch ? '비밀번호가 서로 달라요.' : a.password2 && a.password2 === a.password ? '✓ 비밀번호가 같아요.' : ''}</p>`;
 }
 
 function submit(a, label) {
@@ -58,7 +67,8 @@ function emailForms(a) {
           <label class="visually-hidden" for="auth-code">메일로 받은 코드</label>
           <input id="auth-code" class="area-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="메일로 받은 코드" value="${a.code}" data-input="auth-code" data-focus-key="auth-code">
           ${passwordField(a, { autocomplete: 'new-password', placeholder: `새 비밀번호 (${PASSWORD_MIN}자 이상)` })}
-          ${submit(a, '비밀번호 바꾸고 로그인')}
+          ${confirmField(a)}
+          ${submit(a, '비밀번호 바꾸기')}
         </div>
         <button type="button" class="text-button text-button-muted" data-action="auth-forgot">코드 다시 받기</button>
       </form>`;
@@ -70,6 +80,7 @@ function emailForms(a) {
       <div class="auth-fields">
         ${emailField(a, signin ? 'username' : 'email')}
         ${passwordField(a, { autocomplete: signin ? 'current-password' : 'new-password', placeholder: signin ? '비밀번호' : `비밀번호 (${PASSWORD_MIN}자 이상)` })}
+        ${signin ? '' : confirmField(a)}
         ${submit(a, signin ? '로그인' : '가입하고 시작하기')}
       </div>
       <div class="auth-links">
@@ -117,7 +128,7 @@ async function authStep(ctx, run) {
 }
 
 const switchMode = ({ ui, rerender }, mode, extra = {}) => {
-  ui.auth = { ...authUi(ui), mode, error: '', info: '', ...extra };
+  ui.auth = { ...authUi(ui), mode, password2: '', error: '', info: '', ...extra };
   rerender();
 };
 
@@ -132,13 +143,32 @@ export const authInputs = {
   'auth-email': ({ ui }, el) => {
     authUi(ui).email = el.value;
   },
-  'auth-password': ({ ui }, el) => {
-    authUi(ui).password = el.value;
+  'auth-password': (ctx, el) => {
+    const a = authUi(ctx.ui);
+    a.password = el.value;
+    if (a.password2) updateMatchHint(a);
+  },
+  'auth-password2': (ctx, el) => {
+    authUi(ctx.ui).password2 = el.value;
+    updateMatchHint(authUi(ctx.ui));
   },
   'auth-code': ({ ui }, el) => {
     authUi(ui).code = el.value;
   },
 };
+
+/** Update "같아요 / 달라요" in place, so typing isn't interrupted by a re-render. */
+function updateMatchHint(a) {
+  const hint = document.getElementById('auth-password2-hint');
+  const box = document.getElementById('auth-password2');
+  if (!hint || !box) return;
+  const mismatch = Boolean(a.password2 && a.password && a.password2 !== a.password);
+  const same = Boolean(a.password2 && a.password2 === a.password);
+  hint.textContent = mismatch ? '비밀번호가 서로 달라요.' : same ? '✓ 비밀번호가 같아요.' : '';
+  hint.className = `password-match ${mismatch ? 'is-bad' : same ? 'is-ok' : ''}`;
+  if (mismatch) box.setAttribute('aria-invalid', 'true');
+  else box.removeAttribute('aria-invalid');
+}
 
 export const authForms = {
   'email-auth': (ctx) =>
@@ -146,9 +176,10 @@ export const authForms = {
       if (a.mode === 'signin') {
         await signInWithEmail(a.email, a.password);
       } else {
-        const { needsConfirmation } = await signUpWithEmail(a.email, a.password);
+        const { needsConfirmation } = await signUpWithEmail(a.email, a.password, a.password2);
         if (needsConfirmation) {
           a.password = '';
+          a.password2 = '';
           a.mode = 'signin';
           a.info = '확인 메일을 보냈어요. 메일의 링크를 이 브라우저에서 연 뒤 로그인해 주세요.';
           ctx.announce(a.info);
@@ -169,8 +200,12 @@ export const authForms = {
     }),
   'reset-confirm': (ctx) =>
     authStep(ctx, async (a) => {
-      await resetPasswordWithCode(a.email, a.code, a.password);
-      ctx.ui.auth = null;
-      ctx.announce('비밀번호를 바꾸고 로그인했어요.');
+      await resetPasswordWithCode(a.email, a.code, a.password, a.password2);
+      a.mode = 'signin';
+      a.code = '';
+      a.password = '';
+      a.password2 = '';
+      a.info = '비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요.';
+      ctx.announce(a.info);
     }),
 };

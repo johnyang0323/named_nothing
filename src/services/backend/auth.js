@@ -11,6 +11,9 @@ export class AuthError extends Error {}
 const listeners = new Set();
 let currentUser = null;
 let ready = false;
+// While resetting a password the reset code briefly signs the person in;
+// keep that hidden from the app (no screen change, no syncing).
+let holdAuthEvents = false;
 
 export const getUser = () => currentUser;
 
@@ -57,7 +60,9 @@ export function avatarUrl(user) {
 export async function initAuth() {
   const supabase = await getSupabase();
   if (!supabase) return;
-  supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user || null));
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (!holdAuthEvents) setUser(session?.user || null);
+  });
   const { data } = await supabase.auth.getSession();
   setUser(data?.session?.user || null);
 
@@ -124,8 +129,9 @@ export async function signInWithEmail(email, password) {
  * is signed in immediately; otherwise they get a confirmation link that
  * returns to this page.
  */
-export async function signUpWithEmail(email, password) {
+export async function signUpWithEmail(email, password, confirmPassword = password) {
   const address = checkCredentials(email, password);
+  if (password !== confirmPassword) throw new AuthError('비밀번호가 서로 달라요. 두 칸에 같은 비밀번호를 입력해 주세요.');
   const supabase = await getSupabase();
   if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
   const { data, error } = await supabase.auth.signUp({ email: address, password, options: { emailRedirectTo: redirectUrl() } });
@@ -162,21 +168,35 @@ export async function requestPasswordReset(email) {
   return address;
 }
 
-/** Forgot password, step 2: the code from the email + a new password → signed in. */
-export async function resetPasswordWithCode(email, code, newPassword) {
+/**
+ * Forgot password, step 2: the code from the email + a new password.
+ * Afterwards everyone is signed out (this device and any others), so the
+ * person signs in again with the new password.
+ */
+export async function resetPasswordWithCode(email, code, newPassword, confirmPassword = newPassword) {
   const token = String(code || '').replace(/\s/g, '');
   if (!/^\d{6,10}$/.test(token)) throw new AuthError('메일로 받은 숫자 코드를 입력해 주세요.');
   if (String(newPassword || '').length < PASSWORD_MIN) throw new AuthError(`새 비밀번호는 ${PASSWORD_MIN}자 이상이어야 해요.`);
+  if (newPassword !== confirmPassword) throw new AuthError('새 비밀번호가 서로 달라요. 두 칸에 같은 비밀번호를 입력해 주세요.');
   const supabase = await getSupabase();
-  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'recovery' });
-  if (error) throw new AuthError('코드가 맞지 않거나 시간이 지났어요. 코드를 다시 받아주세요.');
-  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-  if (updateError) {
-    if (/password/i.test(updateError.message)) throw new AuthError('비밀번호가 너무 쉬워요. 더 길거나 다른 비밀번호를 써주세요.');
-    throw new AuthError('비밀번호를 바꾸지 못했어요. 다시 시도해 주세요.');
+  holdAuthEvents = true;
+  let changed = false;
+  try {
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'recovery' });
+    if (error) throw new AuthError('코드가 맞지 않거나 시간이 지났어요. 코드를 다시 받아주세요.');
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) {
+      if (/password/i.test(updateError.message)) throw new AuthError('비밀번호가 너무 쉬워요. 더 길거나 다른 비밀번호를 써주세요.');
+      throw new AuthError('비밀번호를 바꾸지 못했어요. 다시 시도해 주세요.');
+    }
+    changed = true;
+  } finally {
+    // end the temporary session: everywhere after a change, here otherwise
+    await supabase.auth.signOut({ scope: changed ? 'global' : 'local' }).catch(() => supabase.auth.signOut({ scope: 'local' }).catch(() => {}));
+    holdAuthEvents = false;
+    setUser(null);
   }
-  setUser(data?.user || data?.session?.user || null);
-  return currentUser;
+  return true;
 }
 
 /**

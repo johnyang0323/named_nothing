@@ -29,6 +29,7 @@ function createBackend({ photos, photoFunction = null } = {}) {
   const userFor = (email, meta = {}) => ({ id: accounts.get(email)?.id || 'kakao-user', aud: 'authenticated', role: 'authenticated', email, app_metadata: { provider: 'email' }, user_metadata: meta, created_at: '2026-01-01T00:00:00Z' });
   const session = (user) => ({ access_token: 'at-' + user.id, token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: 'rt', user });
   const kakaoUser = { id: 'user-1', aud: 'authenticated', role: 'authenticated', app_metadata: { provider: 'kakao' }, user_metadata: { name: '산책하는 사람', avatar_url: 'http://k.kakaocdn.net/dn/profile.png' }, created_at: '2026-01-01T00:00:00Z' };
+  const logouts = [];
   const photoReply = photos || [{ url: 'https://photos.example.com/a.png', thumb: null, site: '예시 블로그', link: 'https://blog.example.com/post', relevant: true }];
 
   async function handle(route) {
@@ -71,7 +72,10 @@ function createBackend({ photos, photoFunction = null } = {}) {
     }
     if (path === '/auth/v1/token') return json(session(kakaoUser)); // PKCE after Kakao
     if (path === '/auth/v1/authorize') return route.fulfill({ status: 302, headers: { location: `${url.searchParams.get('redirect_to')}?code=kakao-code` } });
-    if (path === '/auth/v1/logout') return route.fulfill({ status: 204, headers: cors });
+    if (path === '/auth/v1/logout') {
+      logouts.push(url.searchParams.get('scope') || 'global');
+      return route.fulfill({ status: 204, headers: cors });
+    }
     if (path === '/rest/v1/days') {
       if (req.method() === 'POST') {
         const body = req.postDataJSON();
@@ -148,7 +152,7 @@ function createBackend({ photos, photoFunction = null } = {}) {
     }
     return json({ error: 'unmocked ' + path }, 404);
   }
-  return { db, accounts, log, handle, votes, fnBodies, prefs, errorsLog, resetCodes, deleted, social };
+  return { db, accounts, log, logouts, handle, votes, fnBodies, prefs, errorsLog, resetCodes, deleted, social };
 }
 
 // ───────────── social stand-in (mirrors the rules in supabase/social.sql) ─────────────
@@ -415,6 +419,7 @@ async function signUp(page, email = 'me@test.com', password = 'correct-horse') {
   await page.click('[data-action="auth-mode"]');
   await page.fill('#auth-email', email);
   await page.fill('#auth-password', password);
+  await page.fill('#auth-password2', password);
   await page.click('[data-form="email-auth"] button[type=submit]');
   await page.waitForSelector('body:not(.is-gated) #home-title, body:not(.is-gated) h1');
   await page.waitForFunction(() => !document.body.classList.contains('is-gated'));

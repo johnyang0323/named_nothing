@@ -3952,3 +3952,23 @@ input[type='checkbox'][role='switch']:focus-visible {
   color: var(--forest-2);
   background: rgba(46, 90, 64, 0.1);
 }
+
+/* sign-up / new password: "같아요 / 달라요" under the second box */
+.password-match {
+  min-height: 1.1em;
+  margin: -4px 0 0;
+  padding: 0 4px;
+  font-size: 0.8125rem;
+}
+.password-match:empty {
+  display: none;
+}
+.password-match.is-ok {
+  color: var(--forest-2);
+}
+.password-match.is-bad {
+  color: var(--destructive);
+}
+.area-input[aria-invalid='true'] {
+  border-color: var(--destructive);
+}
