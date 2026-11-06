@@ -1,17 +1,40 @@
 /* ==========================================================================
-   계획 있는 것처럼 사는 하루 — Minimalist & Editorial design system
+   계획 있는 것처럼 사는 하루 — Liquid glass design system
+   forest green (main) · sand beige (second) · electric purple (point)
    ========================================================================== */
 
 :root {
-  --bg: #f7f5f0;
-  --text: #252525;
-  --text-secondary: #6f6c66; /* darker than #85827B for body-size contrast */
-  --muted: #85827b;
-  --accent: #78816a;
-  --accent-deep: #5e6553;
-  --surface: #ece9e1;
-  --white: #ffffff;
-  --line: #dcd8ce;
+  /* brand palette */
+  --forest: #1f3d2b; /* main */
+  --forest-2: #2e5a40;
+  --forest-3: #4f7a5e;
+  --sand: #e8dcc4; /* second main */
+  --sand-light: #f5efe3;
+  --purple: #8b5cf6; /* point */
+  --purple-deep: #6d3fe0;
+  --purple-soft: rgba(139, 92, 246, 0.14);
+
+  /* roles */
+  --bg: #efe6d4;
+  --text: #17271d;
+  --text-secondary: #4c5c52;
+  --muted: #7f8a82;
+  --accent: var(--purple);
+  --accent-deep: var(--forest-2);
+  --surface: rgba(255, 255, 255, 0.4);
+  --white: rgba(255, 255, 255, 0.64);
+  --line: rgba(31, 61, 43, 0.13);
+
+  /* liquid glass */
+  --glass: rgba(255, 255, 255, 0.5);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-blur: blur(18px) saturate(170%);
+  --glass-shadow: 0 10px 30px rgba(31, 61, 43, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --grad-forest: linear-gradient(135deg, #3a6d4f 0%, #2e5a40 40%, #1f3d2b 100%);
+  --grad-cta: linear-gradient(120deg, #1f3d2b 0%, #2e5a40 50%, #6d3fe0 125%);
+  --grad-purple: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 55%, #6d3fe0 100%);
+  --grad-title: linear-gradient(120deg, #1f3d2b 0%, #2e5a40 55%, #6d3fe0 115%);
 
   --font-serif: 'Nanum Myeongjo', 'Noto Serif KR', 'Noto Serif CJK KR', 'AppleMyungjo', 'Batang', 'Source Han Serif K',
     Georgia, 'Times New Roman', serif;
@@ -2585,4 +2608,484 @@ body.is-gated .account-button {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ==========================================================================
+   Liquid glass theme
+   A sand base with soft forest/purple light behind translucent, blurred
+   surfaces. Forest green carries the text and primary actions, sand the
+   ground, and electric purple only the "point" moments (selection,
+   new discoveries, focus).
+   ========================================================================== */
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* the light behind the glass: fixed, so cards blur it while scrolling */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(55% 40% at 100% 0%, rgba(46, 90, 64, 0.38), transparent 70%),
+    radial-gradient(45% 35% at 0% 30%, rgba(139, 92, 246, 0.26), transparent 70%),
+    radial-gradient(60% 45% at 15% 100%, rgba(31, 61, 43, 0.34), transparent 70%),
+    radial-gradient(40% 35% at 95% 80%, rgba(139, 92, 246, 0.2), transparent 70%),
+    linear-gradient(165deg, var(--sand-light) 0%, var(--sand) 55%, #e0d0b1 100%);
+}
+
+/* ---- the glass recipe -------------------------------------------------- */
+.suggestion-card,
+.mood,
+.stop,
+.entry,
+.entry-editor,
+.empty,
+.my-tag,
+.invite-banner,
+.group-item,
+.replace-option,
+.member-chip,
+.diag-result,
+.discovery,
+.auth-panel,
+.area-map-wrap,
+.kakao-map,
+.place-chip,
+.weather-badge,
+.facts,
+.account,
+.taste,
+.profile,
+.history-item,
+.visit,
+.tabs {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* blocks that used to be plain sections become soft glass panels */
+.account,
+.taste,
+.profile,
+.facts,
+.history-item,
+.visit {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius);
+}
+
+.history-list,
+.visit-list {
+  gap: var(--space-3);
+}
+
+.history-item {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.visit {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.auth-panel {
+  padding: var(--space-5);
+  border-radius: var(--radius);
+}
+
+.discovery {
+  padding: var(--space-3);
+  border-radius: var(--radius);
+}
+
+/* fields and small controls: lighter glass */
+.area-input,
+.note,
+.chip,
+.budget-chip span,
+.icon-button,
+.group-select {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(31, 61, 43, 0.06);
+  color: var(--text);
+}
+
+.area-input:focus,
+.note:focus {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(139, 92, 246, 0.55);
+}
+
+:focus-visible {
+  outline-color: var(--purple);
+}
+
+/* ---- type ----------------------------------------------------------------- */
+.display,
+.flow-title,
+.title {
+  color: var(--forest);
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .display,
+  .flow-title,
+  .title {
+    background: var(--grad-title);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.brand {
+  color: var(--forest);
+  font-weight: 600;
+}
+
+.eyebrow,
+.section-label {
+  color: var(--forest-3);
+}
+
+.kicker {
+  color: var(--forest-2);
+}
+
+a {
+  text-decoration-color: rgba(139, 92, 246, 0.6);
+}
+
+.text-button {
+  color: var(--forest);
+  text-decoration-color: rgba(31, 61, 43, 0.35);
+}
+
+.text-button:hover {
+  text-decoration-color: var(--purple);
+}
+
+/* ---- buttons --------------------------------------------------------------- */
+.button-primary {
+  background: var(--grad-forest);
+  color: var(--sand-light);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 22px rgba(31, 61, 43, 0.28);
+}
+
+.button-primary:hover {
+  background: linear-gradient(135deg, #46805e 0%, #34654a 40%, #224530 100%);
+}
+
+.button-wide.button-primary,
+.cta-area .button-primary {
+  background: var(--grad-cta);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 28px rgba(76, 52, 160, 0.28), 0 4px 12px rgba(31, 61, 43, 0.25);
+}
+
+.button-secondary {
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(31, 61, 43, 0.35);
+  color: var(--forest);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.button-secondary:hover {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.button-ghost {
+  background: rgba(255, 255, 255, 0.42);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  color: var(--forest);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(31, 61, 43, 0.06);
+}
+
+.button-ghost:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* point colour: things that are chosen */
+.chip.is-on,
+.gallery-pin.is-pinned {
+  background: var(--grad-purple);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px rgba(139, 92, 246, 0.3);
+}
+
+.budget-chip input:checked + span {
+  background: var(--grad-forest);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--sand-light);
+}
+
+.mood:has(input:checked) {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18), var(--glass-shadow);
+}
+
+.mood:has(input:checked) .mood-label::before {
+  background: var(--purple);
+  border-color: var(--purple);
+}
+
+.wild-tag {
+  background: var(--grad-purple);
+}
+
+.why-tags li {
+  background: var(--purple-soft);
+  color: var(--purple-deep);
+}
+
+.vis-friends,
+.vis-group {
+  background: var(--purple-soft);
+  color: var(--purple-deep);
+}
+
+.weather-note {
+  color: var(--purple-deep);
+}
+
+.toggle input {
+  accent-color: var(--purple);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--forest);
+  border-bottom-color: var(--purple);
+}
+
+.tabs {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-small);
+}
+
+.stop.is-visited {
+  background: rgba(232, 220, 196, 0.6);
+}
+
+.is-visited .stop-status {
+  color: var(--purple-deep);
+}
+
+.dot-current,
+.km-current {
+  background: var(--purple);
+}
+
+.km-current {
+  box-shadow: 0 0 0 7px rgba(139, 92, 246, 0.25);
+}
+
+.km-pick {
+  background: var(--grad-purple);
+}
+
+.philosophy {
+  border-left-color: var(--purple);
+}
+
+.save-status,
+.account-sync {
+  color: var(--forest-2);
+}
+
+/* ---- header, bottom menu, toast ------------------------------------------ */
+.account-button[aria-current='page'] .avatar {
+  box-shadow: 0 0 0 2px var(--sand-light), 0 0 0 4px var(--purple);
+}
+
+.avatar {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.avatar-initial {
+  color: var(--forest);
+}
+
+/* phones: a floating glass pill for the menu */
+.nav {
+  inset: auto 12px calc(10px + env(safe-area-inset-bottom)) 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding-bottom: 0;
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 12px 32px rgba(31, 61, 43, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.nav a {
+  color: var(--forest-3);
+}
+
+.nav a[aria-current='page'] {
+  color: var(--forest);
+}
+
+.nav a[aria-current='page']::after {
+  top: auto;
+  bottom: 9px;
+  left: 38%;
+  right: 38%;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--grad-purple);
+}
+
+.nav-count:not(:empty) {
+  color: var(--purple-deep);
+}
+
+.view {
+  padding-bottom: calc(var(--nav-height) + var(--space-7) + 10px);
+}
+
+body[data-screen='home'] .view {
+  padding-bottom: calc(var(--nav-height) + var(--space-3) + 10px + env(safe-area-inset-bottom));
+}
+
+.toast {
+  bottom: calc(var(--nav-height) + var(--space-5) + env(safe-area-inset-bottom));
+  background: rgba(31, 61, 43, 0.82);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--sand-light);
+  box-shadow: 0 12px 30px rgba(31, 61, 43, 0.3);
+}
+
+.toast-action {
+  color: var(--sand-light);
+}
+
+.map-hint {
+  background: rgba(31, 61, 43, 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.map-chip {
+  background: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  color: var(--forest);
+}
+
+/* photos and illustrations sit in glass frames */
+.destination-visual,
+.suggestion-visual,
+.discovery-visual,
+.stop-visual,
+.entry-photos,
+.welcome-visual {
+  box-shadow: 0 10px 28px rgba(31, 61, 43, 0.16);
+}
+
+.destination-visual {
+  border: 1px solid var(--glass-border);
+}
+
+@media (min-width: 860px) {
+  /* desktop: the header becomes a glass bar, the menu sits inside it */
+  .masthead {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-5);
+    border: 1px solid var(--glass-border);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.45);
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(22px) saturate(170%);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .nav {
+    inset: auto;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  .nav a[aria-current='page']::after {
+    bottom: 2px;
+    left: 0;
+    right: 0;
+  }
+
+  .view,
+  body[data-screen='home'] .view {
+    padding-bottom: var(--space-7);
+  }
+
+  .toast {
+    bottom: var(--space-6);
+  }
+}
+
+/* No blur available, or the person asked for less transparency:
+   solid surfaces, same colours, so text never sits on a busy background. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .suggestion-card, .mood, .stop, .entry, .entry-editor, .empty, .my-tag, .invite-banner, .group-item,
+  .replace-option, .member-chip, .diag-result, .discovery, .auth-panel, .area-map-wrap, .kakao-map,
+  .place-chip, .weather-badge, .facts, .account, .taste, .profile, .history-item, .visit, .tabs, .nav,
+  .area-input, .note, .chip, .budget-chip span, .icon-button, .button-secondary, .button-ghost, .masthead {
+    background-color: #fbf7ef;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body::before {
+    background: var(--sand-light);
+  }
+
+  .suggestion-card, .mood, .stop, .entry, .entry-editor, .empty, .my-tag, .invite-banner, .group-item,
+  .replace-option, .member-chip, .diag-result, .discovery, .auth-panel, .area-map-wrap, .kakao-map,
+  .place-chip, .weather-badge, .facts, .account, .taste, .profile, .history-item, .visit, .tabs, .nav,
+  .area-input, .note, .chip, .budget-chip span, .icon-button, .button-secondary, .button-ghost, .masthead, .toast {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .suggestion-card, .mood, .stop, .entry, .entry-editor, .empty, .my-tag, .invite-banner, .group-item,
+  .replace-option, .member-chip, .diag-result, .discovery, .auth-panel, .area-map-wrap, .kakao-map,
+  .place-chip, .weather-badge, .facts, .account, .taste, .profile, .history-item, .visit, .tabs, .nav,
+  .area-input, .note, .chip, .budget-chip span, .icon-button, .button-secondary, .button-ghost, .masthead {
+    background: #fffaf2;
+  }
+
+  .toast {
+    background: var(--forest);
+  }
+}
+
+/* weather badge reads as a small glass pill next to the place chip */
+.weather-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
 }

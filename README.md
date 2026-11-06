@@ -18,6 +18,16 @@ It isn't a productivity tracker, an itinerary planner or a navigation app. There
 | 경로 (Route) | `#/route` | Reorder (↑/↓), mark visited, replace, remove (with undo), explore from any stop |
 | 나의 하루 (My Day) | `#/day` | Visited / kept places, a gentle summary, optional feeling and one-line note, reset the day |
 
+## Design
+
+Liquid glass over soft gradients:
+
+- **Colors:** forest green `#1F3D2B` is the main color (titles, primary buttons, nav). Sand beige `#E8DCC4` is the second main color (background, warm surfaces). Electric purple `#8B5CF6` is the accent (selected states, the active tab, highlights).
+- **Glass:** cards, chips, inputs, the floating bottom nav (phone) and the top bar (desktop) are translucent white with `backdrop-filter` blur and saturation, a bright edge and a soft shadow. They float over a fixed backdrop of forest and purple gradient blobs on sand.
+- **Gradients:** titles use a forest-to-purple gradient, and the main "오늘 시작하기" button runs from forest to purple.
+- **Fallbacks:** browsers without `backdrop-filter` and users who turn on "reduce transparency" get solid warm surfaces instead.
+- All tokens live in `:root` in `src/style.css`, and the glass layer is at the end of that file.
+
 ## Tech stack
 
 - **Vite 6** with **vanilla JavaScript, HTML and CSS**. There are no frameworks and no runtime dependencies.

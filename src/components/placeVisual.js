@@ -13,26 +13,29 @@ export function photoSlot(place, { gallery = false } = {}) {
   return raw(` data-photo-for="${escapeHtml(place.id)}"${gallery ? ' data-photo-gallery' : ''}`);
 }
 
+// forest green (main) · sand beige (second) · electric purple (point)
 const C = {
-  ivory: '#F7F5F0',
-  olive: '#78816A',
-  oliveDeep: '#5E6553',
-  oliveSoft: '#A7AE98',
-  charcoal: '#3A3936',
-  gray: '#85827B',
-  sand: '#CDBFA6',
-  clay: '#B98B6E',
-  claySoft: '#D9BFA9',
+  ivory: '#F5EFE3',
+  olive: '#3F6B50',
+  oliveDeep: '#1F3D2B',
+  oliveSoft: '#93B19C',
+  charcoal: '#1F2A23',
+  gray: '#7F8A82',
+  sand: '#D9C9A8',
+  clay: '#B9875F',
+  claySoft: '#E6CBA6',
+  purple: '#8B5CF6',
+  purpleSoft: '#C4B0FA',
   white: '#FFFFFF',
 };
 
 const BACKGROUNDS = {
-  restful: '#E4E1D6',
-  scenic: '#DEDDCD',
-  active: '#E7DFD1',
-  enriching: '#EAE4D9',
-  creative: '#EADBCD',
-  productive: '#E1E1D9',
+  restful: '#E8DCC4',
+  scenic: '#E3DDCB',
+  active: '#EADFC8',
+  enriching: '#EFE6D4',
+  creative: '#E6DDF3',
+  productive: '#DFE3D3',
 };
 
 const W = 400;
@@ -198,8 +201,12 @@ const drawers = {
 /** Abstract composition for things that aren't places (e.g. today's small suggestion). */
 export function horizonVisual(seed = 0) {
   const r = rng(seed);
+  const id = `sky-${seed}`;
   return raw(`<svg class="visual" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-    <rect width="${W}" height="${H}" fill="${BACKGROUNDS.scenic}"/>
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5EFE3"/><stop offset="0.6" stop-color="#E8DCC4"/><stop offset="1" stop-color="${C.purpleSoft}"/>
+    </linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#${id})"/>
     <circle cx="${140 + r(140)}" cy="${110 + r(30)}" r="46" fill="${C.claySoft}"/>
     <path d="M0 180 Q120 ${150 + r(20)} 240 176 T400 168 V260 H0 Z" fill="${C.oliveSoft}"/>
     <path d="M0 214 Q180 190 400 212 V260 H0 Z" fill="${C.olive}"/>
