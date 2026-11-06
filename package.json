@@ -12,11 +12,14 @@
     "test:e2e": "node tests/e2e/run.mjs"
   },
   "devDependencies": {
-    "vite": "^6.4.5",
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "esbuild": "0.25.12",
     "playwright": "1.63.0",
-    "esbuild": "0.25.12"
+    "vite": "^6.4.5"
   },
   "dependencies": {
+    "@capacitor/core": "^8.6.0",
     "@supabase/supabase-js": "^2.118.0"
   }
 }

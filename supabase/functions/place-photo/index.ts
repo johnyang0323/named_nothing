@@ -4,7 +4,7 @@
 //
 // Secrets (Supabase dashboard → Edge Functions → Secrets):
 //   KAKAO_REST_API_KEY  = Kakao Developers → 앱 키 → REST API 키
-//   ALLOWED_ORIGINS     = https://johnyang0323.github.io   (comma-separated, optional)
+//   ALLOWED_ORIGINS     = https://johnyang0323.github.io,https://localhost   (comma-separated, optional; https://localhost is the Android app)
 //
 // Function settings: turn OFF "Verify JWT" (projects with sb_publishable_ keys
 // send a non-JWT key). Access is limited to the site's origin below instead.
@@ -16,7 +16,7 @@
 const KAKAO_KEY = Deno.env.get('KAKAO_REST_API_KEY') ?? '';
 // "https://site.io/" and "https://site.io" mean the same origin
 const normalize = (o: string) => o.trim().replace(/\/+$/, '').toLowerCase();
-const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') || 'https://johnyang0323.github.io')
+const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') || 'https://johnyang0323.github.io,https://localhost')
   .split(',')
   .map(normalize)
   .filter(Boolean);

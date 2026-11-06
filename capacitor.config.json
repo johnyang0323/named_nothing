@@ -1,0 +1,17 @@
+{
+  "appId": "io.github.johnyang0323.haru",
+  "appName": "계획 있는 하루",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "pheawjaqtsifkmlsjhea.supabase.co",
+      "kauth.kakao.com",
+      "accounts.kakao.com",
+      "logins.daum.net"
+    ]
+  }
+}

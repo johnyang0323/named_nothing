@@ -18,7 +18,7 @@
 // automatically. If the service role key is missing, add it yourself under
 // Edge Functions → Secrets as SERVICE_ROLE_KEY (Project Settings → API keys →
 // "service_role" / secret key). Never put it in the app.
-//   ALLOWED_ORIGINS = https://johnyang0323.github.io   (comma-separated, optional)
+//   ALLOWED_ORIGINS = https://johnyang0323.github.io,https://localhost   (comma-separated, optional; https://localhost is the Android app)
 //   KAKAO_ADMIN_KEY = Kakao Developers → 앱 키 → Admin 키 (optional but recommended)
 //     Used only to "연결 끊기" (unlink) a Kakao-login account when it is deleted,
 //     as Kakao's policy requires; otherwise the next Kakao login skips the consent
@@ -38,7 +38,7 @@ export function kakaoUserId(user: { identities?: Identity[] }) {
 }
 
 const normalize = (o: string) => o.trim().replace(/\/+$/, '').toLowerCase();
-const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') || 'https://johnyang0323.github.io')
+const ALLOWED = (Deno.env.get('ALLOWED_ORIGINS') || 'https://johnyang0323.github.io,https://localhost')
   .split(',')
   .map(normalize)
   .filter(Boolean);

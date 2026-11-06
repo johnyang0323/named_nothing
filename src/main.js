@@ -22,6 +22,7 @@ import { createTasteStore } from './services/tasteStore.js';
 import { buildContext, makeBias, tasteActive, WILDCARD_RATE } from './services/personalize.js';
 import { getWeather } from './services/weather.js';
 import { installErrorReporting } from './services/errorLog.js';
+import { isNativeApp } from './services/native.js';
 
 /** Screens reachable by #hash. */
 const APP_SCREENS = { home, discover, explore, route, day: myday, account, together };
@@ -300,7 +301,8 @@ if (isBackendConfigured()) {
 }
 
 // Installable app (PWA): offline shell + home-screen install. Production only.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+// Not inside the Android/iOS app: its files are already on the device.
+if (import.meta.env.PROD && 'serviceWorker' in navigator && !isNativeApp()) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {
       /* the app works without it */

@@ -5,10 +5,13 @@
  * The link is remembered until the person has signed in, then confirmed
  * on the 함께 screen.
  */
+import { shareBase } from '../services/native.js';
+
 const PENDING_KEY = 'plannish-invite';
 
 export function inviteLink({ friend = null, group = null }) {
-  const url = new URL(window.location.pathname, window.location.origin);
+  // In the Android/iOS app this is the public web address, not https://localhost.
+  const url = new URL(shareBase());
   if (friend) url.searchParams.set('friend', friend);
   if (group) url.searchParams.set('group', group);
   return url.toString();

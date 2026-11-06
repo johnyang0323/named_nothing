@@ -90,7 +90,7 @@
    지금 프로젝트는 `hyper-responder`로 이미 설정돼 있어요.
 5. **Edge Functions → Secrets**에 아래 두 값을 추가합니다.
    - `KAKAO_REST_API_KEY` = 카카오 **REST API 키**
-   - `ALLOWED_ORIGINS` = `https://johnyang0323.github.io`
+   - `ALLOWED_ORIGINS` = `https://johnyang0323.github.io,https://localhost` (뒤의 `https://localhost`는 안드로이드 앱 주소예요)
 6. `place-photo` 함수의 **Details**(또는 Settings) 탭에서 **Verify JWT with legacy secret**(또는 *Enforce JWT verification*)을 **끄고** 저장합니다.
    새 방식 키(`sb_publishable_…`)는 JWT 형식이 아니라서, 이 설정이 켜져 있으면 로그인하지 않은 사용자의 사진 요청이 거절돼요.
    대신 함수 코드가 `ALLOWED_ORIGINS`에 등록한 사이트에서 온 요청만 받도록 막고 있어요.
