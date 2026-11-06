@@ -20,10 +20,13 @@ It isn't a productivity tracker, an itinerary planner or a navigation app. There
 
 ## Design
 
-The page is black and lit by soft white gradients. It uses black, white and purple only, and whatever is selected is purple.
+The design follows Apple's Liquid Glass idea and uses black, white and purple only.
 
-- **Colors:** the page is black `#000` with a few soft white radial gradients for light. Text is white `#FFF`. Purple `#8B5CF6` marks selected items (time budget, mood check, tabs, the current menu item, switches) and the main call to action. Greys are white or black at low opacity. The one exception is the Kakao login button, which has to be Kakao's yellow under Kakao's design guide.
-- **Liquid glass:** cards and grouped lists are panes of white at low opacity with blur, a bright top edge and a deep shadow. The floating tab bar, home coin and toast are the same glass over the content.
+- **Background:** one calm black-to-white gradient (no blobs). It is mostly black and lightens toward the lower right.
+- **Blocks:** a single layer of glass. This is white at low opacity whose blur also dims what's behind it, with a bright top edge and a deep shadow. Nothing inside a block is a second pane: entries, notes and results inside a group are flat, divided by hairlines.
+- **Selected controls and the main action:** clear glass running from white to light purple, with dark text. This covers the chosen time budget, mood row, tab, current menu item, an "on" switch, "오늘 시작하기" and other primary buttons.
+- **Unselected controls:** clear black glass (secondary buttons, chips, inputs, place and weather chips, gallery buttons).
+- Text is white, and links are purple. The one exception is the Kakao login button, which has to be Kakao's yellow under Kakao's design guide.
 - **iOS Settings layout:** large bold titles; small grey section headers above inset grouped blocks. Lists are a single glass block whose rows are divided by hairlines starting at the text. Rows have chevrons, iOS switches and segmented controls (time budget, sharing scope, 친구/단체방). The mood choice is a checkmark list. On every screen size the menu is a floating liquid-glass capsule at the bottom: 발견 · 경로 · [home logo] · 나의 하루 · 함께. The raised app logo in the middle goes home.
 - **Place photos:** user photos come first. These are journal photos the author chose to share as the place's photo (`supabase/place_photos.sql`; nickname only, the note stays private, can be reported). After them come only trustworthy web results: photos from posts whose title names the place, or ones people picked. Otherwise the card keeps its illustration and offers **카카오맵에서 실제 사진 보기**.
 - **Type:** San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices (system fonts). Elsewhere it uses the bundled open font Pretendard, drawn to match them.

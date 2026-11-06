@@ -4618,3 +4618,246 @@ input[type='checkbox'][role='switch']::before {
 input[type='checkbox'][role='switch']:checked {
   background: #8b5cf6;
 }
+
+/* =========================================================================
+   Apple-style liquid glass, final layer
+   - Background: one calm black → white gradient (no blobs).
+   - Blocks: a single layer of glass; nothing inside a block is glass again.
+   - Selected controls: clear light-purple + white glass.
+   - Unselected controls: clear black glass.
+   ========================================================================= */
+:root {
+  --page: linear-gradient(155deg, #000 0%, #0a0a0a 40%, #3a3a3a 76%, #9c9c9c 100%);
+
+  --block-bg: rgba(255, 255, 255, 0.07);
+  --block-filter: blur(30px) saturate(160%) brightness(0.82);
+  --block-border: rgba(255, 255, 255, 0.16);
+  --block-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 14px 36px rgba(0, 0, 0, 0.45);
+
+  --off-bg: rgba(0, 0, 0, 0.36);
+  --off-filter: blur(20px) saturate(160%);
+  --off-border: rgba(255, 255, 255, 0.14);
+  --off-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 4px 14px rgba(0, 0, 0, 0.35);
+
+  --on-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0.34) 42%, rgba(139, 92, 246, 0.46) 100%);
+  --on-filter: blur(20px) saturate(180%);
+  --on-border: rgba(255, 255, 255, 0.62);
+  --on-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -1px 0 rgba(139, 92, 246, 0.25), 0 8px 22px rgba(139, 92, 246, 0.32);
+  --on-text: #000;
+
+  --glass: var(--block-bg);
+  --glass-border: var(--block-border);
+  --glass-shadow: var(--block-shadow);
+  --glass-blur: var(--block-filter);
+}
+
+html {
+  background: #000;
+}
+
+body::before {
+  display: block;
+  background: var(--page);
+}
+
+/* ---- blocks: one layer of glass ---- */
+.group,
+.mood-grid,
+.stops,
+.discoveries,
+.activities,
+.history-list,
+.group-list,
+.visit-list,
+.replace-list,
+.memory-list,
+.people,
+.auth-panel,
+.facts,
+.suggestion-card,
+.area-map-wrap,
+.empty,
+.entry,
+.entry-editor,
+.my-tag,
+.invite-banner,
+.discovery,
+.tabs,
+.budget-options,
+.nav,
+.together .block:not(:has(.people, .group-list, .entry, .member-chips)),
+.myday .block.journal,
+.myday .block.reset {
+  background: var(--block-bg);
+  -webkit-backdrop-filter: var(--block-filter);
+  backdrop-filter: var(--block-filter);
+  border: 0.5px solid var(--block-border);
+  box-shadow: var(--block-shadow);
+}
+
+/* …and nothing inside a block is a second pane of glass */
+:is(.group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list, .replace-list, .memory-list, .people, .auth-panel, .entry, .entry-editor, .together .block, .myday .block, .discovery)
+  :is(.entry, .entry-editor, .empty, .my-tag, .facts, .diag-result, .share-place, .invite-banner, .discovery, .suggestion-card) {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: 0;
+  border-top: 0.5px solid var(--block-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ---- unselected controls: clear black glass ---- */
+.button,
+.button-secondary,
+.button-ghost,
+.chip,
+.place-chip,
+.weather-badge,
+.map-chip,
+.icon-button,
+.directions-button,
+.kakao-photos-link,
+.gallery-btn,
+.gallery-reject,
+.gallery-pin,
+.area-input,
+.note,
+.member-chip {
+  color: #fff;
+  background: var(--off-bg);
+  -webkit-backdrop-filter: var(--off-filter);
+  backdrop-filter: var(--off-filter);
+  border: 0.5px solid var(--off-border);
+  box-shadow: var(--off-shadow);
+}
+
+.button-secondary:hover,
+.button-ghost:hover,
+.chip:hover {
+  background: rgba(0, 0, 0, 0.48);
+}
+
+/* segment and tab options sit inside their block; only the chosen one is a pane */
+.budget-chip span,
+.tabs .tab {
+  color: #fff;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+/* ---- selected (and the main action): clear light-purple + white glass ---- */
+.button-primary,
+.button-primary:hover,
+.button-wide.button-primary,
+.cta-area .button-primary,
+.cta-area .button-primary:hover,
+.chip.is-on,
+.chip[aria-pressed='true'],
+.budget-chip input:checked + span,
+.tabs .tab[aria-selected='true'],
+.gallery-pin.is-pinned,
+.nav a[aria-current='page'] {
+  color: var(--on-text);
+  background: var(--on-bg);
+  -webkit-backdrop-filter: var(--on-filter);
+  backdrop-filter: var(--on-filter);
+  border: 0.5px solid var(--on-border);
+  box-shadow: var(--on-shadow);
+  font-weight: 600;
+}
+
+.button-primary:disabled {
+  opacity: 0.55;
+}
+
+.mood:has(input:checked) {
+  background: var(--on-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.mood:has(input:checked) .mood-label,
+.mood:has(input:checked) .mood-hint {
+  color: #000;
+}
+
+.mood:has(input:checked)::before {
+  border-color: #000;
+}
+
+.toggle input[type='checkbox'],
+input[type='checkbox'][role='switch'] {
+  background: var(--off-bg);
+  box-shadow: inset 0 0 0 0.5px var(--off-border);
+}
+
+.toggle input[type='checkbox']:checked,
+input[type='checkbox'][role='switch']:checked {
+  background: var(--on-bg);
+  box-shadow: inset 0 0 0 0.5px var(--on-border), 0 4px 14px rgba(139, 92, 246, 0.35);
+}
+
+/* the menu bar is a block; its items are plain until chosen */
+.nav a {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.nav .nav-home,
+.nav .nav-home[aria-current='page'] {
+  background: var(--off-bg);
+  border: 0.5px solid var(--off-border);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.nav .nav-home[aria-current='page'] {
+  background: var(--on-bg);
+  border-color: var(--on-border);
+  box-shadow: var(--on-shadow), 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.nav-count:not(:empty) {
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.toast {
+  background: var(--block-bg);
+  -webkit-backdrop-filter: var(--block-filter);
+  backdrop-filter: var(--block-filter);
+  border: 0.5px solid var(--block-border);
+  box-shadow: var(--block-shadow);
+  color: #fff;
+}
+
+/* Kakao requires its own yellow login button (Kakao Login design guide) */
+.kakao-login,
+.kakao-login:hover {
+  background: #fee500;
+  color: rgba(0, 0, 0, 0.85);
+  border: 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :root {
+    --block-bg: rgba(0, 0, 0, 0.72);
+    --off-bg: rgba(0, 0, 0, 0.78);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --block-bg: rgba(0, 0, 0, 0.85);
+    --off-bg: #000;
+    --on-bg: #8b5cf6;
+    --on-text: #fff;
+  }
+}
+
+/* selected glass: brighter, so it reads as light purple + white on the dark page */
+:root {
+  --on-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.62) 38%, rgba(139, 92, 246, 0.62) 100%);
+  --on-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(139, 92, 246, 0.35), 0 8px 24px rgba(139, 92, 246, 0.4);
+}
