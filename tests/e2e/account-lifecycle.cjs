@@ -27,7 +27,16 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   // ---- sign-up asks for the password twice ----
   await p.click('[data-action="auth-mode"]');
   await p.fill('#auth-email', 'reset@test.com');
+  assert((await p.textContent('#auth-password-rule')).includes('8자 이상, 특수문자 1개 이상'), 'rule shown');
+  assert((await p.getAttribute('#auth-password2', 'placeholder')) === '비밀번호 재입력', 'second box label');
+  await p.fill('#auth-password', 'nospecial12');
+  assert((await p.textContent('#auth-password-rule')).includes('필요해요: 특수문자'), 'missing special shown while typing');
+  await p.fill('#auth-password2', 'nospecial12');
+  await p.click('[data-form="email-auth"] button[type=submit]');
+  await p.waitForSelector('.welcome .area-error');
+  assert((await p.textContent('.area-error')).includes('특수문자') && !backend.accounts.has('reset@test.com'), 'no special character refused');
   await p.fill('#auth-password', 'first-password');
+  await p.waitForSelector('.password-rule.is-ok');
   await p.fill('#auth-password2', 'first-passw0rd');
   await p.waitForSelector('.password-match.is-bad');
   await p.click('[data-form="email-auth"] button[type=submit]');
@@ -38,7 +47,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await p.click('[data-form="email-auth"] button[type=submit]');
   await p.waitForFunction(() => !document.body.classList.contains('is-gated'));
   assert(backend.accounts.get('reset@test.com')?.password === 'first-password', 'account created');
-  ok('가입: password typed twice; a mismatch is shown while typing and refused; matching → account created');
+  ok('가입: 8자 이상 + 특수문자 rule shown and ticked while typing, refused without one; password typed twice; a mismatch is shown while typing and refused; matching → account created');
 
   // ---- password reset with an emailed code ----
   await p.goto(APP + '#account');
@@ -60,7 +69,11 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await p.fill('#auth-password', 'short');
   await p.fill('#auth-password2', 'short');
   await p.click('[data-form="reset-confirm"] button[type=submit]');
-  await p.waitForSelector('text=8자 이상');
+  await p.waitForFunction(() => /8자 이상/.test(document.querySelector('.welcome .area-error')?.textContent || ''));
+  await p.fill('#auth-password', 'newpassword1');
+  await p.fill('#auth-password2', 'newpassword1');
+  await p.click('[data-form="reset-confirm"] button[type=submit]');
+  await p.waitForFunction(() => /특수문자/.test(document.querySelector('.welcome .area-error')?.textContent || ''));
   await p.fill('#auth-password', 'new-password-1');
   await p.fill('#auth-password2', 'new-password-2');
   await p.click('[data-form="reset-confirm"] button[type=submit]');
@@ -80,7 +93,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await p.fill('#auth-password', 'new-password-1');
   await p.click('[data-form="email-auth"] button[type=submit]');
   await p.waitForFunction(() => !document.body.classList.contains('is-gated'));
-  ok('비밀번호를 잊었어요 → code → wrong code / short / mismatched refused → changed, then signed out everywhere; old password fails, new one signs in');
+  ok('비밀번호를 잊었어요 → code → wrong code / short / no special / mismatched refused → changed, then signed out everywhere; old password fails, new one signs in');
 
   // ---- error reports ----
   await p.goto(APP + '#home');

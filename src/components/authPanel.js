@@ -12,6 +12,8 @@ import {
   requestPasswordReset,
   resetPasswordWithCode,
   PASSWORD_MIN,
+  PASSWORD_RULE,
+  passwordProblems,
 } from '../services/backend/auth.js';
 
 export function authUi(ui) {
@@ -33,12 +35,24 @@ function passwordField(a, { autocomplete, placeholder }) {
     <input id="auth-password" class="area-input" type="password" autocomplete="${autocomplete}" placeholder="${placeholder}" minlength="${PASSWORD_MIN}" value="${a.password}" data-input="auth-password" data-focus-key="auth-password">`;
 }
 
+/** "8자 이상 · 특수문자 1개 이상" under a new password, ticked off while typing. */
+function ruleHint(a) {
+  const fine = a.password && !passwordProblems(a.password).length;
+  return html`<p id="auth-password-rule" class="password-rule ${fine ? 'is-ok' : ''}" aria-live="polite">${ruleText(a.password)}</p>`;
+}
+
+function ruleText(password) {
+  if (!password) return `${PASSWORD_RULE}`;
+  const missing = passwordProblems(password);
+  return missing.length ? `필요해요: ${missing.join(' · ')}` : `✓ ${PASSWORD_RULE}`;
+}
+
 /** Second password box, to catch typos in a new password. */
 function confirmField(a) {
   const mismatch = a.password2 && a.password && a.password2 !== a.password;
   return html`
-    <label class="visually-hidden" for="auth-password2">비밀번호 확인</label>
-    <input id="auth-password2" class="area-input" type="password" autocomplete="new-password" placeholder="비밀번호 한 번 더" minlength="${PASSWORD_MIN}" value="${a.password2}" data-input="auth-password2" data-focus-key="auth-password2" aria-describedby="auth-password2-hint" ${mismatch ? 'aria-invalid="true"' : ''}>
+    <label class="visually-hidden" for="auth-password2">비밀번호 재입력</label>
+    <input id="auth-password2" class="area-input" type="password" autocomplete="new-password" placeholder="비밀번호 재입력" minlength="${PASSWORD_MIN}" value="${a.password2}" data-input="auth-password2" data-focus-key="auth-password2" aria-describedby="auth-password2-hint" ${mismatch ? 'aria-invalid="true"' : ''}>
     <p id="auth-password2-hint" class="password-match ${mismatch ? 'is-bad' : a.password2 && a.password2 === a.password ? 'is-ok' : ''}" aria-live="polite">${mismatch ? '비밀번호가 서로 달라요.' : a.password2 && a.password2 === a.password ? '✓ 비밀번호가 같아요.' : ''}</p>`;
 }
 
@@ -66,7 +80,8 @@ function emailForms(a) {
         <div class="auth-fields">
           <label class="visually-hidden" for="auth-code">메일로 받은 코드</label>
           <input id="auth-code" class="area-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="메일로 받은 코드" value="${a.code}" data-input="auth-code" data-focus-key="auth-code">
-          ${passwordField(a, { autocomplete: 'new-password', placeholder: `새 비밀번호 (${PASSWORD_MIN}자 이상)` })}
+          ${passwordField(a, { autocomplete: 'new-password', placeholder: '새 비밀번호' })}
+          ${ruleHint(a)}
           ${confirmField(a)}
           ${submit(a, '비밀번호 바꾸기')}
         </div>
@@ -79,7 +94,8 @@ function emailForms(a) {
       <p class="note-label">${signin ? '이메일로 로그인' : '이메일로 가입하기'}</p>
       <div class="auth-fields">
         ${emailField(a, signin ? 'username' : 'email')}
-        ${passwordField(a, { autocomplete: signin ? 'current-password' : 'new-password', placeholder: signin ? '비밀번호' : `비밀번호 (${PASSWORD_MIN}자 이상)` })}
+        ${passwordField(a, { autocomplete: signin ? 'current-password' : 'new-password', placeholder: '비밀번호' })}
+        ${signin ? '' : ruleHint(a)}
         ${signin ? '' : confirmField(a)}
         ${submit(a, signin ? '로그인' : '가입하고 시작하기')}
       </div>
@@ -147,6 +163,11 @@ export const authInputs = {
     const a = authUi(ctx.ui);
     a.password = el.value;
     if (a.password2) updateMatchHint(a);
+    const rule = document.getElementById('auth-password-rule');
+    if (rule) {
+      rule.textContent = ruleText(a.password);
+      rule.classList.toggle('is-ok', !passwordProblems(a.password).length);
+    }
   },
   'auth-password2': (ctx, el) => {
     authUi(ctx.ui).password2 = el.value;

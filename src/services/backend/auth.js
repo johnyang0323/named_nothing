@@ -101,6 +101,23 @@ export async function signInWithKakao(returnScreen = 'day') {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PASSWORD_MIN = 8;
+/** Special characters a new password needs one of: ASCII punctuation, e.g. ! @ # $ % ^ & * - _ . ? */
+const SPECIAL_RE = /[!-/:-@[-`{-~]/;
+export const PASSWORD_RULE = `${PASSWORD_MIN}자 이상, 특수문자 1개 이상`;
+
+/** What a NEW password still needs (empty list = fine). Sign-in accepts older passwords as they are. */
+export function passwordProblems(password) {
+  const value = String(password || '');
+  const problems = [];
+  if (value.length < PASSWORD_MIN) problems.push(`${PASSWORD_MIN}자 이상`);
+  if (!SPECIAL_RE.test(value)) problems.push('특수문자 1개 이상');
+  return problems;
+}
+
+function checkNewPassword(password, label = '비밀번호') {
+  const problems = passwordProblems(password);
+  if (problems.length) throw new AuthError(`${label}는 ${problems.join(', ')}이 필요해요. (특수문자 예: ! @ # $ % ^ & * - _)`);
+}
 
 function checkCredentials(email, password) {
   const address = String(email || '').trim();
@@ -131,6 +148,7 @@ export async function signInWithEmail(email, password) {
  */
 export async function signUpWithEmail(email, password, confirmPassword = password) {
   const address = checkCredentials(email, password);
+  checkNewPassword(password);
   if (password !== confirmPassword) throw new AuthError('비밀번호가 서로 달라요. 두 칸에 같은 비밀번호를 입력해 주세요.');
   const supabase = await getSupabase();
   if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
@@ -176,7 +194,7 @@ export async function requestPasswordReset(email) {
 export async function resetPasswordWithCode(email, code, newPassword, confirmPassword = newPassword) {
   const token = String(code || '').replace(/\s/g, '');
   if (!/^\d{6,10}$/.test(token)) throw new AuthError('메일로 받은 숫자 코드를 입력해 주세요.');
-  if (String(newPassword || '').length < PASSWORD_MIN) throw new AuthError(`새 비밀번호는 ${PASSWORD_MIN}자 이상이어야 해요.`);
+  checkNewPassword(newPassword, '새 비밀번호');
   if (newPassword !== confirmPassword) throw new AuthError('새 비밀번호가 서로 달라요. 두 칸에 같은 비밀번호를 입력해 주세요.');
   const supabase = await getSupabase();
   holdAuthEvents = true;

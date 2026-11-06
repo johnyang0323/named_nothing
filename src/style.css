@@ -3972,3 +3972,13 @@ input[type='checkbox'][role='switch']:focus-visible {
 .area-input[aria-invalid='true'] {
   border-color: var(--destructive);
 }
+
+.password-rule {
+  margin: -4px 0 0;
+  padding: 0 4px;
+  font-size: 0.8125rem;
+  color: var(--label-2);
+}
+.password-rule.is-ok {
+  color: var(--forest-2);
+}
