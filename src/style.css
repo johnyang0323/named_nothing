@@ -5753,3 +5753,150 @@ body[data-screen='home'] .view {
   font-size: 0.8rem;
   font-weight: 800;
 }
+
+/* =========================================================================
+   Liquid glass, everywhere (final layer)
+   One recipe for every pane and control: a clear pane brighter at the top,
+   a bright top edge (light catching the glass), a thin white rim, soft
+   aurora-tinted shadow. Selected controls get a SECOND pane stacked inside
+   the first: a clear outer rim, a crisp inner edge, then the aurora glass.
+   ========================================================================= */
+:root {
+  --pane: linear-gradient(180deg, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0.36) 100%);
+  --pane-control: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.3) 100%);
+  --pane-blur: blur(26px) saturate(185%);
+  --pane-rim: rgba(255, 255, 255, 0.85);
+  --pane-shadow: inset 0 1px 0 #fff, inset 0 -1px 1px rgba(59, 130, 246, 0.05), 0 14px 36px rgba(59, 130, 246, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --control-shadow: inset 0 1px 0 #fff, inset 0 -1px 1px rgba(59, 130, 246, 0.06), 0 6px 18px rgba(59, 130, 246, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  /* selected: two panes */
+  --stack-fill: linear-gradient(120deg, rgba(59, 130, 246, 0.82) 0%, rgba(96, 165, 250, 0.78) 34%, rgba(167, 139, 250, 0.78) 68%, rgba(251, 207, 232, 0.86) 100%);
+  --stack-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.95),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.4),
+    inset 0 0 0 4.75px rgba(255, 255, 255, 0.9),
+    inset 0 8px 10px -6px rgba(255, 255, 255, 0.85),
+    inset 0 -6px 10px -6px rgba(59, 130, 246, 0.35),
+    0 10px 26px rgba(96, 165, 250, 0.38),
+    0 2px 5px rgba(59, 130, 246, 0.18);
+
+  --block-bg: var(--pane);
+  --off-bg: var(--pane-control);
+  --on-bg: var(--stack-fill);
+  --on-shadow: var(--stack-shadow);
+}
+
+/* ---- blocks: one clear pane ---- */
+:is(.group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list, .replace-list,
+  .memory-list, .people, .auth-panel, .facts, .suggestion-card, .area-map-wrap, .empty, .entry, .entry-editor,
+  .invite-banner, .discovery, .tabs, .budget-options,
+  .together .block:not(:has(.people, .group-list, .entry, .member-chips)), .myday .block.journal, .myday .block.reset):not(.lg-glass) {
+  background: var(--pane);
+  -webkit-backdrop-filter: var(--pane-blur);
+  backdrop-filter: var(--pane-blur);
+  border: 1px solid var(--pane-rim);
+  box-shadow: var(--pane-shadow);
+}
+
+/* glisse panes keep their refraction rim; only the tint and shadow follow */
+.lg-glass:is(.group, .mood-grid, .area-map-wrap) {
+  --lg-glass: rgba(255, 255, 255, 0.5);
+  box-shadow: var(--pane-shadow);
+  outline: 1px solid var(--pane-rim);
+  outline-offset: -1px;
+}
+
+/* the swipe card is a block too, just a little more solid */
+.swipe-card.destination {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.62));
+  border: 1px solid var(--pane-rim);
+  box-shadow: var(--pane-shadow), 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+/* ---- every unselected control: one clear pane ---- */
+:is(.button, .button-secondary, .button-ghost, .chip, .place-chip, .weather-badge, .map-chip, .icon-button,
+  .directions-button, .kakao-photos-link, .gallery-btn, .gallery-reject, .gallery-pin, .area-input, .note,
+  .member-chip, .text-pill):not(.button-primary):not(.is-on):not([aria-pressed='true']):not(.is-pinned):not(.kakao-login) {
+  color: var(--text);
+  background: var(--pane-control);
+  -webkit-backdrop-filter: blur(20px) saturate(185%);
+  backdrop-filter: blur(20px) saturate(185%);
+  border: 1px solid var(--pane-rim);
+  box-shadow: var(--control-shadow);
+}
+
+.lg-button:not(.is-selected-glass):not(.cta-button):not([data-variant='filled']) {
+  --lg-glass: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--control-shadow);
+  outline: 1px solid var(--pane-rim);
+  outline-offset: -1px;
+}
+
+/* ---- selected: a second pane stacked on the first ---- */
+:is(.button-primary, .chip.is-on, .chip[aria-pressed='true'], .gallery-pin.is-pinned, .tabs .tab[aria-selected='true'],
+  .budget-chip input:checked + span),
+.cta-button.lg-button,
+.cta-area .cta-button.lg-button,
+.lg-button.is-selected-glass:not(:disabled),
+.button-primary:hover {
+  color: #0a0a0a;
+  background: var(--stack-fill);
+  background-color: transparent;
+  -webkit-backdrop-filter: blur(18px) saturate(190%);
+  backdrop-filter: blur(18px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--stack-shadow);
+  translate: 0 -1px;
+}
+
+.cta-button.lg-button::before,
+.lg-button.is-selected-glass:not(:disabled)::before {
+  content: none;
+}
+
+.mood:has(input:checked) {
+  background: var(--stack-fill);
+  box-shadow: var(--stack-shadow);
+  border-radius: 18px;
+  margin: 4px;
+}
+
+/* glisse: the segmented thumb and the tab bar lens become the stacked pane */
+.lg-segmented-thumb {
+  background: var(--stack-fill);
+  box-shadow: var(--stack-shadow);
+}
+
+.app-tabbar .lg-tab-lens::before {
+  background: var(--stack-fill);
+  opacity: 0.7;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.95),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.45),
+    inset 0 0 0 3.75px rgba(255, 255, 255, 0.9),
+    inset 0 6px 8px -5px rgba(255, 255, 255, 0.85);
+}
+
+.lg-switch[aria-checked='true'] .lg-switch-fill {
+  background: var(--stack-fill);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9), inset 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
+/* the tab bar itself is a pane */
+.app-tabbar.lg-tab-bar {
+  outline: 1px solid var(--pane-rim);
+  outline-offset: -1px;
+}
+
+/* pressed: the pane dips a little (scale composes with any positioning transform) */
+:is(.button, .lg-button, .chip, .place-chip):active {
+  scale: 0.98;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --pane: #fff;
+    --pane-control: #fff;
+    --stack-fill: #3b82f6;
+  }
+}
