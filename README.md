@@ -1,4 +1,4 @@
-# 계획 있는 척.
+# 계획 있는 척
 
 > Not every day needs a plan. Every day can have a story.
 
@@ -27,7 +27,8 @@ The design uses Apple's Liquid Glass idea on white, with an aurora palette.
 - **Blocks:** a single layer of clear white glass. Nothing inside a block is a second pane.
 - **Selected controls and the main action:** the aurora gradient as glass. This covers the chosen time budget, mood row, tab, current menu item, an "on" switch, "오늘 시작하기" and other primary buttons.
 - **Unselected controls:** clear white glass.
-- No app title at the top of screens. The account button sits alone on the right.
+- No app title at the top of screens. The account button sits alone on the right. The sign-in screen shows only the centred name, one short centred line and the sign-in panel.
+- **Logo and default picture:** white, one aurora circle in the middle and a white question mark inside it (`scripts/make-icons.cjs`, `src/components/placeVisual.js`).
 - **iOS Settings layout:** large bold titles; small grey section headers above inset grouped blocks. Lists are a single glass block whose rows are divided by hairlines starting at the text. Rows have chevrons, iOS switches and segmented controls (time budget, sharing scope, 친구/단체방). The mood choice is a checkmark list. On every screen size the menu is a floating liquid-glass capsule at the bottom: 발견 · 경로 · [home logo] · 나의 하루 · 함께. The raised app logo in the middle goes home.
 - **Place photos:** user photos come first. These are journal photos the author chose to share as the place's photo (`supabase/place_photos.sql`; nickname only, the note stays private, can be reported). After them come only trustworthy web results: photos from posts whose title names the place, or ones people picked. Otherwise the card keeps its illustration and offers **카카오맵에서 실제 사진 보기**.
 - **Type:** San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices (system fonts). Elsewhere it uses the bundled open font Pretendard, drawn to match them.

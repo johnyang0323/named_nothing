@@ -1,6 +1,6 @@
 {
   "appId": "io.github.johnyang0323.haru",
-  "appName": "계획 있는 척.",
+  "appName": "계획 있는 척",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false

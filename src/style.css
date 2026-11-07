@@ -1,5 +1,5 @@
 /* ==========================================================================
-   계획 있는 척. — Liquid glass design system
+   계획 있는 척 — Liquid glass design system
    forest green (main) · sand beige (second) · electric purple (point)
    ========================================================================== */
 
@@ -5326,4 +5326,34 @@ a {
     --on-bg: #3b82f6;
     --on-text: #fff;
   }
+}
+
+/* ---- sign-in screen: just the name, a short line, and the sign-in panel ---- */
+.welcome-head {
+  margin: clamp(2.5rem, 12vh, 7rem) auto var(--space-6);
+  max-width: 26rem;
+  text-align: center;
+}
+
+.welcome .display {
+  margin: 0;
+  font-size: clamp(2.2rem, 10vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+.welcome .lede {
+  margin: var(--space-3) auto 0;
+  max-width: 22rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--label-2);
+  text-align: center;
+}
+
+.welcome .block {
+  max-width: 26rem;
+  margin-left: auto;
+  margin-right: auto;
 }

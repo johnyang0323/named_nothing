@@ -222,7 +222,7 @@ function handleRoute() {
     window.scrollTo({ top: 0 });
     view.querySelector('h1')?.focus({ preventScroll: true });
   }
-  document.title = `${document.querySelector('h1')?.textContent.replace(/\s+/g, ' ').trim()} · 계획 있는 척.`;
+  document.title = `${document.querySelector('h1')?.textContent.replace(/\s+/g, ' ').trim()} · 계획 있는 척`;
 }
 
 // ---- delegated events ------------------------------------------------------

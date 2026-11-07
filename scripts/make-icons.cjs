@@ -10,18 +10,20 @@ const ROOT = path.join(__dirname, '..');
 const RES = path.join(ROOT, 'android/app/src/main/res');
 
 function art(pad = 0, { rx = 0, bg = true } = {}) {
-  const a = -pad, s = 100 + pad * 2, e = 100 + pad;
-  // aurora palette on white: #3B82F6 · #60A5FA · #A78BFA · #FBCFE8
+  // white, one aurora circle in the middle, a white question mark inside
+  const a = -pad, s = 100 + pad * 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${a} ${a} ${s} ${s}">
   <defs>
     <clipPath id="c"><rect x="${a}" y="${a}" width="${s}" height="${s}" rx="${rx}"/></clipPath>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3B82F6"/><stop offset="0.35" stop-color="#60A5FA"/><stop offset="0.7" stop-color="#A78BFA"/><stop offset="1" stop-color="#FBCFE8"/>
+    </linearGradient>
   </defs>
   <g clip-path="url(#c)">
     ${bg ? `<rect x="${a}" y="${a}" width="${s}" height="${s}" fill="#FFFFFF"/>` : ''}
-    <circle cx="60" cy="43" r="15" fill="#A78BFA"/>
-    <path d="M${a} 66 Q36 50 ${e} 60 V${e} H${a} Z" fill="#60A5FA"/>
-    <path d="M${a} 80 Q56 62 ${e} 76 V${e} H${a} Z" fill="#3B82F6"/>
-    <path d="M30 92 Q52 78 74 71" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 7"/>
+    <circle cx="50" cy="50" r="30" fill="url(#g)"/>
+    <path d="M41 41.5C41 35.5 45.5 32 50.5 32C56 32 60 35.8 60 40.8C60 45 57.3 47.2 54.2 49C51.7 50.5 50.5 52 50.5 55.5V57.5" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="50.5" cy="67" r="4.2" fill="#FFFFFF"/>
   </g>
 </svg>`;
 }
