@@ -79,7 +79,29 @@
 
 ## 6. 장소 사진 기능 켜기
 
-사진은 카카오 이미지 검색을 사용합니다. REST API 키가 브라우저에 노출되지 않도록, Supabase 서버 함수가 대신 검색합니다.
+사진은 이 순서로 찾아요. 키가 브라우저에 노출되지 않도록 Supabase 서버 함수가 대신 검색합니다.
+
+1. **한국관광공사 TourAPI**: 근처의 같은 장소에 등록된 공식 사진 (`TOUR_API_KEY`)
+2. **네이버 이미지 검색**: 제목에 장소 이름이 들어간 사진만 (`NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`)
+3. **다음(카카오) 검색**: 네이버 키가 없을 때만 쓰는 예비 수단 (`KAKAO_REST_API_KEY`)
+
+(해외 장소 사진은 이 함수가 아니라 구글 지도에서 바로 가져와요. [GOOGLE_MAPS_SETUP.md](GOOGLE_MAPS_SETUP.md) 참고)
+
+### 키 받기
+
+**네이버 검색 (NAVER_CLIENT_ID / NAVER_CLIENT_SECRET)**
+1. [Naver Developers](https://developers.naver.com/apps/#/register)에 로그인 → **Application → 애플리케이션 등록**
+2. 애플리케이션 이름: `계획 있는 척`, **사용 API: 검색** 선택
+3. 환경: **WEB 설정** → 웹 서비스 URL에 `https://johnyang0323.github.io` 입력 → 등록
+4. 만들어진 앱의 **Client ID**와 **Client Secret**을 아래 Secrets에 넣어요. (하루 25,000회까지 무료)
+
+**한국관광공사 TourAPI (TOUR_API_KEY)**
+1. [공공데이터포털](https://www.data.go.kr) 회원가입 → 검색창에 **한국관광공사_국문 관광정보 서비스_GW** 검색
+2. **활용신청** → 목적 간단히 적고 신청 (보통 바로 자동 승인돼요. 키가 실제로 동작하기까지 1~2시간 걸릴 수 있어요)
+3. **마이페이지 → 데이터 활용 → Open API → 활용신청 현황**에서 그 서비스를 열고 **일반 인증키 (Decoding)** 값을 복사해요. (Encoding 값을 넣어도 동작해요)
+4. 사진은 공공누리 조건에 따라 앱에 "사진: 한국관광공사"로 출처를 표시해요.
+
+### 함수 배포
 
 1. **Edge Functions → Deploy a new function → Via Editor**를 엽니다.
 2. 에디터에 예시 코드(`withSupabase`, `Hello ${name}` 등)가 들어 있어요. **전부 지웁니다.**
@@ -88,8 +110,11 @@
    ⚠️ 배포 후 함수 **Overview**에 나오는 주소의 끝부분(예: `.../functions/v1/hyper-responder`)이 실제 호출 이름이에요. 대시보드가 자동으로 정하기도 하고, 나중에 바꿀 수 없어요.
    이 이름이 `place-photo`가 아니면 GitHub 저장소 **Settings → Secrets and variables → Actions → Variables**에 `PHOTO_FUNCTION` = 그 이름(예: `hyper-responder`)을 추가하고 배포를 다시 실행하세요.
    지금 프로젝트는 `hyper-responder`로 이미 설정돼 있어요.
-5. **Edge Functions → Secrets**에 아래 두 값을 추가합니다.
-   - `KAKAO_REST_API_KEY` = 카카오 **REST API 키**
+5. **Edge Functions → Secrets**에 아래 값을 추가합니다.
+   - `NAVER_CLIENT_ID` = 네이버 Client ID
+   - `NAVER_CLIENT_SECRET` = 네이버 Client Secret
+   - `TOUR_API_KEY` = 공공데이터포털 일반 인증키
+   - `KAKAO_REST_API_KEY` = 카카오 **REST API 키** (이미 있으면 그대로 두세요. 네이버 키가 없을 때 예비로 써요)
    - `ALLOWED_ORIGINS` = `https://johnyang0323.github.io,https://localhost` (뒤의 `https://localhost`는 안드로이드 앱 주소예요)
 6. `place-photo` 함수의 **Details**(또는 Settings) 탭에서 **Verify JWT with legacy secret**(또는 *Enforce JWT verification*)을 **끄고** 저장합니다.
    새 방식 키(`sb_publishable_…`)는 JWT 형식이 아니라서, 이 설정이 켜져 있으면 로그인하지 않은 사용자의 사진 요청이 거절돼요.
@@ -99,8 +124,10 @@
 
    | 보이는 내용 | 뜻 / 해결 |
    |---|---|
-   | `"deployed": true`, `"kakaoRestKeySet": true` | 정상이에요. 앱의 **나의 하루 → 사진 기능 점검**을 눌러보세요. |
-   | `"kakaoRestKeySet": false` | Secrets에 `KAKAO_REST_API_KEY`를 추가해 주세요. |
+   | `"deployed": true`, `"webSearch": "naver"`, `"tourApiKeySet": true` | 정상이에요. 앱의 **계정 → 사진 기능 점검**을 눌러보세요. |
+   | `"webSearch": "kakao"` | 네이버 키가 아직 없어서 다음 검색을 쓰고 있어요. `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`을 추가해 주세요. |
+   | `"tourApiKeySet": false` | `TOUR_API_KEY`를 추가해 주세요. |
+   | `"naverKeySet"` 항목이 아예 없음 | 예전 코드예요. 3번처럼 최신 코드를 붙여넣고 **Deploy** 해주세요. |
    | `Requested function was not found` | 함수가 없어요. 이름이 정확히 `place-photo`인지, **Deploy**까지 눌렀는지 확인해 주세요. |
    | `Missing authorization header` / `Invalid JWT` | 6번의 Verify JWT를 꺼주세요. |
    | `{"error":"origin not allowed"}` | 예전 버전 함수예요. 3번처럼 최신 코드를 다시 붙여넣고 **Deploy** 해주세요. |

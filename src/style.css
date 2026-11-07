@@ -6492,3 +6492,9 @@ body[data-screen='home'] .view {
   margin: var(--space-4) 0 var(--space-2);
   text-align: center;
 }
+
+/* 국내 / 해외 map switch: top-left, opposite 현재 위치 */
+.map-chip.map-chip-region {
+  left: var(--space-3);
+  right: auto;
+}

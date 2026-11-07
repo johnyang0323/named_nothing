@@ -4,6 +4,7 @@
  * Account settings live on the 계정 screen.
  */
 import { getPlaceById } from '../services/placeRepository.js';
+import { isRealPlace } from '../services/kakao/mapper.js';
 import { refreshCommunityPhotos } from '../services/photos.js';
 import { FEELINGS, NOTE_MAX_LENGTH } from '../services/store.js';
 import { formatKoreanDate } from '../utils/date.js';
@@ -111,7 +112,7 @@ function audienceSummary(e, groups) {
 
 /** Only real (Kakao) places have a card other people can see the photo on. */
 function canSharePlace(placeId) {
-  return getPlaceById(placeId)?.source === 'kakao';
+  return isRealPlace(getPlaceById(placeId));
 }
 
 function openEditor(ui, { placeId, entry = null }) {

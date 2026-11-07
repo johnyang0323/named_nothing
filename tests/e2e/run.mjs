@@ -24,6 +24,8 @@ const BUILDS = {
   // real-place mode, no accounts
   kakao: { VITE_KAKAO_MAP_KEY: 'test-key', VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
   // everything on (what the deployed site runs)
+  // Kakao in Korea + Google abroad, no accounts
+  google: { VITE_KAKAO_MAP_KEY: 'test-key', VITE_GOOGLE_MAPS_KEY: 'test-google', VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
   full: { VITE_KAKAO_MAP_KEY: 'test-key', VITE_SUPABASE_URL: 'https://test.supabase.co', VITE_SUPABASE_ANON_KEY: 'anon-test', VITE_PHOTO_FUNCTION: 'place-photo' },
 };
 
@@ -31,6 +33,7 @@ const SERVERS = [
   { build: 'plain', port: 4173, prefix: '/' },
   { build: 'kakao', port: 4174, prefix: '/' },
   { build: 'full', port: 4175, prefix: '/' },
+  { build: 'google', port: 4176, prefix: '/' },
   { build: 'plain', port: 4180, prefix: '/named_nothing/' }, // like GitHub Pages
 ];
 
@@ -49,6 +52,7 @@ const SUITES = [
   'place-photos.cjs',
   'social-plus.cjs',
   'legacy-share.cjs',
+  'google.cjs',
 ];
 
 const TYPES = {

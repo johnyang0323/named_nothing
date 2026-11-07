@@ -74,7 +74,7 @@ async function openAs(browser, email, targetPlace) {
   await until(() => [...backend.votes.keys()].some((k) => k.endsWith('|' + idB()) && k.includes('p0.png')), 8000, 'B vote stored');
 
   const C = await openAs(browser, 'c@test.com', place);
-  const urls = await C.p.evaluate((id) => JSON.parse(localStorage.getItem('plannish-photos'))[id].photos.map((x) => x.url.split('/').pop()), [...backend.votes.keys()][0].split('|')[0]);
+  const urls = await C.p.evaluate((id) => JSON.parse(localStorage.getItem('plannish-photos-v2'))[id].photos.map((x) => x.url.split('/').pop()), [...backend.votes.keys()][0].split('|')[0]);
   assert(!urls.includes('p0.png') && urls[0] === 'p2.png', 'C: p0 hidden for everyone ' + urls);
   ok('C: after two down-votes p0 is hidden for everyone; order', urls.join(' > '));
 
@@ -82,7 +82,7 @@ async function openAs(browser, email, targetPlace) {
   backend.votes.set(`${[...backend.votes.keys()][0].split('|')[0]}|https://evil.test/x.png|user-9`, 1);
   backend.votes.set(`${[...backend.votes.keys()][0].split('|')[0]}|https://evil.test/x.png|user-8`, 1);
   const D = await openAs(browser, 'd@test.com', place);
-  const urlsD = await D.p.evaluate(() => Object.values(JSON.parse(localStorage.getItem('plannish-photos'))).flatMap((e) => (e.photos || []).map((x) => x.url)));
+  const urlsD = await D.p.evaluate(() => Object.values(JSON.parse(localStorage.getItem('plannish-photos-v2'))).flatMap((e) => (e.photos || []).map((x) => x.url)));
   assert(!urlsD.some((u) => u.includes('evil.test')), 'no injected image');
   ok('D: up-voting an outside image URL does not make it appear');
 

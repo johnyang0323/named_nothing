@@ -35,6 +35,14 @@ async function findCenter(kakao, query) {
   throw new AreaSearchError(`‘${query}’을(를) 찾지 못했어요. 동 이름이나 역 이름으로 다시 적어보세요.`);
 }
 
+/** A Korean (road/lot) address → center, or null. No keyword guessing. */
+export async function addressCenter(query) {
+  const kakao = await ensureKakao();
+  const geocoder = new kakao.maps.services.Geocoder();
+  const { data, status } = await callService((cb) => geocoder.addressSearch(query, cb));
+  return status === kakao.maps.services.Status.OK && data[0] ? { lat: Number(data[0].y), lng: Number(data[0].x) } : null;
+}
+
 async function ensureKakao() {
   try {
     return await loadKakao();

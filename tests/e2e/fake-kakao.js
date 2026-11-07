@@ -21,7 +21,7 @@ window.kakao = { maps: {
     SortBy: { ACCURACY: 'accuracy' },
     Geocoder: function () {
       this.coord2RegionCode = (x, y, cb) => { window.__regionCall = [x, y]; cb([{ region_type: 'B', region_3depth_name: '망원동' }, { region_type: 'H', region_3depth_name: '망원1동' }], 'OK'); };
-      this.addressSearch = (q, cb) => (q === '없는동네' ? cb([], 'ZERO_RESULT') : cb([{ x: '126.906', y: '37.556' }], 'OK'));
+      this.addressSearch = (q, cb) => (q === '없는동네' || /시부야|shibuya/i.test(q) ? cb([], 'ZERO_RESULT') : cb([{ x: '126.906', y: '37.556' }], 'OK'));
     },
     Places: function () {
       const make = (prefix, cat, n) => Array.from({ length: n }, (_, i) => ({

@@ -96,11 +96,72 @@ test('health check, origin rules and error replies', async () => {
   const slash = await loadFunction({ ...SECRETS, ALLOWED_ORIGINS: SITE + '/' }, kakaoOk);
   assert.equal((await slash.handler(post({ query: '테스트 장소' }))).status, 200, 'trailing slash in the secret is fine');
 
-  const noKey = await loadFunction({ ALLOWED_ORIGINS: SITE }, kakaoOk);
+  const noKey = await loadFunction({ ALLOWED_ORIGINS: SITE }, kakaoOk); // no search key at all
   assert.equal((await noKey.handler(post({ query: '테스트 장소' }))).status, 500);
 
   const rejected = await loadFunction(SECRETS, () => ({ status: 401 }));
   const r = await rejected.handler(post({ query: '테스트 장소' }));
   assert.equal(r.status, 502);
   assert.equal((await r.json()).status, 401);
+});
+
+// ---- Naver search + 한국관광공사 TourAPI ---------------------------------------
+const NAVER_ITEMS = [
+  { title: '망원 카페 소소 창가 자리', link: 'https://blogfiles.pstatic.net/a.jpg', thumbnail: 'https://search.pstatic.net/common/?src=https%3A%2F%2Fa.jpg&type=b150', sizewidth: '1000', sizeheight: '750' },
+  { title: '서울 카페 추천 모음', link: 'https://blogfiles.pstatic.net/b.jpg', thumbnail: 'https://search.pstatic.net/common/?src=b&type=b150', sizewidth: '1000', sizeheight: '750' },
+  { title: '카페소소 배너', link: 'https://x/c.jpg', thumbnail: 'https://search.pstatic.net/common/?src=c&type=b150', sizewidth: '1600', sizeheight: '300' },
+];
+const tourJson = (items) => ({ response: { header: { resultCode: '0000' }, body: { items: items.length ? { item: items } : '' } } });
+const replies = ({ tour = true, naverStatus = 200 } = {}) => (url) => {
+  if (url.includes('openapi.naver.com')) return naverStatus === 200 ? { body: { items: NAVER_ITEMS } } : { status: naverStatus };
+  if (url.includes('locationBasedList2')) return tour ? { body: tourJson([{ title: '카페 소소(망원)', contentid: '77', dist: '35', firstimage: 'http://tong.visitkorea.or.kr/1.jpg', firstimage2: 'http://tong.visitkorea.or.kr/1s.jpg' }, { title: '망원시장', contentid: '78', dist: '300', firstimage: 'http://tong/x.jpg' }]) } : { body: tourJson([]) };
+  if (url.includes('detailImage2')) return { body: tourJson([{ originimgurl: 'http://tong.visitkorea.or.kr/2.jpg', smallimageurl: 'http://tong.visitkorea.or.kr/2s.jpg' }]) };
+  return kakaoOk(url);
+};
+const NEW_SECRETS = { NAVER_CLIENT_ID: 'id', NAVER_CLIENT_SECRET: 'sec', TOUR_API_KEY: 'tk', ALLOWED_ORIGINS: SITE };
+
+test('TourAPI photos first, then Naver images whose title names the place', async () => {
+  const { handler } = await loadFunction(NEW_SECRETS, replies());
+  const body = await (await handler(post({ query: '카페 소소 서울 마포구', name: '카페 소소', lat: 37.556, lng: 126.91 }))).json();
+  assert.equal(body.tour, 'ok');
+  assert.equal(body.search, 'naver');
+  assert.deepEqual(body.photos.map((p) => p.source), ['tour', 'tour', 'naver']);
+  assert.equal(body.photos[0].url, 'https://tong.visitkorea.or.kr/1.jpg', 'https, nearest matching spot');
+  assert.equal(body.photos[0].site, '한국관광공사');
+  assert.equal(body.photos[2].url, 'https://search.pstatic.net/common/?src=https%3A%2F%2Fa.jpg&type=w800', 'larger Naver thumbnail');
+  assert.ok(body.photos[2].thumb.endsWith('type=b150'), 'original thumbnail kept as fallback');
+  assert.ok(!body.photos.some((p) => p.url.includes('src=b')), 'title without the place name left out');
+});
+
+test('no TourAPI match or outside Korea → Naver only; Naver refusal is reported', async () => {
+  const none = await loadFunction(NEW_SECRETS, replies({ tour: false }));
+  const a = await (await none.handler(post({ query: '카페 소소 서울', name: '카페 소소', lat: 37.5, lng: 126.9 }))).json();
+  assert.equal(a.tour, 'no match');
+  assert.deepEqual(a.photos.map((p) => p.source), ['naver']);
+  const abroad = await (await none.handler(post({ query: 'Cafe Soso Tokyo', name: '카페 소소', lat: 35.68, lng: 139.76 }))).json();
+  assert.equal(abroad.tour, 'skipped');
+
+  const refused = await loadFunction({ ...NEW_SECRETS, TOUR_API_KEY: '' }, replies({ naverStatus: 401 }));
+  const r = await refused.handler(post({ query: '카페 소소 서울', name: '카페 소소' }));
+  assert.equal(r.status, 502);
+  assert.deepEqual(await r.json(), { error: 'naver search failed', provider: 'naver', status: 401, tour: 'off' });
+});
+
+test('without Naver keys the Kakao search still works (with TourAPI on top)', async () => {
+  const { handler } = await loadFunction({ ...SECRETS, TOUR_API_KEY: 'tk' }, replies());
+  const body = await (await handler(post({ query: '카페 소소 서울 마포구', name: '카페 소소', lat: 37.556, lng: 126.91 }))).json();
+  assert.equal(body.search, 'kakao');
+  assert.equal(body.photos[0].source, 'tour');
+  assert.ok(body.photos.some((p) => p.url === 'https://img/real-1.jpg'));
+  const health = await (await handler(new Request('https://x/f', { method: 'GET' }))).json();
+  assert.equal(health.webSearch, 'kakao');
+  assert.equal(health.tourApiKeySet, true);
+});
+
+test('TourAPI helpers', async () => {
+  const { mod } = await loadFunction(NEW_SECRETS, replies());
+  assert.ok(mod.tourMatches({ title: '카페 소소(망원)', dist: '35' }, '카페 소소'));
+  assert.ok(!mod.tourMatches({ title: '망원시장', dist: '300' }, '카페 소소'));
+  assert.ok(!mod.tourMatches({ title: '카페 소소', dist: '900' }, '카페 소소'), 'too far');
+  assert.equal(mod.naverLarger('http://search.pstatic.net/common/?src=x'), 'https://search.pstatic.net/common/?src=x&type=w800');
 });
