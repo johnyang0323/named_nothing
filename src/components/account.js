@@ -244,6 +244,9 @@ export const actions = {
     ctx.ui.confirmDelete = 'busy';
     ctx.rerender();
     try {
+      // no save may be left waiting to run after the account is gone
+      await ctx.sync.flush().catch(() => {});
+      await ctx.taste.flush().catch(() => {});
       const { kakaoUnlinked } = await deleteAccount();
       leaveDevice(ctx);
       ctx.toast(

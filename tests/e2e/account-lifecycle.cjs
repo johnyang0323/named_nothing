@@ -153,6 +153,48 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert(left.days.every((u) => u === null) && left.taste === null && left.owner === null, 'device cleared ' + JSON.stringify(left));
   ok('계정 삭제: explained, can cancel, then account + days + taste removed server-side and on this device; back to login');
 
+  // ---- "Confirm email" on: confirmation mail, resend, clear errors ----
+  {
+    const mail = createBackend({ confirmEmail: true });
+    const ctxM = await browser.newContext({ ...devices['iPhone 13'], reducedMotion: 'reduce' });
+    await wire(ctxM, mail, { errors: [] });
+    const m = await ctxM.newPage();
+    await m.goto(APP);
+    await m.waitForSelector('.welcome');
+    await m.click('[data-action="auth-mode"]');
+    await m.fill('#auth-email', 'new@test.com');
+    await m.fill('#auth-password', 'new-password-1');
+    await m.fill('#auth-password2', 'new-password-1');
+    await m.click('[data-form="email-auth"] button[type=submit]');
+    await m.waitForSelector('text=new@test.com(으)로 확인 메일을 보냈어요');
+    await m.click('[data-action="auth-resend"]');
+    await m.waitForSelector('text=확인 메일을 다시 보냈어요');
+    assert(mail.resent.includes('new@test.com'), 'resend called');
+    await m.click('[data-action="auth-resend"]');
+    await m.waitForSelector('text=1분쯤 뒤에 다시 보낼 수 있어요');
+    // signing in before confirming says so and offers the resend button
+    await m.fill('#auth-password', 'new-password-1');
+    await m.click('[data-form="email-auth"] button[type=submit]');
+    await m.waitForSelector('text=아직 이메일 확인이 끝나지 않은 계정이에요');
+    assert(await m.isVisible('[data-action="auth-resend"]'), 'resend offered on sign-in');
+    await ctxM.close();
+
+    const down = createBackend({ confirmEmail: true, mailDown: true });
+    const ctxD = await browser.newContext({ ...devices['iPhone 13'], reducedMotion: 'reduce' });
+    await wire(ctxD, down, { errors: [] });
+    const d = await ctxD.newPage();
+    await d.goto(APP);
+    await d.waitForSelector('.welcome');
+    await d.click('[data-action="auth-mode"]');
+    await d.fill('#auth-email', 'x@test.com');
+    await d.fill('#auth-password', 'new-password-1');
+    await d.fill('#auth-password2', 'new-password-1');
+    await d.click('[data-form="email-auth"] button[type=submit]');
+    await d.waitForSelector('text=확인 메일을 보내지 못했어요');
+    await ctxD.close();
+    ok('confirm email: "sent to …" + resend (with cool-down), unconfirmed sign-in offers resend, mail failure is named');
+  }
+
   console.log('errors:', errors.length ? errors : 'none');
   await browser.close();
   if (errors.length) process.exit(1);

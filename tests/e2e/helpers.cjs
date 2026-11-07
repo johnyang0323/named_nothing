@@ -5,7 +5,8 @@ const FAKE_KAKAO = fs.readFileSync(__dirname + '/fake-kakao.js', 'utf8');
 const PNG = fs.readFileSync(ROOT + '/public/icons/icon-512.png');
 const SB = 'https://test.supabase.co';
 
-function createBackend({ photos, photoFunction = null } = {}) {
+function createBackend({ photos, photoFunction = null, confirmEmail = false, mailDown = false } = {}) {
+  const resent = [];
   const db = new Map();
   const votes = new Map(); // place|url|user -> vote
   const prefs = new Map(); // user -> { taste, updated_at }
@@ -43,12 +44,27 @@ function createBackend({ photos, photoFunction = null } = {}) {
     if (path === '/auth/v1/signup') {
       const b = req.postDataJSON();
       if (accounts.has(b.email)) return json({ ...userFor(b.email), identities: [] });
-      accounts.set(b.email, { password: b.password, id: b.email === 'me@test.com' ? 'user-1' : 'user-' + (accounts.size + 1) });
+      // like Supabase with custom SMTP that can't send: the sign-up fails
+      if (mailDown) return json({ code: 500, error_code: 'unexpected_failure', msg: 'Error sending confirmation email' }, 500);
+      accounts.set(b.email, { password: b.password, id: b.email === 'me@test.com' ? 'user-1' : 'user-' + (accounts.size + 1), confirmed: !confirmEmail });
+      // "Confirm email" on: a user comes back but no session until the link is opened
+      if (confirmEmail) return json({ ...userFor(b.email), identities: [{ id: 'x' }] });
       return json(session(userFor(b.email)));
+    }
+    if (path === '/auth/v1/resend') {
+      const b = req.postDataJSON();
+      if (resent.filter((r) => r === b.email).length >= 1 && resent.at(-1) === b.email && Date.now() - (resent.lastAt || 0) < 1500) {
+        return json({ code: 429, msg: 'For security purposes, you can only request this after 60 seconds.' }, 429);
+      }
+      resent.push(b.email);
+      resent.lastAt = Date.now();
+      return json({});
     }
     if (path === '/auth/v1/token' && url.searchParams.get('grant_type') === 'password') {
       const b = req.postDataJSON();
-      return accounts.get(b.email)?.password === b.password ? json(session(userFor(b.email))) : json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400);
+      const acct = accounts.get(b.email);
+      if (acct && acct.password === b.password && acct.confirmed === false) return json({ code: 400, error_code: 'email_not_confirmed', msg: 'Email not confirmed' }, 400);
+      return acct?.password === b.password ? json(session(userFor(b.email))) : json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400);
     }
     if (path === '/auth/v1/recover') {
       const b = req.postDataJSON();
@@ -152,7 +168,7 @@ function createBackend({ photos, photoFunction = null } = {}) {
     }
     return json({ error: 'unmocked ' + path }, 404);
   }
-  return { db, accounts, log, logouts, handle, votes, fnBodies, prefs, errorsLog, resetCodes, deleted, social };
+  return { db, accounts, log, logouts, resent, handle, votes, fnBodies, prefs, errorsLog, resetCodes, deleted, social };
 }
 
 // ───────────── social stand-in (mirrors the rules in supabase/social.sql) ─────────────

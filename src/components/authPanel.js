@@ -11,6 +11,7 @@ import {
   signUpWithEmail,
   requestPasswordReset,
   resetPasswordWithCode,
+  resendConfirmation,
   PASSWORD_MIN,
   PASSWORD_RULE,
   passwordProblems,
@@ -119,6 +120,12 @@ export function renderAuthPanel(ui) {
             <p class="auth-or"><span>또는</span></p>`}
       ${emailForms(a)}
       ${a.info ? html`<p class="save-status" role="status">${a.info}</p>` : ''}
+      ${a.unconfirmed
+        ? html`<p class="auth-resend">
+            메일이 안 왔나요? 스팸함도 확인해 주세요.
+            <button type="button" class="text-button" data-action="auth-resend" data-focus-key="auth-resend" ${a.busy ? 'disabled' : ''}>확인 메일 다시 보내기</button>
+          </p>`
+        : ''}
       ${a.error ? html`<p class="area-error" role="alert">${a.error}</p>` : ''}
       <p class="legal-note">
         가입하거나 로그인하면 <a href="./terms.html" target="_blank" rel="noopener">이용약관</a>과
@@ -136,6 +143,7 @@ async function authStep(ctx, run) {
     await run(a);
   } catch (error) {
     a.error = error.message || '로그인하지 못했어요.';
+    if (error.code === 'unconfirmed') a.unconfirmed = a.email;
     ctx.announce(a.error);
   } finally {
     a.busy = false;
@@ -153,6 +161,12 @@ export const authActions = {
   'auth-mode': (ctx) => switchMode(ctx, authUi(ctx.ui).mode === 'signin' ? 'signup' : 'signin'),
   'auth-forgot': (ctx) => switchMode(ctx, 'reset', { password: '', code: '' }),
   'auth-back': (ctx) => switchMode(ctx, 'signin'),
+  'auth-resend': (ctx) =>
+    authStep(ctx, async (a) => {
+      const address = await resendConfirmation(a.unconfirmed || a.email);
+      a.info = `${address}(으)로 확인 메일을 다시 보냈어요. 받은편지함과 스팸함을 확인해 주세요.`;
+      ctx.announce(a.info);
+    }),
 };
 
 export const authInputs = {
@@ -202,7 +216,8 @@ export const authForms = {
           a.password = '';
           a.password2 = '';
           a.mode = 'signin';
-          a.info = '확인 메일을 보냈어요. 메일의 링크를 이 브라우저에서 연 뒤 로그인해 주세요.';
+          a.info = `${a.email}(으)로 확인 메일을 보냈어요. 메일의 "가입 확인하기"를 누른 뒤 로그인해 주세요.`;
+          a.unconfirmed = a.email;
           ctx.announce(a.info);
           return;
         }

@@ -5900,3 +5900,9 @@ body[data-screen='home'] .view {
     --stack-fill: #3b82f6;
   }
 }
+
+.auth-resend {
+  margin: var(--space-2) 0 0;
+  font-size: 0.85rem;
+  color: var(--label-2);
+}

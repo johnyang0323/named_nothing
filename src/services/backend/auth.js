@@ -133,7 +133,11 @@ export async function signInWithEmail(email, password) {
   if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
   const { data, error } = await supabase.auth.signInWithPassword({ email: address, password });
   if (error) {
-    if (/confirm/i.test(error.message)) throw new AuthError('아직 이메일 확인이 끝나지 않은 계정이에요. 메일의 확인 링크를 누르거나 관리자에게 문의해 주세요.');
+    if (/confirm/i.test(error.message)) {
+      const unconfirmed = new AuthError('아직 이메일 확인이 끝나지 않은 계정이에요. 메일의 "가입 확인하기"를 눌러 주세요.');
+      unconfirmed.code = 'unconfirmed';
+      throw unconfirmed;
+    }
     if (error.status === 429) throw new AuthError('시도가 너무 많았어요. 잠시 후 다시 해주세요.');
     throw new AuthError('이메일이나 비밀번호가 맞지 않아요. 처음이라면 ‘처음이에요’를 눌러 가입해 주세요.');
   }
@@ -156,7 +160,10 @@ export async function signUpWithEmail(email, password, confirmPassword = passwor
   if (error) {
     if (/already registered|already exists/i.test(error.message)) throw new AuthError('이미 가입된 이메일이에요. ‘로그인’으로 들어와 주세요.');
     if (/password/i.test(error.message)) throw new AuthError('비밀번호가 너무 쉬워요. 더 길거나 다른 비밀번호를 써주세요.');
-    if (error.status === 429) throw new AuthError('시도가 너무 많았어요. 잠시 후 다시 해주세요.');
+    if (error.status === 429 || /rate limit|too many/i.test(error.message)) throw new AuthError('확인 메일을 너무 자주 요청했어요. 1분쯤 뒤에 다시 시도해 주세요.');
+    if (/sending|confirmation email|smtp|mail/i.test(error.message) || error.status >= 500) {
+      throw new AuthError('확인 메일을 보내지 못했어요. 메일 발송 설정에 문제가 있을 수 있어요. 잠시 후 다시 시도해 주세요.');
+    }
     throw new AuthError('가입하지 못했어요. 잠시 후 다시 시도해 주세요.');
   }
   // Supabase returns a user with no identities when the address is already taken
@@ -166,6 +173,20 @@ export async function signUpWithEmail(email, password, confirmPassword = passwor
   if (!data?.session) return { needsConfirmation: true };
   setUser(data.user);
   return { needsConfirmation: false };
+}
+
+/** Send the sign-up confirmation email again (for an account that isn't confirmed yet). */
+export async function resendConfirmation(email) {
+  const address = String(email || '').trim();
+  if (!EMAIL_RE.test(address)) throw new AuthError('이메일 주소를 확인해 주세요.');
+  const supabase = await getSupabase();
+  if (!supabase) throw new AuthError('계정 기능이 아직 설정되지 않았어요.');
+  const { error } = await supabase.auth.resend({ type: 'signup', email: address, options: { emailRedirectTo: redirectUrl() } });
+  if (error) {
+    if (error.status === 429 || /rate limit|too many|seconds/i.test(error.message)) throw new AuthError('조금 전에 보냈어요. 1분쯤 뒤에 다시 보낼 수 있어요.');
+    throw new AuthError('확인 메일을 다시 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
+  }
+  return address;
 }
 
 /**
