@@ -5382,3 +5382,201 @@ body[data-screen='home'] .view {
 .app-tabbar .avatar-tab .avatar-initial {
   font-size: 0.75rem;
 }
+
+/* =========================================================================
+   Discover: one clearly bounded swipe card on a small deck
+   ========================================================================= */
+.discover-layout {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-3);
+}
+
+.deck-column {
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* two cards peeking out behind: "there's more to swipe" */
+.swipe-deck {
+  position: relative;
+  isolation: isolate;
+  padding-bottom: 14px;
+}
+
+.swipe-deck::before,
+.swipe-deck::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: calc(100% - 14px);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  pointer-events: none;
+}
+
+.swipe-deck::before {
+  z-index: -2;
+  width: 84%;
+  transform: translate(-50%, 14px);
+  opacity: 0.6;
+}
+
+.swipe-deck::after {
+  z-index: -1;
+  width: 92%;
+  transform: translate(-50%, 7px);
+  opacity: 0.85;
+}
+
+/* the card itself: a solid-edged glass card, clearly its own thing */
+.swipe-card.destination {
+  position: relative;
+  margin: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.14), 0 18px 44px rgba(59, 130, 246, 0.2), inset 0 1px 0 #fff;
+  cursor: grab;
+}
+
+.swipe-card .destination-figure {
+  position: static;
+  margin: 0;
+}
+
+.swipe-card .destination-visual {
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+}
+
+.swipe-card .photo-credit {
+  margin: 0;
+  padding: 6px 16px 0;
+  font-size: 0.72rem;
+}
+
+.swipe-card .destination-body {
+  padding: 12px 18px 18px;
+}
+
+.swipe-card .destination-body .kicker {
+  margin: 0;
+}
+
+.swipe-card .title {
+  margin: 2px 0 6px;
+  font-size: 1.6rem;
+}
+
+.swipe-card .description {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  color: var(--label-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* "가보기 / 다른 곳" stamps while dragging (and during the first nudge) */
+.swipe-card .swipe-hint {
+  top: 18px;
+  z-index: 4;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.3);
+}
+
+.swipe-card .swipe-hint-go {
+  left: 18px;
+  background: var(--aurora);
+}
+
+.swipe-card .swipe-hint-skip {
+  right: 18px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* tilt the card a little toward the side it's going */
+.swipe-card.is-dragging {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5), 0 24px 54px rgba(59, 130, 246, 0.28);
+}
+
+/* first visit: the card sways once (see nudge() in discover.js) */
+
+.swipe-card .destination-visual,
+.swipe-card .destination-figure {
+  box-shadow: none;
+  background: #fff;
+}
+
+/* buttons right under the card, on the side the card goes */
+.swipe-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.swipe-actions .button {
+  width: 100%;
+  min-height: 52px;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.swipe-tip,
+.swipe-tip {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-2) 4px 0;
+  font-size: 0.78rem;
+  color: var(--label-2);
+}
+
+.destination-details .kakao-photos-link {
+  margin-top: 0;
+}
+
+.destination-details .section-label {
+  margin-top: var(--space-6);
+}
+
+@media (min-width: 860px) {
+  .discover-layout {
+    grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .deck-column {
+    margin: 0;
+    position: sticky;
+    top: var(--space-6);
+  }
+
+  .discover .destination {
+    grid-template-columns: none;
+  }
+
+  .swipe-card .destination-visual {
+    aspect-ratio: 4 / 3;
+  }
+}
