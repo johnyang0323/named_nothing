@@ -61,7 +61,7 @@ export function render(state, { ui, taste, context }) {
             <button type="button" class="button button-secondary" data-action="another" data-focus-key="another">다른 곳 보기</button>
           </div>
           ${hasLearnedSwipe() ? '' : html`<p class="swipe-tip">카드를 오른쪽으로 밀면 가보기, 왼쪽으로 밀면 다른 곳을 보여드려요.</p>`}
-          <p class="quiet-link"><a href="#home">기분 다시 고르기</a></p>
+          <p class="quiet-link"><a href="#home">조건 바꾸기 (위치·시간·기분)</a></p>
         </div>
       </article>
     </section>`;

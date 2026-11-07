@@ -90,14 +90,17 @@ const title = (p) => p.textContent('#discover-title');
   assert((await title(p)) === t0, 'vertical touch no swipe');
   ok('touch: vertical drag scrolls (scrollY', y0, '→', await p.evaluate(() => scrollY), ') without swiping');
   await p.evaluate(() => scrollTo(0, 0));
-  await touch([[300, 300], [280, 302], [220, 305], [140, 306], [60, 308]]);
+  // swipe across the top of the photo (clear of its buttons), wherever the layout puts it
+  const sy = Math.round((await p.locator('.destination-visual').boundingBox()).y + 60);
+  await touch([[300, sy], [280, sy + 2], [220, sy + 5], [140, sy + 6], [60, sy + 8]]);
   await p.waitForFunction((t) => document.querySelector('#discover-title')?.textContent !== t, t0);
   assert(!(await p.isVisible('.swipe-tip')), 'tip hidden after learning');
   const overflow = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   assert(!overflow, 'no horizontal overflow');
   ok('touch: swipe left anywhere on card → 다른 곳; tip disappears; no sideways scroll');
   await p.evaluate(() => scrollTo(0, 0));
-  await touch([[80, 300], [100, 300], [180, 302], [260, 304], [340, 305]]);
+  const sy2 = Math.round((await p.locator('.destination-visual').boundingBox()).y + 60);
+  await touch([[80, sy2], [100, sy2], [180, sy2 + 2], [260, sy2 + 4], [340, sy2 + 5]]);
   await p.waitForURL(/#explore/);
   ok('touch: swipe right → 가보기');
 

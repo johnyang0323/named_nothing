@@ -13,7 +13,7 @@ import * as together from './components/together.js';
 import { syncLine } from './components/account.js';
 import { captureInvite } from './components/share.js';
 import { avatar } from './components/entryCard.js';
-import { getMyProfile, loadMyProfile, onProfileChange } from './services/backend/social.js';
+import { getMyProfile, loadMyProfile, onProfileChange, avatarSrc } from './services/backend/social.js';
 import { hydrateJournalPhotos } from './components/entryCard.js';
 import * as welcome from './components/welcome.js';
 import * as splash from './components/splash.js';
@@ -188,7 +188,20 @@ function updateNav() {
     else link.removeAttribute('aria-current');
   });
   const tabbar = document.getElementById('tabbar');
-  if (tabbar) renderTabBar(tabbar, { current: currentName, routeCount: store.getState().route.length });
+  if (!tabbar) return;
+  const state = store.getState();
+  const profile = getMyProfile();
+  renderTabBar(tabbar, {
+    current: currentName,
+    routeCount: state.route.length,
+    // the day has started → the logo opens today's recommendation
+    started: Boolean(state.recommendationId),
+    account: {
+      initial: Array.from(profile?.nickname || '나')[0],
+      src: (profile && avatarSrc(profile)) || avatarUrl(getUser()) || null,
+      label: '계정',
+    },
+  });
 }
 
 /**
@@ -256,7 +269,8 @@ view.addEventListener('submit', (event) => {
 
 /** The profile picture (or initial) in the header, linking to 계정. */
 function refreshAccountButton() {
-  const button = document.querySelector('[data-account-button]');
+  updateNav(); // the 계정 tab shows my photo
+  const button = document.querySelector('header [data-account-button]');
   if (!button) return;
   const profile = getMyProfile();
   const fallbackSrc = avatarUrl(getUser()); // Kakao photo until a profile photo is set

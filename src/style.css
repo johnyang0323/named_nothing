@@ -5357,3 +5357,28 @@ a {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* no header any more: content starts under the status bar */
+.view,
+body[data-screen='home'] .view {
+  padding-top: calc(var(--space-6) + env(safe-area-inset-top));
+}
+
+@media (min-width: 860px) {
+  .view,
+  body[data-screen='home'] .view {
+    padding-top: calc(var(--space-8) + env(safe-area-inset-top));
+  }
+}
+
+/* 계정 tab: my photo or initial as the icon */
+.app-tabbar .avatar-tab {
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.app-tabbar .avatar-tab .avatar-initial {
+  font-size: 0.75rem;
+}
