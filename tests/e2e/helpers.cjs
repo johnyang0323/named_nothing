@@ -29,6 +29,11 @@ function createBackend({ photos, photoFunction = null, confirmEmail = false, mai
     notes: [], // notifications
     reactions: [], // { entry_id, user_id, emoji }
     cards: [], // shared_cards
+    // together.sql
+    tdays: new Map(), // id -> { id, owner_id, title, created_at }
+    tmembers: [], // { day_id, user_id }
+    titems: [], // { id, day_id, place_id, place, added_by, created_at }
+    tvotes: [], // { item_id, user_id }
   };
   const accounts = new Map(); // email -> { password, id }
   const log = [];
@@ -222,6 +227,8 @@ const notify = (S, user, actor, kind, entry = null, data = {}) => {
   if (!user || user === actor || blocked(S, user, actor)) return;
   S.notes.push({ id: uid(), user_id: user, actor_id: actor, kind, entry_id: entry, data, read_at: null, created_at: new Date(Date.now() + S.notes.length).toISOString() });
 };
+const inDay = (S, d, u) => S.tmembers.some((m) => m.day_id === d && m.user_id === u);
+const sharesDay = (S, a, b) => S.tmembers.some((x) => x.user_id === a && inDay(S, x.day_id, b));
 const canRead = (S, e, me) =>
   e.user_id === me ||
   (!blocked(S, e.user_id, me) && ((e.visibility === 'friends' && isFriend(S, me, e.user_id)) || (e.visibility === 'group' && e.group_id && isMember(S, e.group_id, me))));
@@ -394,6 +401,20 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
         notify(S, owner, me, 'friend_accepted');
         return json(profileOf(owner));
       }
+      case 'create_together_day': {
+        const title = String(b.p_title || '').trim();
+        if (!title || title.length > 30) return err('invalid title');
+        const d = { id: uid(), owner_id: me, title, created_at: new Date().toISOString() };
+        S.tdays.set(d.id, d);
+        S.tmembers.push({ day_id: d.id, user_id: me });
+        (b.p_members || []).slice(0, 10).forEach((m) => {
+          if (m !== me && isFriend(S, me, m) && !blocked(S, me, m) && !inDay(S, d.id, m)) {
+            S.tmembers.push({ day_id: d.id, user_id: m });
+            notify(S, m, me, 'together_invite', null, { day_id: d.id, title });
+          }
+        });
+        return json(d);
+      }
       case 'friend_traces': {
         const rows = (b.p_place_ids || []).map((pid) => {
           const es = [...S.entries.values()].filter((e) => e.place_id === pid && e.user_id !== me && isFriend(S, me, e.user_id) && canRead(S, e, me));
@@ -408,7 +429,11 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
   }
 
   const tables = {
-    profiles: () => [...S.profiles.values()].filter((p) => p.user_id === me || ((isFriend(S, me, p.user_id) || sharesGroup(S, me, p.user_id) || hasRequest(S, me, p.user_id)) && !blocked(S, me, p.user_id))),
+    profiles: () => [...S.profiles.values()].filter((p) => p.user_id === me || ((isFriend(S, me, p.user_id) || sharesGroup(S, me, p.user_id) || hasRequest(S, me, p.user_id) || sharesDay(S, me, p.user_id)) && !blocked(S, me, p.user_id))),
+    together_days: () => [...S.tdays.values()].filter((d) => inDay(S, d.id, me)),
+    together_members: () => S.tmembers.filter((m) => inDay(S, m.day_id, me)),
+    together_items: () => S.titems.filter((i) => inDay(S, i.day_id, me)),
+    together_votes: () => S.tvotes.filter((v) => { const i = S.titems.find((x) => x.id === v.item_id); return i && inDay(S, i.day_id, me); }),
     friend_requests: () => S.requests.filter((r) => r.from_id === me || r.to_id === me),
     notifications: () => S.notes.filter((n) => n.user_id === me),
     reactions: () => S.reactions.filter((r) => S.entries.has(r.entry_id) && canRead(S, S.entries.get(r.entry_id), me) && !blocked(S, me, r.user_id)),
@@ -453,6 +478,18 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
           S.reactions.push({ entry_id: r.entry_id, user_id: me, emoji: r.emoji });
           notify(S, e.user_id, me, 'reaction', e.id, { emoji: r.emoji });
         }
+        out.push(r);
+      } else if (table === 'together_items') {
+        if (r.added_by !== me || !inDay(S, r.day_id, me)) return err('rls', 403);
+        if (S.titems.some((i) => i.day_id === r.day_id && i.place_id === r.place_id)) return json({ code: '23505', message: 'duplicate key value violates unique constraint' }, 409);
+        const row = { id: uid(), created_at: new Date(Date.now() + S.titems.length).toISOString(), ...r };
+        S.titems.push(row);
+        S.tmembers.filter((m) => m.day_id === r.day_id && m.user_id !== me).forEach((m) => notify(S, m.user_id, me, 'together_item', null, { day_id: r.day_id, place_name: String(r.place?.name || '').slice(0, 80) }));
+        out.push(row);
+      } else if (table === 'together_votes') {
+        const item = S.titems.find((i) => i.id === r.item_id);
+        if (r.user_id !== me || !item || !inDay(S, item.day_id, me)) return err('rls', 403);
+        if (!S.tvotes.some((v) => v.item_id === r.item_id && v.user_id === me)) S.tvotes.push({ item_id: r.item_id, user_id: me });
         out.push(r);
       } else if (table === 'shared_cards') {
         if (r.from_id !== me || !isFriend(S, me, r.to_id) || blocked(S, me, r.to_id)) return err('rls', 403);
@@ -509,6 +546,22 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
       S.cards = S.cards.filter((c) => !(where(c) && (c.from_id === me || c.to_id === me)));
     } else if (table === 'notifications') {
       S.notes = S.notes.filter((n) => !(where(n) && n.user_id === me));
+    } else if (table === 'together_items') {
+      const gone = S.titems.filter((i) => where(i) && (i.added_by === me || S.tdays.get(i.day_id)?.owner_id === me)).map((i) => i.id);
+      S.titems = S.titems.filter((i) => !gone.includes(i.id));
+      S.tvotes = S.tvotes.filter((v) => !gone.includes(v.item_id));
+    } else if (table === 'together_votes') {
+      S.tvotes = S.tvotes.filter((v) => !(where(v) && v.user_id === me));
+    } else if (table === 'together_members') {
+      S.tmembers = S.tmembers.filter((m) => !(where(m) && (m.user_id === me || S.tdays.get(m.day_id)?.owner_id === me)));
+    } else if (table === 'together_days') {
+      [...S.tdays.values()].filter((d) => where(d) && d.owner_id === me).forEach((d) => {
+        S.tdays.delete(d.id);
+        S.tmembers = S.tmembers.filter((m) => m.day_id !== d.id);
+        const items = S.titems.filter((i) => i.day_id === d.id).map((i) => i.id);
+        S.titems = S.titems.filter((i) => i.day_id !== d.id);
+        S.tvotes = S.tvotes.filter((v) => !items.includes(v.item_id));
+      });
     }
     return route.fulfill({ status: 204, headers: cors, body: '' });
   }

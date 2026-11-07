@@ -6102,3 +6102,68 @@ body[data-screen='home'] .view {
   background: var(--stack-fill);
   box-shadow: var(--stack-shadow);
 }
+
+/* 함께 하루 */
+.together-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: var(--space-2) 0 0;
+  padding: 8px 14px;
+  border-radius: 18px;
+  font-size: 0.88rem;
+  background: var(--stack-fill);
+  box-shadow: var(--stack-shadow);
+}
+
+.together-banner .text-button {
+  color: #0a0a0a;
+  min-height: 28px;
+}
+
+.outing-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.outing-item {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: 18px;
+}
+
+.outing-item + .outing-item {
+  margin-top: var(--space-2);
+}
+
+.outing-item-main p {
+  margin: 0;
+}
+
+.outing-item-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.outing-item.is-top {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.14));
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.28);
+}
+
+.outing-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+#outing-title {
+  margin: var(--space-2) 0;
+}
+
+[data-form='outing-create'] .send-friends {
+  margin-bottom: var(--space-3);
+}

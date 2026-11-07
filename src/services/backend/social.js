@@ -568,3 +568,71 @@ export async function friendEntriesFor(placeId, limit = 6) {
     .limit(limit);
   return error ? [] : data;
 }
+
+// ─────────────────────────── 함께 하루 (together.sql) ───────────────────────────
+
+export async function createTogetherDay(title, memberIds) {
+  const { supabase } = await client();
+  const { data, error } = await supabase.rpc('create_together_day', { p_title: String(title || '').trim(), p_members: memberIds });
+  if (notSetUp(error)) throw new SocialError('함께 하루는 아직 준비 중이에요.');
+  if (error) throw new SocialError(/title/.test(error.message) ? '이름을 1~30자로 정해 주세요.' : '함께 하루를 만들지 못했어요.');
+  return data;
+}
+
+/** The 함께 하루 I'm in (newest first), with members' profiles. Empty if not set up. */
+export async function listTogetherDays() {
+  const { supabase } = await client();
+  const { data: days, error } = await supabase.from('together_days').select('id, owner_id, title, created_at').order('created_at', { ascending: false }).limit(20);
+  if (error || !days.length) return [];
+  const { data: members } = await supabase.from('together_members').select('day_id, user_id').in('day_id', days.map((d) => d.id));
+  const profiles = await profilesFor((members || []).map((m) => m.user_id));
+  return days.map((d) => ({
+    ...d,
+    members: (members || []).filter((m) => m.day_id === d.id).map((m) => ({ user_id: m.user_id, profile: profiles.get(m.user_id) || null })),
+  }));
+}
+
+/** What's in one shared envelope, with votes, best first. */
+export async function togetherItems(dayId) {
+  const { supabase } = await client();
+  const { data: items, error } = await supabase.from('together_items').select('id, day_id, place_id, place, added_by, created_at').eq('day_id', dayId).order('created_at');
+  if (error) return [];
+  const { data: votes } = items.length ? await supabase.from('together_votes').select('item_id, user_id').in('item_id', items.map((i) => i.id)) : { data: [] };
+  return items
+    .map((i, order) => ({ ...i, order, votes: (votes || []).filter((v) => v.item_id === i.id).map((v) => v.user_id) }))
+    .sort((a, b) => b.votes.length - a.votes.length || a.order - b.order);
+}
+
+export async function addTogetherItem(dayId, place) {
+  const { supabase, user } = await client();
+  const { error } = await supabase.from('together_items').insert({ day_id: dayId, place_id: String(place.id), place, added_by: user.id });
+  if (error && /duplicate|unique|23505/i.test(`${error.code} ${error.message}`)) return 'already';
+  fail('함께 봉투에 담지 못했어요.')(error);
+  return 'added';
+}
+
+export async function removeTogetherItem(id) {
+  const { supabase } = await client();
+  const { error } = await supabase.from('together_items').delete().eq('id', id);
+  fail('함께 봉투에서 빼지 못했어요.')(error);
+}
+
+export async function toggleTogetherVote(itemId, mine) {
+  const { supabase, user } = await client();
+  const { error } = mine
+    ? await supabase.from('together_votes').delete().eq('item_id', itemId).eq('user_id', user.id)
+    : await supabase.from('together_votes').insert({ item_id: itemId, user_id: user.id });
+  fail('투표하지 못했어요.')(error);
+}
+
+export async function leaveTogetherDay(dayId) {
+  const { supabase, user } = await client();
+  const { error } = await supabase.from('together_members').delete().eq('day_id', dayId).eq('user_id', user.id);
+  fail('함께 하루에서 나가지 못했어요.')(error);
+}
+
+export async function endTogetherDay(dayId) {
+  const { supabase } = await client();
+  const { error } = await supabase.from('together_days').delete().eq('id', dayId);
+  fail('함께 하루를 끝내지 못했어요.')(error);
+}

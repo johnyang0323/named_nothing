@@ -103,6 +103,38 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await A.waitForSelector(`.stop-name:has-text("${sent}")`);
   ok(`place card: B sends "${sent}" with a note → A's inbox → 봉투에 담기 → in A's 경로`);
 
+  // ── 함께 하루: a shared envelope with B, filled while swiping, voted on ──
+  await A.goto(APP + '#together');
+  await A.click('[data-action="together-tab"][data-tab="outing"]');
+  await A.fill('#outing-title', '토요일 나들이');
+  await A.click('[data-form="outing-create"] .send-friend:has-text("비")');
+  await A.click('[data-form="outing-create"] button[type=submit]');
+  await A.waitForSelector('.group-title:has-text("토요일 나들이")');
+  assert(S.tdays.size === 1 && S.tmembers.length === 2, 'day with A and B');
+  await A.click('[data-action="outing-swipe"]');
+  await A.waitForSelector('.together-banner:has-text("토요일 나들이")');
+  const first = (await A.textContent('#discover-title')).trim();
+  await A.click('[data-action="keep"]');
+  await A.waitForSelector('text=함께 봉투에 담았어요');
+  await A.waitForFunction((t) => document.querySelector('#discover-title')?.textContent.trim() !== t, first);
+  const second = (await A.textContent('#discover-title')).trim();
+  await A.click('[data-action="keep"]');
+  await until(() => S.titems.length === 2, 5000, 'two places in the shared envelope');
+
+  await B.goto(APP + '#together');
+  await B.click('[data-action="together-tab"][data-tab="inbox"]');
+  await B.waitForSelector('.note-text:has-text("에이님이 함께 하루에 초대했어요: 토요일 나들이")');
+  await B.click('.note-item:has-text("함께 하루에 초대했어요") [data-action="outing-open"]');
+  await B.waitForSelector('.group-title:has-text("토요일 나들이")');
+  await B.waitForSelector(`.outing-item:has-text("${first}")`);
+  await B.waitForSelector(`.outing-item:has-text("${second}")`);
+  await B.click(`.outing-item:has-text("${second}") [data-action="outing-vote"]`);
+  await B.waitForSelector(`.outing-item.is-top:has-text("${second}")`);
+  await B.click(`.outing-item.is-top [data-action="outing-go"]`);
+  await B.waitForURL(/#route/);
+  await B.waitForSelector(`.stop-name:has-text("${second}")`);
+  ok(`함께 하루: A invites B, keeps "${first}" and "${second}" while swiping; B votes 👍 → "${second}" goes on top; 여기로 출발 → B's 경로`);
+
   // ── an old ?friend= link now sends a request instead ──
   const C = await person();
   const tagA = [...S.profiles.values()].find((p) => p.nickname === '에이').tag;

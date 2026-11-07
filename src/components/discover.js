@@ -7,7 +7,7 @@ import { needsLocation } from './home.js';
 import { explainPick } from '../services/personalize.js';
 import { isBackendConfigured } from '../services/backend/config.js';
 import { getUser } from '../services/backend/auth.js';
-import { listFriends, sendCard, friendTraces, friendEntriesFor, profilesFor, SocialError } from '../services/backend/social.js';
+import { listFriends, sendCard, friendTraces, friendEntriesFor, profilesFor, addTogetherItem, SocialError } from '../services/backend/social.js';
 import { entryCard, avatar } from './entryCard.js';
 
 const socialOn = () => isBackendConfigured() && Boolean(getUser());
@@ -75,6 +75,13 @@ export function render(state, { ui, taste, context }) {
   return html`
     <section class="screen discover" aria-labelledby="discover-title">
       <p class="eyebrow">오늘의 첫 목적지 · ${moodLabel(state.mood)}${state.area ? ` · ${state.area.label} 근처` : ''}</p>
+      ${ui.activeTogether
+        ? html`<p class="together-banner" role="status">
+            <span>👥 <strong>${ui.activeTogether.title}</strong> 함께 봉투에도 담는 중</span>
+            <a class="text-button" href="#together" data-action="together-show">함께 봉투 보기</a>
+            <button type="button" class="text-button text-button-muted" data-action="together-stop">그만</button>
+          </p>`
+        : ''}
       <div class="discover-layout">
         <div class="deck-column">
           <div class="swipe-deck">
@@ -185,7 +192,14 @@ function keep(ctx, card) {
     const result = ctx.store.actions.keepRecommendation();
     if (!result) return;
     ctx.ui.envelopeBump = true;
-    ctx.toast(`‘${result.kept.name}’을(를) 봉투에 담았어요.`, { label: '경로 보기', run: (c) => c.navigate('route') });
+    const together = ctx.ui.activeTogether;
+    if (together) {
+      addTogetherItem(together.id, result.kept)
+        .then((r) => ctx.toast(r === 'already' ? `‘${result.kept.name}’은(는) 이미 함께 봉투에 있어요.` : `‘${result.kept.name}’을(를) ‘${together.title}’ 함께 봉투에 담았어요.`))
+        .catch((error) => ctx.toast(error instanceof SocialError ? error.message : '함께 봉투에 담지 못했어요.'));
+    } else {
+      ctx.toast(`‘${result.kept.name}’을(를) 봉투에 담았어요.`, { label: '경로 보기', run: (c) => c.navigate('route') });
+    }
     if (card?.isConnected) ctx.rerender();
   };
   flyIntoEnvelope(card || document.querySelector('[data-swipe-card]'), run);
@@ -251,6 +265,15 @@ function loadTraces(ctx, place) {
 }
 
 export const actions = {
+  'together-stop': (ctx) => {
+    ctx.ui.activeTogether = null;
+    ctx.rerender();
+  },
+  'together-show': (ctx) => {
+    const id = ctx.ui.activeTogether?.id;
+    if (ctx.ui.together && id) Object.assign(ctx.ui.together, { tab: 'outing', openOutingId: id });
+    ctx.navigate('together');
+  },
   'send-open': (ctx) => openSend(ctx),
   'send-close': (ctx) => {
     ctx.ui.sendCard = null;

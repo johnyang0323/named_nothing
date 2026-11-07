@@ -22,6 +22,13 @@ import {
   receivedCards,
   removeCard,
   reactionsFor,
+  createTogetherDay,
+  listTogetherDays,
+  togetherItems,
+  removeTogetherItem,
+  toggleTogetherVote,
+  leaveTogetherDay,
+  endTogetherDay,
   listFriends,
   removeFriend,
   blockUser,
@@ -45,7 +52,7 @@ import { clearUnread, refreshUnread } from '../services/backend/inbox.js';
 import { CATEGORY_LABELS } from '../data/places.js';
 
 function state(ui) {
-  if (!ui.together) ui.together = { tab: 'friends', loading: true, friends: [], feed: [], groups: [], openGroupId: null, members: [], groupFeed: [], comments: [], reactions: [], requests: { incoming: [], outgoing: [] }, notes: [], cards: [], profiles: new Map(), addText: '', groupName: '', joinCode: '' };
+  if (!ui.together) ui.together = { tab: 'friends', loading: true, friends: [], feed: [], groups: [], openGroupId: null, members: [], groupFeed: [], comments: [], reactions: [], requests: { incoming: [], outgoing: [] }, notes: [], cards: [], outings: [], openOutingId: null, outingItems: [], newOuting: { title: '', members: [] }, profiles: new Map(), addText: '', groupName: '', joinCode: '' };
   return ui.together;
 }
 
@@ -69,6 +76,10 @@ export async function reload(ctx) {
       listNotifications().catch(() => []),
       receivedCards().catch(() => []),
     ]);
+    const outings = await listTogetherDays().catch(() => []);
+    if (t.openOutingId && !outings.some((o) => o.id === t.openOutingId)) t.openOutingId = null;
+    t.outings = outings;
+    t.outingItems = t.openOutingId ? await togetherItems(t.openOutingId).catch(() => []) : [];
     let members = [];
     let groupFeed = [];
     if (t.openGroupId && groups.some((g) => g.id === t.openGroupId)) {
@@ -213,6 +224,86 @@ function cardItem(c) {
   </li>`;
 }
 
+function outingList(t) {
+  const n = t.newOuting;
+  return html`
+    <section class="block" aria-labelledby="outings-title">
+      <h2 class="section-label" id="outings-title">함께 하루</h2>
+      ${t.outings.length
+        ? html`<ul class="group-list">
+            ${t.outings.map(
+              (o) => html`<li><button type="button" class="group-item" data-action="outing-open" data-id="${o.id}" data-focus-key="outing-${o.id}">
+                <span class="group-name">${o.title}</span>
+                <span class="group-meta">${o.members.map((m) => m.profile?.nickname).filter(Boolean).join(', ')}</span>
+              </button></li>`,
+            )}
+          </ul>`
+        : html`<p class="empty-body">친구와 같이 나가는 날, 함께 쓰는 봉투를 만들어요. 각자 카드를 넘기며 담고, 👍로 갈 곳을 정해요.</p>`}
+    </section>
+
+    <form class="block" data-form="outing-create" novalidate>
+      <label class="section-label" for="outing-title">새 함께 하루</label>
+      <input id="outing-title" class="area-input" type="text" maxlength="30" placeholder="예: 토요일 망원동 나들이" value="${n.title}" data-input="outing-title" data-focus-key="outing-title" autocomplete="off">
+      ${t.friends.length
+        ? html`<div class="send-friends" role="group" aria-label="같이 갈 친구">
+            ${t.friends.map(
+              (f) => html`<label class="send-friend ${n.members.includes(f.user_id) ? 'is-on' : ''}">
+                <input type="checkbox" class="visually-hidden" value="${f.user_id}" data-input="outing-member" ${n.members.includes(f.user_id) ? 'checked' : ''}>
+                ${avatar(f)}<span>${f.nickname}</span>
+              </label>`,
+            )}
+          </div>`
+        : html`<p class="fine-print">먼저 친구를 추가하면 함께 하루에 초대할 수 있어요.</p>`}
+      <button type="submit" class="button button-primary button-small" ${n.title.trim() && n.members.length && !n.busy ? '' : 'disabled'}>${n.busy ? '만드는 중…' : '만들고 초대하기'}</button>
+    </form>`;
+}
+
+function outingView(t) {
+  const o = t.outings.find((x) => x.id === t.openOutingId);
+  if (!o) return outingList(t);
+  const me = getUser()?.id;
+  const owner = o.owner_id === me;
+  const name = (id) => (id === me ? '나' : o.members.find((m) => m.user_id === id)?.profile?.nickname || '멤버');
+  return html`
+    <button type="button" class="text-button flow-back" data-action="outing-back" data-focus-key="outing-back">← 함께 하루 목록</button>
+    <section class="block group-head" aria-labelledby="outing-title-h">
+      <h2 class="group-title" id="outing-title-h">${o.title}</h2>
+      <ul class="member-chips" aria-label="함께하는 사람">
+        ${o.members.map((m) => html`<li class="member-chip">${avatar(m.profile)}<span>${m.user_id === me ? '나' : m.profile?.nickname || '멤버'}${m.user_id === o.owner_id ? ' · 만든 사람' : ''}</span></li>`)}
+      </ul>
+      <button type="button" class="button button-primary button-wide" data-action="outing-swipe" data-id="${o.id}" data-focus-key="outing-swipe">카드 넘기며 함께 봉투에 담기</button>
+    </section>
+
+    <section class="block" aria-labelledby="outing-items-title">
+      <h2 class="section-label" id="outing-items-title">함께 봉투 ${t.outingItems.length ? `${t.outingItems.length}곳` : ''}</h2>
+      ${t.outingItems.length
+        ? html`<ul class="outing-items">
+            ${t.outingItems.map((item, i) => {
+              const mine = item.votes.includes(me);
+              return html`<li class="outing-item ${i === 0 && item.votes.length ? 'is-top' : ''}">
+                <div class="outing-item-main">
+                  <p class="kicker">${CATEGORY_LABELS[item.place?.category] || '장소'} · ${name(item.added_by)}님이 담음</p>
+                  <p class="outing-item-name">${i === 0 && item.votes.length ? '👑 ' : ''}${item.place?.name || '어딘가'}</p>
+                  ${item.votes.length ? html`<p class="fine-print">👍 ${item.votes.map(name).join(', ')}</p>` : ''}
+                </div>
+                <div class="outing-item-actions">
+                  <button type="button" class="reaction ${mine ? 'is-on' : ''}" data-action="outing-vote" data-id="${item.id}" data-mine="${mine ? '1' : ''}" aria-pressed="${mine}" aria-label="👍 투표${item.votes.length ? ` ${item.votes.length}표` : ''}">👍 <span class="reaction-count">${item.votes.length}</span></button>
+                  <button type="button" class="button button-secondary button-small" data-action="outing-go" data-id="${item.id}">여기로 출발</button>
+                  ${item.added_by === me || owner ? html`<button type="button" class="text-button text-button-muted" data-action="outing-remove" data-id="${item.id}">빼기</button>` : ''}
+                </div>
+              </li>`;
+            })}
+          </ul>`
+        : html`<p class="empty-body">아직 비어 있어요. "카드 넘기며 함께 봉투에 담기"를 누르고, 마음에 드는 카드를 아래로 내려 담아 보세요.</p>`}
+    </section>
+
+    <section class="block">
+      ${owner
+        ? html`<button type="button" class="text-button text-button-muted" data-action="outing-end" data-id="${o.id}">함께 하루 끝내기</button>`
+        : html`<button type="button" class="text-button text-button-muted" data-action="outing-leave" data-id="${o.id}">나가기</button>`}
+    </section>`;
+}
+
 function inboxTab(t) {
   const pending = new Set(t.requests.incoming.map((r) => r.from_id));
   return html`
@@ -231,6 +322,9 @@ function inboxTab(t) {
               (n) => html`<li class="note-item ${n.read_at ? '' : 'is-unread'}">
                 ${avatar(n.actor)}
                 <p class="note-text">${noteText(n)} <span class="fine-print">${ago(n.created_at)}</span></p>
+                ${['together_invite', 'together_item'].includes(n.kind) && n.data?.day_id && t.outings.some((o) => o.id === n.data.day_id)
+                  ? html`<span class="note-actions"><button type="button" class="button button-secondary button-small" data-action="outing-open" data-id="${n.data.day_id}">열기</button></span>`
+                  : ''}
                 ${n.kind === 'friend_request' && pending.has(n.actor_id)
                   ? html`<span class="note-actions">
                       <button type="button" class="button button-primary button-small" data-action="request-accept" data-id="${n.actor_id}" data-name="${n.actor?.nickname || ''}">수락</button>
@@ -377,6 +471,7 @@ export function render(_state, { ui }) {
       <div class="tabs" role="tablist" aria-label="함께">
         <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="friends" data-focus-key="tab-friends" aria-selected="${t.tab === 'friends'}">친구</button>
         <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="groups" data-focus-key="tab-groups" aria-selected="${t.tab === 'groups'}">단체방</button>
+        <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="outing" data-focus-key="tab-outing" aria-selected="${t.tab === 'outing'}">함께 하루</button>
         <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="inbox" data-focus-key="tab-inbox" aria-selected="${t.tab === 'inbox'}">
           알림${(() => {
             const n = t.notes.filter((x) => !x.read_at).length + t.requests.incoming.length;
@@ -391,6 +486,10 @@ export function render(_state, { ui }) {
           ? friendsTab(t, ui)
           : t.tab === 'inbox'
             ? inboxTab(t)
+            : t.tab === 'outing'
+              ? t.openOutingId
+                ? outingView(t)
+                : outingList(t)
             : t.openGroupId
               ? groupView(t, ui)
               : groupList(t)}
@@ -432,6 +531,52 @@ export const actions = {
     ctx.toast(result === 'already' ? '이미 봉투에 있는 곳이에요.' : `‘${card.place.name}’을(를) 봉투에 담았어요.`, { label: '경로 보기', run: (c) => c.navigate('route') });
   },
   'card-remove': (ctx, data) => attempt(ctx, () => removeCard(data.id), '카드를 지웠어요.'),
+  'outing-open': (ctx, data) => {
+    Object.assign(state(ctx.ui), { tab: 'outing', openOutingId: data.id, loading: true });
+    ctx.rerender();
+    reload(ctx);
+  },
+  'outing-back': ({ ui, rerender }) => {
+    state(ui).openOutingId = null;
+    rerender();
+  },
+  'outing-swipe': (ctx, data) => {
+    const o = state(ctx.ui).outings.find((x) => x.id === data.id);
+    if (!o) return;
+    ctx.ui.activeTogether = { id: o.id, title: o.title };
+    if (!ctx.store.getState().area) {
+      ctx.toast('먼저 오늘 어디서 시작할지 정해 주세요.');
+      ctx.navigate('home');
+      return;
+    }
+    if (!ctx.store.getState().recommendationId) ctx.store.actions.startDay();
+    ctx.navigate('discover');
+  },
+  'outing-vote': (ctx, data) => attempt(ctx, () => toggleTogetherVote(data.id, data.mine === '1')),
+  'outing-remove': (ctx, data) => attempt(ctx, () => removeTogetherItem(data.id), '함께 봉투에서 뺐어요.'),
+  'outing-go': (ctx, data) => {
+    const item = state(ctx.ui).outingItems.find((i) => i.id === data.id);
+    if (!item) return;
+    const result = ctx.store.actions.keepPlace(item.place);
+    if (!result) {
+      ctx.toast('먼저 오늘 어디서 시작할지 정해 주세요.', { label: '위치 정하기', run: (c) => c.navigate('home') });
+      return;
+    }
+    ctx.toast(`‘${item.place.name}’을(를) 내 경로에 담았어요. 출발해요!`);
+    ctx.navigate('route');
+  },
+  'outing-leave': (ctx, data) => {
+    if (!window.confirm('이 함께 하루에서 나갈까요?')) return;
+    state(ctx.ui).openOutingId = null;
+    if (ctx.ui.activeTogether?.id === data.id) ctx.ui.activeTogether = null;
+    attempt(ctx, () => leaveTogetherDay(data.id), '나왔어요.');
+  },
+  'outing-end': (ctx, data) => {
+    if (!window.confirm('이 함께 하루를 끝낼까요? 함께 봉투와 투표가 모두 지워져요.')) return;
+    state(ctx.ui).openOutingId = null;
+    if (ctx.ui.activeTogether?.id === data.id) ctx.ui.activeTogether = null;
+    attempt(ctx, () => endTogetherDay(data.id), '함께 하루를 끝냈어요.');
+  },
   'copy-tag': async ({ toast }) => {
     const ok = await copyText(fullTag(getMyProfile()));
     toast(ok ? '이름표를 복사했어요. 친구에게 보내주세요.' : `이름표: ${fullTag(getMyProfile())}`);
@@ -506,6 +651,16 @@ export const inputs = {
   'group-name': ({ ui }, el) => {
     state(ui).groupName = el.value;
   },
+  'outing-title': ({ ui }, el) => {
+    state(ui).newOuting.title = el.value;
+    const button = el.closest('form')?.querySelector('button[type=submit]');
+    if (button) button.disabled = !(el.value.trim() && state(ui).newOuting.members.length);
+  },
+  'outing-member': ({ ui, rerender }, el) => {
+    const n = state(ui).newOuting;
+    n.members = el.checked ? [...new Set([...n.members, el.value])] : n.members.filter((id) => id !== el.value);
+    rerender();
+  },
   'group-code': ({ ui }, el) => {
     state(ui).joinCode = el.value;
   },
@@ -535,6 +690,20 @@ export const forms = {
       t.adding = false;
       ctx.rerender();
     }
+  },
+  'outing-create': async (ctx) => {
+    const t = state(ctx.ui);
+    const n = t.newOuting;
+    if (n.busy) return;
+    n.busy = true;
+    ctx.rerender();
+    const day = await attempt(ctx, () => createTogetherDay(n.title, n.members), (d) => `‘${d.title}’을(를) 만들고 친구들을 초대했어요.`);
+    n.busy = false;
+    if (day) {
+      t.newOuting = { title: '', members: [] };
+      t.openOutingId = day.id;
+      await reload(ctx);
+    } else ctx.rerender();
   },
   'group-create': async (ctx) => {
     const t = state(ctx.ui);
