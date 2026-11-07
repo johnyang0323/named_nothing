@@ -5,7 +5,7 @@
  */
 import { html } from '../utils/dom.js';
 import { CATEGORY_LABELS } from '../data/places.js';
-import { photoUrls, avatarSrc, fullTag, COMMENT_MAX } from '../services/backend/social.js';
+import { photoUrls, avatarSrc, fullTag, COMMENT_MAX, REACTIONS } from '../services/backend/social.js';
 
 const VIS_LABEL = { private: '나만 보기', friends: '친구 공개', group: '단체방' };
 
@@ -31,8 +31,9 @@ function when(entry) {
  * @param opts.canModerate  group owner: may delete others' entries/comments
  * @param opts.showOwnerActions  show edit/delete (my own entries)
  * @param opts.ui        screen ui state (comment drafts)
+ * @param opts.reactions reaction rows for this entry ({ user_id, emoji })
  */
-export function entryCard(entry, { me, author = null, comments = [], profiles = new Map(), groupName = '', canModerate = false, showOwnerActions = false, ui = {} } = {}) {
+export function entryCard(entry, { me, author = null, comments = [], profiles = new Map(), groupName = '', canModerate = false, showOwnerActions = false, ui = {}, reactions = [] } = {}) {
   const mine = entry.user_id === me;
   const shared = entry.visibility !== 'private';
   const draft = ui.commentDrafts?.[entry.id] || '';
@@ -63,6 +64,8 @@ export function entryCard(entry, { me, author = null, comments = [], profiles = 
         ${!mine ? html`<button type="button" class="text-button text-button-muted" data-action="report" data-type="entry" data-id="${entry.id}">신고</button>` : ''}
       </div>
 
+      ${shared ? reactionBar(entry, reactions, me, profiles) : ''}
+
       ${shared
         ? html`<section class="comments" aria-label="${entry.place_name} 댓글">
             ${comments.map((c) => {
@@ -83,6 +86,21 @@ export function entryCard(entry, { me, author = null, comments = [], profiles = 
           </section>`
         : ''}
     </article>`;
+}
+
+/** ❤️ 👍 😂 😮 🥹 — tap to react, tap again to take it back. */
+function reactionBar(entry, reactions, me, profiles) {
+  const forEntry = reactions.filter((r) => r.entry_id === entry.id);
+  return html`<div class="reactions" role="group" aria-label="반응">
+    ${REACTIONS.map((emoji) => {
+      const who = forEntry.filter((r) => r.emoji === emoji);
+      const mine = who.some((r) => r.user_id === me);
+      const names = who.map((r) => (r.user_id === me ? '나' : profiles.get(r.user_id)?.nickname)).filter(Boolean).join(', ');
+      return html`<button type="button" class="reaction ${mine ? 'is-on' : ''}" data-action="react" data-entry="${entry.id}" data-emoji="${emoji}" data-mine="${mine ? '1' : ''}" aria-pressed="${mine}" title="${names}" aria-label="${emoji} 반응${who.length ? ` ${who.length}개` : ''}">
+        <span aria-hidden="true">${emoji}</span>${who.length ? html`<span class="reaction-count">${who.length}</span>` : ''}
+      </button>`;
+    })}
+  </div>`;
 }
 
 /** Fill in private photos with signed links (only those this person may read). */

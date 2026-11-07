@@ -10,7 +10,7 @@
  */
 import { toDateKey } from '../utils/date.js';
 import { getAllPlaces, getPlaceById, placeExists, usePlaces, useSamplePlaces } from './placeRepository.js';
-import { sanitizeArea } from './kakao/mapper.js';
+import { sanitizeArea, sanitizePlace } from './kakao/mapper.js';
 import { pickInitial, pickAlternative, suggestNearby } from './recommender.js';
 import { moods } from '../data/places.js';
 
@@ -293,6 +293,26 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
         discoveryIds: state.discoveryIds.filter((d) => d !== id),
       });
       return true;
+    },
+
+    /**
+     * Keep a place someone sent (a shared card) in today's envelope, even if
+     * it's from another neighborhood: it joins today's places, then the route.
+     * Returns 'kept', 'already', or null (no starting area yet / bad place).
+     */
+    keepPlace(place) {
+      const clean = sanitizePlace(place);
+      if (!clean || !state.area) return null;
+      const known = state.area.places.some((p) => p.id === clean.id);
+      const area = known ? state.area : { ...state.area, places: [...state.area.places, clean] };
+      if (!known) activateArea(area);
+      if (routeIds().includes(clean.id)) {
+        if (!known) update({ area });
+        return 'already';
+      }
+      signal('add', clean.id);
+      update({ area, route: [...state.route, { id: clean.id, visited: false }] });
+      return 'kept';
     },
 
     /** Returns what was removed so the UI can offer "되돌리기". */

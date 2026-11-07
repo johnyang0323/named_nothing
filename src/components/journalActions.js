@@ -3,7 +3,7 @@
  * comments, reports, deleting an entry. After a change the current
  * screen's reload() refreshes its data.
  */
-import { addComment, deleteComment, deleteEntry, report, SocialError } from '../services/backend/social.js';
+import { addComment, deleteComment, deleteEntry, report, toggleReaction, SocialError } from '../services/backend/social.js';
 
 const confirmText = {
   entry: '이 기록을 신고할까요? 운영자가 확인하고 조치해요.',
@@ -31,6 +31,7 @@ export const journalActions = {
     if (!window.confirm('이 댓글을 지울까요?')) return;
     attempt(ctx, () => deleteComment(data.id), '댓글을 지웠어요.');
   },
+  react: (ctx, data) => attempt(ctx, () => toggleReaction(data.entry, data.emoji, data.mine === '1')),
   'entry-delete': (ctx, data) => {
     const entry = ctx.ui.entryIndex?.get(data.id);
     if (!entry || !window.confirm('이 기록과 사진을 지울까요? 되돌릴 수 없어요.')) return;

@@ -5,6 +5,56 @@ import { placeVisual, photoSlot } from './placeVisual.js';
 import { attachSwipe, hasLearnedSwipe, markSwipeLearned } from './swipe.js';
 import { needsLocation } from './home.js';
 import { explainPick } from '../services/personalize.js';
+import { isBackendConfigured } from '../services/backend/config.js';
+import { getUser } from '../services/backend/auth.js';
+import { listFriends, sendCard, friendTraces, friendEntriesFor, profilesFor, SocialError } from '../services/backend/social.js';
+import { entryCard, avatar } from './entryCard.js';
+
+const socialOn = () => isBackendConfigured() && Boolean(getUser());
+
+/** "친구 2명이 다녀간 곳 · 비, 산책하는A" on the card. */
+function traceLine(ui, place) {
+  const t = ui.traces?.get(place.id);
+  if (!t || !t.friends) return '';
+  const names = t.nicknames.slice(0, 2).join(', ');
+  return html`<p class="friend-trace"><span aria-hidden="true">👥</span> 친구 ${t.friends}명이 다녀간 곳${names ? ` · ${names}` : ''}</p>`;
+}
+
+/** Entries friends shared about this place, under the card. */
+function friendEntries(ui, place) {
+  const found = ui.placeEntries?.get(place.id);
+  if (!found || !found.entries.length) return '';
+  return html`<h2 class="section-label">친구들의 기록</h2>
+    <div class="entries">${found.entries.map((e) => entryCard(e, { me: getUser()?.id, author: found.profiles.get(e.user_id), profiles: found.profiles, ui }))}</div>`;
+}
+
+/** Pick a friend (and a short note) to send this card to. */
+function sendPanel(ui) {
+  const s = ui.sendCard;
+  if (!s) return '';
+  const friends = ui.sendFriends;
+  return html`<section class="send-panel" aria-labelledby="send-title">
+    <h2 class="section-label" id="send-title">누구에게 보낼까요?</h2>
+    ${!friends
+      ? html`<p class="empty-body">친구 목록을 불러오는 중…</p>`
+      : friends.length
+        ? html`<div class="send-friends" role="radiogroup" aria-label="받을 친구">
+            ${friends.map(
+              (f) => html`<label class="send-friend ${s.to === f.user_id ? 'is-on' : ''}">
+                <input type="radio" name="send-to" value="${f.user_id}" class="visually-hidden" data-input="send-to" ${s.to === f.user_id ? 'checked' : ''}>
+                ${avatar(f)}<span>${f.nickname}</span>
+              </label>`,
+            )}
+          </div>
+          <label class="visually-hidden" for="send-note">한마디</label>
+          <input id="send-note" class="area-input" type="text" maxlength="100" placeholder="한마디 (예: 여기 같이 갈래?)" value="${s.note || ''}" data-input="send-note" data-focus-key="send-note" autocomplete="off">
+          <div class="actions actions-compact">
+            <button type="button" class="button button-primary button-small" data-action="send-card" data-focus-key="send-card" ${s.to && !s.busy ? '' : 'disabled'}>${s.busy ? '보내는 중…' : '보내기'}</button>
+            <button type="button" class="text-button text-button-muted" data-action="send-close">취소</button>
+          </div>`
+        : html`<p class="empty-body">아직 친구가 없어요. <a href="#together">함께</a>에서 친구를 추가해 보세요.</p>`}
+  </section>`;
+}
 
 export function onEnter({ store, ui }) {
   const state = store.getState();
@@ -39,6 +89,7 @@ export function render(state, { ui, taste, context }) {
               <div class="destination-body">
                 <p class="kicker">${categoryLabel(place)}</p>
                 <h1 id="discover-title" class="title" tabindex="-1">${place.name}</h1>
+                ${traceLine(ui, place)}
                 ${(() => {
                   const reasons = taste && context ? explainPick(place, { taste: taste.get(), context: context(), wild: state.recommendationWild }) : [];
                   return reasons.length ? html`<ul class="why-tags" aria-label="이 장소를 고른 이유">${reasons.map((r) => html`<li>${r}</li>`)}</ul>` : '';
@@ -63,6 +114,8 @@ export function render(state, { ui, taste, context }) {
           ${hasLearnedSwipe()
             ? ''
             : html`<p class="swipe-tip"><span>← 밀면 다음</span><span>↓ 내리면 보관</span><span>밀면 이전 →</span></p>`}
+          ${socialOn() && !ui.sendCard ? html`<button type="button" class="text-button send-open" data-action="send-open" data-focus-key="send-open">✉︎ 친구에게 보내기</button>` : ''}
+          ${sendPanel(ui)}
         </div>
 
         <div class="destination-details">
@@ -78,6 +131,7 @@ export function render(state, { ui, taste, context }) {
           </ul>
 
           ${placeFacts(place)}
+          ${friendEntries(ui, place)}
           <p class="quiet-link"><a href="#home">조건 바꾸기 (위치·시간·기분)</a></p>
         </div>
       </div>
@@ -152,7 +206,57 @@ function goKept(ctx) {
   ctx.navigate('route');
 }
 
+async function openSend(ctx) {
+  ctx.ui.sendCard = { to: null, note: '', busy: false };
+  ctx.rerender();
+  if (!ctx.ui.sendFriends) {
+    ctx.ui.sendFriends = await listFriends().catch(() => []);
+    if (ctx.getScreen() === 'discover') ctx.rerender();
+  }
+}
+
+async function send(ctx) {
+  const s = ctx.ui.sendCard;
+  const place = getPlaceById(ctx.store.getState().recommendationId);
+  if (!s?.to || !place || s.busy) return;
+  s.busy = true;
+  ctx.rerender();
+  try {
+    await sendCard(s.to, place, s.note);
+    const friend = ctx.ui.sendFriends?.find((f) => f.user_id === s.to);
+    ctx.ui.sendCard = null;
+    ctx.toast(`${friend?.nickname || '친구'}님에게 ‘${place.name}’ 카드를 보냈어요.`);
+  } catch (error) {
+    s.busy = false;
+    ctx.toast(error instanceof SocialError ? error.message : '카드를 보내지 못했어요.');
+  }
+  ctx.rerender();
+}
+
+/** Look up friends' traces for the card on screen (once per place). */
+function loadTraces(ctx, place) {
+  const ui = ctx.ui;
+  ui.traces = ui.traces || new Map();
+  ui.placeEntries = ui.placeEntries || new Map();
+  if (!socialOn() || !place || ui.traces.has(place.id)) return;
+  ui.traces.set(place.id, null);
+  Promise.all([friendTraces([place.id]), friendEntriesFor(place.id)])
+    .then(async ([traces, entries]) => {
+      ui.traces.set(place.id, traces.get(place.id) || null);
+      const profiles = await profilesFor(entries.map((e) => e.user_id)).catch(() => new Map());
+      ui.placeEntries.set(place.id, { entries, profiles });
+      if ((traces.get(place.id) || entries.length) && ctx.getScreen() === 'discover' && ctx.store.getState().recommendationId === place.id) ctx.rerender();
+    })
+    .catch(() => {});
+}
+
 export const actions = {
+  'send-open': (ctx) => openSend(ctx),
+  'send-close': (ctx) => {
+    ctx.ui.sendCard = null;
+    ctx.rerender();
+  },
+  'send-card': (ctx) => send(ctx),
   previous: (ctx) => previous(ctx),
   'go-kept': (ctx) => goKept(ctx),
   keep: (ctx) => keep(ctx),
@@ -194,7 +298,18 @@ function nudge(card) {
   );
 }
 
-export function afterRender(_state, ctx) {
+export const inputs = {
+  'send-to': (ctx, el) => {
+    if (ctx.ui.sendCard) ctx.ui.sendCard.to = el.value;
+    ctx.rerender();
+  },
+  'send-note': (ctx, el) => {
+    if (ctx.ui.sendCard) ctx.ui.sendCard.note = el.value;
+  },
+};
+
+export function afterRender(state, ctx) {
+  loadTraces(ctx, getPlaceById(state.recommendationId));
   const card = document.querySelector('[data-swipe-card]');
   if (!card) return;
   if (!hasLearnedSwipe() && !ctx.ui.swipeNudged) {

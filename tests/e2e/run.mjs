@@ -47,6 +47,7 @@ const SUITES = [
   'account-lifecycle.cjs',
   'social.cjs',
   'place-photos.cjs',
+  'social-plus.cjs',
 ];
 
 const TYPES = {

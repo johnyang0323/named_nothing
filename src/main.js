@@ -28,6 +28,7 @@ import { installErrorReporting } from './services/errorLog.js';
 import { isNativeApp } from './services/native.js';
 import { renderReact, unmountReact } from './react/root.jsx';
 import { renderTabBar } from './react/TabBar.jsx';
+import { getUnread, onUnread, startInbox, refreshUnread } from './services/backend/inbox.js';
 
 /** Screens reachable by #hash. */
 const APP_SCREENS = { home, discover, explore, route, day: myday, account, together };
@@ -196,6 +197,7 @@ function updateNav() {
     routeCount: state.route.length,
     // the day has started → the logo opens today's recommendation
     started: Boolean(state.recommendationId),
+    inbox: getUnread(),
     account: {
       initial: Array.from(profile?.nickname || '나')[0],
       src: (profile && avatarSrc(profile)) || avatarUrl(getUser()) || null,
@@ -306,10 +308,13 @@ if (isBackendConfigured()) {
     ui.myEntries = null;
     ui.together = null;
     if (user) loadMyProfile().catch(() => null);
+    refreshUnread();
     refreshAccountButton();
     handleRoute();
   });
   onProfileChange(() => refreshAccountButton());
+  onUnread(() => updateNav());
+  startInbox();
   // update only the status line, so saving in the background never redraws
   // the screen under someone who is typing
   sync.onStatus(() => {

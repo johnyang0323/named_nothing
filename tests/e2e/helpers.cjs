@@ -23,6 +23,12 @@ function createBackend({ photos, photoFunction = null, confirmEmail = false, mai
     comments: new Map(), // id -> comment
     reports: [],
     files: new Map(), // 'bucket/path' -> Buffer
+    // social_plus.sql
+    requests: [], // { from_id, to_id, created_at }
+    invites: new Map(), // token -> owner_id
+    notes: [], // notifications
+    reactions: [], // { entry_id, user_id, emoji }
+    cards: [], // shared_cards
   };
   const accounts = new Map(); // email -> { password, id }
   const log = [];
@@ -186,6 +192,7 @@ function parseFilters(url) {
       if (op === 'eq') return cell === val;
       if (op === 'neq') return cell !== val;
       if (op === 'in') return val.replace(/^\(|\)$/g, '').split(',').map((x) => x.replace(/^"|"$/g, '')).includes(cell);
+      if (op === 'is') return val === 'null' ? row[k] == null : cell === val;
       return true;
     });
   }
@@ -206,6 +213,15 @@ const blocked = (S, a, b) => S.blocks.some((x) => (x.blocker_id === a && x.block
 const isFriend = (S, a, b) => S.friendships.some((f) => f.user_id === a && f.friend_id === b);
 const isMember = (S, g, u) => S.members.some((m) => m.group_id === g && m.user_id === u);
 const sharesGroup = (S, a, b) => S.members.some((x) => x.user_id === a && S.members.some((y) => y.group_id === x.group_id && y.user_id === b));
+const hasRequest = (S, a, b) => S.requests.some((r) => (r.from_id === a && r.to_id === b) || (r.from_id === b && r.to_id === a));
+const makeFriends = (S, a, b) => {
+  if (!isFriend(S, a, b)) S.friendships.push({ user_id: a, friend_id: b, created_at: new Date().toISOString() }, { user_id: b, friend_id: a, created_at: new Date().toISOString() });
+  S.requests = S.requests.filter((r) => !((r.from_id === a && r.to_id === b) || (r.from_id === b && r.to_id === a)));
+};
+const notify = (S, user, actor, kind, entry = null, data = {}) => {
+  if (!user || user === actor || blocked(S, user, actor)) return;
+  S.notes.push({ id: uid(), user_id: user, actor_id: actor, kind, entry_id: entry, data, read_at: null, created_at: new Date(Date.now() + S.notes.length).toISOString() });
+};
 const canRead = (S, e, me) =>
   e.user_id === me ||
   (!blocked(S, e.user_id, me) && ((e.visibility === 'friends' && isFriend(S, me, e.user_id)) || (e.visibility === 'group' && e.group_id && isMember(S, e.group_id, me))));
@@ -340,13 +356,63 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
           .flatMap((e) => e.photo_paths.map((path) => ({ path, nickname: profileOf(e.user_id)?.nickname || '사용자', entry_id: e.id, created_at: e.created_at })));
         return json(rows.slice(0, Math.min(Math.max(b.p_limit || 8, 1), 20)));
       }
+      case 'request_friend': {
+        const them = [...S.profiles.values()].find((p) => p.nickname === b.p_nickname && p.tag === b.p_tag);
+        if (!them || blocked(S, me, them.user_id)) return err('not found');
+        if (them.user_id === me) return err('self');
+        if (isFriend(S, me, them.user_id)) return json('already');
+        if (S.requests.some((r) => r.from_id === them.user_id && r.to_id === me)) {
+          makeFriends(S, me, them.user_id);
+          notify(S, them.user_id, me, 'friend_accepted');
+          return json('accepted');
+        }
+        if (!S.requests.some((r) => r.from_id === me && r.to_id === them.user_id)) {
+          S.requests.push({ from_id: me, to_id: them.user_id, created_at: new Date().toISOString() });
+          notify(S, them.user_id, me, 'friend_request');
+        }
+        return json('requested');
+      }
+      case 'respond_friend': {
+        if (!S.requests.some((r) => r.from_id === b.p_from && r.to_id === me)) return err('not found');
+        if (b.p_accept) {
+          makeFriends(S, me, b.p_from);
+          notify(S, b.p_from, me, 'friend_accepted');
+        } else S.requests = S.requests.filter((r) => !(r.from_id === b.p_from && r.to_id === me));
+        S.notes = S.notes.filter((n) => !(n.user_id === me && n.actor_id === b.p_from && n.kind === 'friend_request'));
+        return json(null);
+      }
+      case 'create_friend_invite': {
+        const token = Array.from({ length: 20 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'[Math.floor(Math.random() * 57)]).join('');
+        S.invites.set(token, me);
+        return json(token);
+      }
+      case 'accept_friend_invite': {
+        const owner = S.invites.get(b.p_token);
+        if (!owner || blocked(S, me, owner)) return err('not found');
+        if (owner === me) return err('self');
+        makeFriends(S, me, owner);
+        notify(S, owner, me, 'friend_accepted');
+        return json(profileOf(owner));
+      }
+      case 'friend_traces': {
+        const rows = (b.p_place_ids || []).map((pid) => {
+          const es = [...S.entries.values()].filter((e) => e.place_id === pid && e.user_id !== me && isFriend(S, me, e.user_id) && canRead(S, e, me));
+          const ids = [...new Set(es.map((e) => e.user_id))];
+          return { place_id: pid, friends: ids.length, nicknames: ids.map((id) => profileOf(id)?.nickname).filter(Boolean).slice(0, 3) };
+        }).filter((r) => r.friends);
+        return json(rows);
+      }
       default:
         return null;
     }
   }
 
   const tables = {
-    profiles: () => [...S.profiles.values()].filter((p) => p.user_id === me || ((isFriend(S, me, p.user_id) || sharesGroup(S, me, p.user_id)) && !blocked(S, me, p.user_id))),
+    profiles: () => [...S.profiles.values()].filter((p) => p.user_id === me || ((isFriend(S, me, p.user_id) || sharesGroup(S, me, p.user_id) || hasRequest(S, me, p.user_id)) && !blocked(S, me, p.user_id))),
+    friend_requests: () => S.requests.filter((r) => r.from_id === me || r.to_id === me),
+    notifications: () => S.notes.filter((n) => n.user_id === me),
+    reactions: () => S.reactions.filter((r) => S.entries.has(r.entry_id) && canRead(S, S.entries.get(r.entry_id), me) && !blocked(S, me, r.user_id)),
+    shared_cards: () => S.cards.filter((c) => (c.from_id === me || c.to_id === me) && !blocked(S, c.from_id, c.to_id)),
     friendships: () => S.friendships.filter((f) => f.user_id === me),
     blocks: () => S.blocks.filter((x) => x.blocker_id === me),
     groups: () => [...S.groups.values()].filter((g) => isMember(S, g.id, me)),
@@ -356,6 +422,10 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
   };
   if (!(table in tables) && table !== 'reports') return null;
 
+  if (method === 'HEAD') {
+    const n = tables[table]().filter(where).length;
+    return route.fulfill({ status: 200, headers: { ...cors, 'access-control-expose-headers': 'content-range', 'content-range': `*/${n}` }, body: '' });
+  }
   if (method === 'GET') return reply(applyOrder(tables[table]().filter(where), url));
 
   if (method === 'POST') {
@@ -374,10 +444,32 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
         if (!e || !canRead(S, e, me) || e.visibility === 'private') return err('rls', 403);
         const row = { id: uid(), created_at: new Date().toISOString(), ...r, user_id: me };
         S.comments.set(row.id, row);
+        notify(S, e.user_id, me, 'comment', e.id, { body: String(r.body).slice(0, 80) });
+        out.push(row);
+      } else if (table === 'reactions') {
+        const e = S.entries.get(r.entry_id);
+        if (!e || !canRead(S, e, me) || r.user_id !== me) return err('rls', 403);
+        if (!S.reactions.some((x) => x.entry_id === r.entry_id && x.user_id === me && x.emoji === r.emoji)) {
+          S.reactions.push({ entry_id: r.entry_id, user_id: me, emoji: r.emoji });
+          notify(S, e.user_id, me, 'reaction', e.id, { emoji: r.emoji });
+        }
+        out.push(r);
+      } else if (table === 'shared_cards') {
+        if (r.from_id !== me || !isFriend(S, me, r.to_id) || blocked(S, me, r.to_id)) return err('rls', 403);
+        const row = { id: uid(), created_at: new Date().toISOString(), seen_at: null, note: null, ...r };
+        S.cards.push(row);
+        notify(S, r.to_id, me, 'card', null, { card_id: row.id, place_name: String(r.place?.name || '').slice(0, 80) });
         out.push(row);
       } else return err('not allowed', 403);
     }
     return (req.headers().prefer || '').includes('return=representation') ? reply(out) : route.fulfill({ status: 201, headers: cors, body: '' });
+  }
+
+  if (method === 'PATCH' && table === 'notifications') {
+    const patch = body();
+    const targets = S.notes.filter(where).filter((n) => n.user_id === me);
+    targets.forEach((n) => Object.assign(n, { read_at: patch.read_at }));
+    return reply(targets);
   }
 
   if (method === 'PATCH' && table === 'journal_entries') {
@@ -409,6 +501,14 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
       });
     } else if (table === 'blocks') {
       S.blocks = S.blocks.filter((x) => !(where(x) && x.blocker_id === me));
+    } else if (table === 'friend_requests') {
+      S.requests = S.requests.filter((r) => !(where(r) && (r.from_id === me || r.to_id === me)));
+    } else if (table === 'reactions') {
+      S.reactions = S.reactions.filter((r) => !(where(r) && r.user_id === me));
+    } else if (table === 'shared_cards') {
+      S.cards = S.cards.filter((c) => !(where(c) && (c.from_id === me || c.to_id === me)));
+    } else if (table === 'notifications') {
+      S.notes = S.notes.filter((n) => !(where(n) && n.user_id === me));
     }
     return route.fulfill({ status: 204, headers: cors, body: '' });
   }

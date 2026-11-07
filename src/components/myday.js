@@ -12,7 +12,7 @@ import { categoryLabel, moodLabel } from './common.js';
 import { isBackendConfigured } from '../services/backend/config.js';
 import { getUser } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
-import { myEntries, saveEntry, listGroups, commentsFor, profilesFor, VISIBILITY, PHOTOS_MAX, NOTE_MAX, SocialError } from '../services/backend/social.js';
+import { myEntries, saveEntry, listGroups, commentsFor, reactionsFor, profilesFor, VISIBILITY, PHOTOS_MAX, NOTE_MAX, SocialError } from '../services/backend/social.js';
 import { entryCard, hydrateJournalPhotos } from './entryCard.js';
 import { journalActions, journalInputs, journalForms } from './journalActions.js';
 
@@ -24,6 +24,7 @@ const cardOptions = (ui, entry, groupNames) => ({
   showOwnerActions: true,
   groupName: groupNames.get(entry.group_id) || '',
   comments: (ui.myComments || []).filter((c) => c.entry_id === entry.id),
+  reactions: (ui.myReactions || []).filter((r) => r.entry_id === entry.id),
   profiles: ui.commentProfiles || new Map(),
   ui,
 });
@@ -232,8 +233,10 @@ async function loadJournal(ctx) {
   try {
     const [entries, groups] = await Promise.all([myEntries(), listGroups().catch(() => [])]);
     // comments on my shared entries, and who wrote them
-    const comments = await commentsFor(entries.filter((e) => e.visibility !== 'private').map((e) => e.id));
-    const profiles = await profilesFor(comments.map((c) => c.user_id));
+    const sharedIds = entries.filter((e) => e.visibility !== 'private').map((e) => e.id);
+    const [comments, reactions] = await Promise.all([commentsFor(sharedIds), reactionsFor(sharedIds)]);
+    const profiles = await profilesFor([...comments.map((c) => c.user_id), ...reactions.map((r) => r.user_id)]);
+    ctx.ui.myReactions = reactions;
     ctx.ui.myEntries = entries;
     ctx.ui.myGroups = groups;
     ctx.ui.myComments = comments;

@@ -30,7 +30,7 @@ function AccountIcon({ account }) {
  * current recommendation once the day has started (발견), otherwise the
  * place / time / mood step (오늘).
  */
-function AppTabBar({ current, routeCount, started, account }) {
+function AppTabBar({ current, routeCount, started, account, inbox }) {
   const items = [
     {
       value: 'route',
@@ -49,7 +49,16 @@ function AppTabBar({ current, routeCount, started, account }) {
       icon: <img className="tab-logo" src="./favicon.svg" alt="" width="30" height="30" />,
       label: '오늘',
     },
-    { value: 'together', href: '#together', icon: ICONS.together, label: '함께' },
+    {
+      value: 'together',
+      href: '#together',
+      icon: ICONS.together,
+      label: (
+        <span className="tab-label">
+          함께{inbox ? <span className="tab-count tab-alert" data-inbox-count aria-label={`새 알림 ${inbox}개`}>{inbox > 9 ? '9+' : inbox}</span> : null}
+        </span>
+      ),
+    },
     { value: 'account', href: '#account', icon: <AccountIcon account={account} />, label: account?.label || '계정' },
   ];
   const selected = current === 'home' || current === 'discover' ? 'today' : current;

@@ -394,3 +394,177 @@ export async function report(targetType, targetId, reason = '') {
   const { error } = await supabase.from('reports').insert({ reporter_id: user.id, target_type: targetType, target_id: String(targetId), reason: String(reason).slice(0, 300) || null });
   fail('신고를 보내지 못했어요.')(error);
 }
+
+// ─────────────────────────── friend requests & invites (social_plus.sql) ───────────────────────────
+
+/** The SQL for a feature hasn't been run yet (missing table or function). */
+const notSetUp = (error) =>
+  Boolean(error) && (['PGRST202', 'PGRST205', '42P01', '42883'].includes(error.code) || /could not find|does not exist|schema cache/i.test(error.message || ''));
+
+/**
+ * Ask to be friends by nickname#tag. Resolves { status: 'requested' |
+ * 'accepted' | 'already' }. Before social_plus.sql runs, falls back to the
+ * old instant add.
+ */
+export async function requestFriend(text) {
+  const parsed = parseTag(text);
+  if (!parsed) throw new SocialError('닉네임#12345 형식으로 입력해 주세요.');
+  const { supabase } = await client();
+  const { data, error } = await supabase.rpc('request_friend', { p_nickname: parsed.nickname, p_tag: parsed.tag });
+  if (notSetUp(error)) {
+    const profile = await addFriend(text);
+    return { status: 'accepted', profile };
+  }
+  if (error) {
+    if (/self/.test(error.message)) throw new SocialError('내 이름표예요. 친구의 이름표를 입력해 주세요.');
+    if (/too many/.test(error.message)) throw new SocialError('보낸 요청이 너무 많아요. 오래된 요청을 취소한 뒤 다시 보내주세요.');
+    throw new SocialError('그 이름표를 찾지 못했어요. 닉네임과 #뒤 숫자를 다시 확인해 주세요.');
+  }
+  return { status: data || 'requested' };
+}
+
+/** Pending requests, both ways, with the other person's profile. */
+export async function listRequests() {
+  const { supabase, user } = await client();
+  const { data, error } = await supabase.from('friend_requests').select('from_id, to_id, created_at').order('created_at', { ascending: false });
+  if (error) return { incoming: [], outgoing: [] };
+  const profiles = await profilesFor(data.map((r) => (r.from_id === user.id ? r.to_id : r.from_id)));
+  const withProfile = (r, id) => ({ ...r, profile: profiles.get(id) || null });
+  return {
+    incoming: data.filter((r) => r.to_id === user.id).map((r) => withProfile(r, r.from_id)),
+    outgoing: data.filter((r) => r.from_id === user.id).map((r) => withProfile(r, r.to_id)),
+  };
+}
+
+export async function respondFriend(fromId, accept) {
+  const { supabase } = await client();
+  const { error } = await supabase.rpc('respond_friend', { p_from: fromId, p_accept: Boolean(accept) });
+  fail(accept ? '요청을 수락하지 못했어요.' : '요청을 거절하지 못했어요.')(error);
+}
+
+export async function cancelRequest(toId) {
+  const { supabase, user } = await client();
+  const { error } = await supabase.from('friend_requests').delete().eq('from_id', user.id).eq('to_id', toId);
+  fail('요청을 취소하지 못했어요.')(error);
+}
+
+/** A one-time invite token for a link; null before social_plus.sql runs. */
+export async function createInviteToken() {
+  const { supabase } = await client();
+  const { data, error } = await supabase.rpc('create_friend_invite');
+  if (error) return null;
+  return typeof data === 'string' ? data : null;
+}
+
+export async function acceptInvite(token) {
+  const { supabase } = await client();
+  const { data, error } = await supabase.rpc('accept_friend_invite', { p_token: String(token || '') });
+  if (error) {
+    if (/self/.test(error.message)) throw new SocialError('내가 만든 초대 링크예요. 친구에게 보내주세요.');
+    throw new SocialError('초대 링크가 만료됐거나 잘못됐어요. 친구에게 새 링크를 부탁해 주세요.');
+  }
+  return data;
+}
+
+// ─────────────────────────── notifications ───────────────────────────
+
+export async function listNotifications(limit = 50) {
+  const { supabase } = await client();
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, actor_id, kind, entry_id, data, read_at, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  const profiles = await profilesFor(data.map((n) => n.actor_id).filter(Boolean));
+  return data.map((n) => ({ ...n, actor: profiles.get(n.actor_id) || null }));
+}
+
+export async function unreadCount() {
+  const { supabase } = await client();
+  const { count, error } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+  return error ? 0 : count || 0;
+}
+
+export async function markNotificationsRead() {
+  const { supabase, user } = await client();
+  await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', user.id).is('read_at', null);
+}
+
+// ─────────────────────────── reactions ───────────────────────────
+
+export const REACTIONS = ['❤️', '👍', '😂', '😮', '🥹'];
+
+export async function reactionsFor(entryIds) {
+  if (!entryIds.length) return [];
+  const { supabase } = await client();
+  const { data, error } = await supabase.from('reactions').select('entry_id, user_id, emoji').in('entry_id', entryIds);
+  return error ? [] : data;
+}
+
+/** Add my reaction, or take it back if I already reacted with it. */
+export async function toggleReaction(entryId, emoji, mine) {
+  if (!REACTIONS.includes(emoji)) throw new SocialError('그 반응은 쓸 수 없어요.');
+  const { supabase, user } = await client();
+  const { error } = mine
+    ? await supabase.from('reactions').delete().eq('entry_id', entryId).eq('user_id', user.id).eq('emoji', emoji)
+    : await supabase.from('reactions').insert({ entry_id: entryId, user_id: user.id, emoji });
+  if (notSetUp(error)) throw new SocialError('반응 기능은 아직 준비 중이에요.');
+  fail('반응을 남기지 못했어요.')(error);
+}
+
+// ─────────────────────────── place cards ───────────────────────────
+
+/** Send a recommendation card to a friend ("여기 같이 갈래?"). */
+export async function sendCard(toId, place, note = '') {
+  const { supabase, user } = await client();
+  const text = String(note || '').trim().slice(0, 100);
+  const { error } = await supabase.from('shared_cards').insert({ from_id: user.id, to_id: toId, place, note: text || null });
+  if (notSetUp(error)) throw new SocialError('카드 보내기는 아직 준비 중이에요.');
+  fail('카드를 보내지 못했어요. 친구 사이인지 확인해 주세요.')(error);
+}
+
+export async function receivedCards(limit = 30) {
+  const { supabase, user } = await client();
+  const { data, error } = await supabase
+    .from('shared_cards')
+    .select('id, from_id, place, note, created_at, seen_at')
+    .eq('to_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  const profiles = await profilesFor(data.map((c) => c.from_id));
+  return data.map((c) => ({ ...c, from: profiles.get(c.from_id) || null }));
+}
+
+export async function removeCard(id) {
+  const { supabase } = await client();
+  const { error } = await supabase.from('shared_cards').delete().eq('id', id);
+  fail('카드를 지우지 못했어요.')(error);
+}
+
+// ─────────────────────────── friends' traces ───────────────────────────
+
+/** place id → { friends, nicknames } for places friends shared entries about. */
+export async function friendTraces(placeIds) {
+  const ids = [...new Set(placeIds.filter(Boolean))].slice(0, 50);
+  if (!ids.length) return new Map();
+  const { supabase } = await client();
+  const { data, error } = await supabase.rpc('friend_traces', { p_place_ids: ids });
+  if (error || !Array.isArray(data)) return new Map();
+  return new Map(data.map((r) => [r.place_id, { friends: r.friends, nicknames: r.nicknames || [] }]));
+}
+
+/** Entries friends shared with me about one place (newest first). */
+export async function friendEntriesFor(placeId, limit = 6) {
+  if (!placeId) return [];
+  const { supabase, user } = await client();
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .select(ENTRY_FIELDS)
+    .eq('place_id', placeId)
+    .neq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return error ? [] : data;
+}

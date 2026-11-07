@@ -18,6 +18,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
     return { ctx, page, email };
   };
   const idOf = (email) => backend.accounts.get(email).id;
+  const isFriendNow = () => S.friendships.some((f) => f.user_id === idOf('a@test.com') && f.friend_id === idOf('b@test.com'));
 
   // a JPEG that carries GPS EXIF, like a phone photo
   const A = await person('a@test.com');
@@ -72,8 +73,22 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await B.page.waitForSelector('.add-friend .area-error');
   await B.page.fill('#friend-tag', `산책하는A#${profA.tag}`);
   await B.page.click('[data-form="friend-add"] button[type=submit]');
+  await B.page.waitForSelector('text=친구 요청을 보냈어요');
+  await B.page.waitForSelector('#sent-title');
+  assert(!isFriendNow(), 'not friends before A accepts');
+  // A sees the request (badge on 함께, inbox) and accepts it
+  await A.page.goto(APP + '#together');
+  await A.page.waitForSelector('#requests-title');
+  await A.page.click('[data-action="together-tab"][data-tab="inbox"]');
+  await A.page.waitForSelector('.note-text:has-text("비님이 친구 요청을 보냈어요")');
+  await A.page.click('#requests-title ~ .people [data-action="request-accept"]');
+  await A.page.waitForSelector('text=친구가 됐어요');
+  assert(isFriendNow(), 'friends after accepting');
+  await B.page.reload();
   await B.page.waitForSelector('.person-name:has-text("산책하는A")');
-  ok('friends: wrong tag refused, exact 산책하는A#tag adds the friend');
+  await B.page.click('[data-action="together-tab"][data-tab="inbox"]');
+  await B.page.waitForSelector('.note-text:has-text("산책하는A님과 친구가 됐어요")');
+  ok('friends: wrong tag refused; exact tag sends a request; A accepts from the inbox; B is told');
 
   // ── A: journal entry with photos, shared with friends; plus a private one ──
   await setupDay(A.page);
@@ -110,12 +125,21 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await B.page.fill('.comment-form input', '저도 가보고 싶어요!');
   await B.page.click('.comment-form button[type=submit]');
   await B.page.waitForSelector('.comment-body:has-text("저도 가보고 싶어요!")');
-  ok('friend B sees the shared entry with photos, not the private one; comments on it');
+  await B.page.click('.entry .reaction[data-emoji="❤️"]');
+  await B.page.waitForSelector('.entry .reaction.is-on[data-emoji="❤️"] .reaction-count:has-text("1")');
+  ok('friend B sees the shared entry with photos, not the private one; comments and reacts ❤️');
 
   await A.page.goto(APP + '#day');
   await A.page.reload();
   await A.page.waitForSelector('.comment-body:has-text("저도 가보고 싶어요!")');
-  ok('A sees B’s comment under the entry on 나의 하루');
+  await A.page.waitForSelector('.reaction[data-emoji="❤️"] .reaction-count:has-text("1")');
+  await A.page.waitForSelector('.app-tabbar [data-inbox-count]');
+  await A.page.goto(APP + '#together');
+  await A.page.click('[data-action="together-tab"][data-tab="inbox"]');
+  await A.page.waitForSelector('.note-text:has-text("비님이 내 기록에 댓글을 남겼어요")');
+  await A.page.waitForSelector('.note-text:has-text("비님이 내 기록에 ❤️")');
+  await A.page.waitForFunction(() => !document.querySelector('.app-tabbar [data-inbox-count]'));
+  ok('A sees B’s comment and ❤️ on 나의 하루; inbox lists both, the 함께 badge clears once opened');
 
   // ── groups ──
   await A.page.goto(APP + '#together');

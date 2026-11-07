@@ -1,6 +1,7 @@
 /**
  * Invite links and copying.
- *   …/named_nothing/?friend=닉네임%2312345   → become friends
+ *   …/named_nothing/?invite=TOKEN            → become friends (one-time token)
+ *   …/named_nothing/?friend=닉네임%2312345   → older links: send a friend request
  *   …/named_nothing/?group=ABCD2345          → join a group room
  * The link is remembered until the person has signed in, then confirmed
  * on the 함께 screen.
@@ -9,10 +10,11 @@ import { shareBase } from '../services/native.js';
 
 const PENDING_KEY = 'plannish-invite';
 
-export function inviteLink({ friend = null, group = null }) {
+export function inviteLink({ friend = null, group = null, invite = null }) {
   // In the Android/iOS app this is the public web address, not https://localhost.
   const url = new URL(shareBase());
-  if (friend) url.searchParams.set('friend', friend);
+  if (invite) url.searchParams.set('invite', invite);
+  else if (friend) url.searchParams.set('friend', friend);
   if (group) url.searchParams.set('group', group);
   return url.toString();
 }
@@ -31,8 +33,13 @@ export function captureInvite() {
   const url = new URL(window.location.href);
   const friend = url.searchParams.get('friend');
   const group = url.searchParams.get('group');
-  if (!friend && !group) return null;
-  const invite = { friend: friend ? friend.slice(0, 30) : null, group: group ? group.slice(0, 12).toUpperCase() : null };
+  const token = url.searchParams.get('invite');
+  if (!friend && !group && !token) return null;
+  const invite = {
+    token: token && /^[A-Za-z0-9]{20}$/.test(token) ? token : null,
+    friend: friend ? friend.slice(0, 30) : null,
+    group: group ? group.slice(0, 12).toUpperCase() : null,
+  };
   try {
     sessionStorage.setItem(PENDING_KEY, JSON.stringify(invite));
   } catch {
@@ -40,6 +47,7 @@ export function captureInvite() {
   }
   url.searchParams.delete('friend');
   url.searchParams.delete('group');
+  url.searchParams.delete('invite');
   window.history.replaceState(null, '', `${url.pathname}${url.search}#together`);
   return invite;
 }
