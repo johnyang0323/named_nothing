@@ -5,36 +5,36 @@
 
 :root {
   /* brand palette */
-  --forest: #fff; /* main */
-  --forest-2: rgba(255, 255, 255, 0.691);
-  --forest-3: rgba(255, 255, 255, 0.565);
-  --sand: #000; /* second main */
-  --sand-light: #000;
-  --purple: #8b5cf6; /* point */
-  --purple-deep: #8b5cf6;
-  --purple-soft: rgba(139, 92, 246, 0.14);
+  --forest: #000; /* main */
+  --forest-2: rgba(0, 0, 0, 0.691);
+  --forest-3: rgba(0, 0, 0, 0.565);
+  --sand: #fff; /* second main */
+  --sand-light: #fff;
+  --purple: #3b82f6; /* point */
+  --purple-deep: #3b82f6;
+  --purple-soft: rgba(59, 130, 246, 0.14);
 
   /* roles */
-  --bg: #000;
-  --text: #fff;
-  --text-secondary: rgba(255, 255, 255, 0.655);
-  --muted: rgba(255, 255, 255, 0.47);
+  --bg: #fff;
+  --text: #000;
+  --text-secondary: rgba(0, 0, 0, 0.655);
+  --muted: rgba(0, 0, 0, 0.47);
   --accent: var(--purple);
   --accent-deep: var(--forest-2);
-  --surface: rgba(0, 0, 0, 0.4);
-  --white: rgba(0, 0, 0, 0.64);
-  --line: rgba(255, 255, 255, 0.13);
+  --surface: rgba(255, 255, 255, 0.4);
+  --white: rgba(255, 255, 255, 0.64);
+  --line: rgba(0, 0, 0, 0.13);
 
   /* liquid glass */
-  --glass: rgba(0, 0, 0, 0.5);
-  --glass-strong: rgba(0, 0, 0, 0.72);
-  --glass-border: rgba(0, 0, 0, 0.7);
+  --glass: rgba(255, 255, 255, 0.5);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.7);
   --glass-blur: blur(18px) saturate(170%);
   --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75);
-  --grad-forest: rgba(255, 255, 255, 0.624);
-  --grad-cta: #fff;
-  --grad-purple: #8b5cf6;
-  --grad-title: #fff;
+  --grad-forest: rgba(0, 0, 0, 0.624);
+  --grad-cta: #000;
+  --grad-purple: #3b82f6;
+  --grad-title: #000;
 
   /* San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices.
      Apple doesn't allow bundling those fonts, so other devices (Android,
@@ -381,7 +381,7 @@ h1[tabindex='-1']:focus {
 }
 
 .button-primary:hover {
-  background: #fff;
+  background: #000;
 }
 
 .button-secondary {
@@ -797,7 +797,7 @@ h1[tabindex='-1']:focus {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3);
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .gallery[hidden] {
@@ -811,8 +811,8 @@ h1[tabindex='-1']:focus {
   height: 36px;
   border: 0;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.92);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  color: #000;
   font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
@@ -823,17 +823,17 @@ h1[tabindex='-1']:focus {
   text-align: center;
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
-  color: #000;
+  color: #fff;
 }
 
 .gallery-reject {
   margin-left: auto;
   min-height: 36px;
   padding: 0 var(--space-3);
-  border: 1px solid rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 999px;
   background: transparent;
-  color: #000;
+  color: #fff;
   font-size: 0.8rem;
   cursor: pointer;
 }
@@ -843,8 +843,8 @@ h1[tabindex='-1']:focus {
   padding: 0 var(--space-3);
   border: 0;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.92);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  color: #000;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -852,11 +852,11 @@ h1[tabindex='-1']:focus {
 
 .gallery-pin.is-pinned {
   background: var(--accent-deep);
-  color: #000;
+  color: #fff;
 }
 
 .gallery button:focus-visible {
-  outline: 2px solid #000;
+  outline: 2px solid #fff;
   outline-offset: 2px;
 }
 
@@ -1331,7 +1331,7 @@ h1[tabindex='-1']:focus {
 .area-error {
   margin-top: var(--space-3);
   font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.661);
+  color: rgba(0, 0, 0, 0.661);
 }
 
 /* ---- Home: two one-screen steps ------------------------------------------ */
@@ -1436,8 +1436,8 @@ body[data-screen='home'] .view {
   transform: translateX(-50%);
   padding: var(--space-1) var(--space-3);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  color: #000;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
   font-size: 0.78rem;
   white-space: nowrap;
   pointer-events: none;
@@ -1455,7 +1455,7 @@ body[data-screen='home'] .view {
 .km-pick {
   width: 22px;
   height: 22px;
-  border: 3px solid #000;
+  border: 3px solid #fff;
   background: var(--accent-deep);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
@@ -1611,8 +1611,8 @@ body[data-screen='home'] .view {
   border: 0;
   border-radius: 12px;
   /* Kakao brand colours, as required by Kakao's login button guide */
-  background: #000;
-  color: rgba(255, 255, 255, 0.85);
+  background: #fff;
+  color: rgba(0, 0, 0, 0.85);
   font-size: 0.98rem;
   font-weight: 600;
   cursor: pointer;
@@ -1882,7 +1882,7 @@ body.is-gated .view {
   padding: 1px 6px;
   border-radius: 4px;
   background: var(--accent-deep);
-  color: #000;
+  color: #fff;
   font-size: 0.72rem;
 }
 
@@ -1958,14 +1958,14 @@ body.is-gated .view {
 .danger-zone {
   margin-top: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid rgba(255, 255, 255, 0.255);
+  border: 1px solid rgba(0, 0, 0, 0.255);
   border-radius: var(--radius-small);
-  background: #000;
+  background: #fff;
 }
 
 .danger-title {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.661);
+  color: rgba(0, 0, 0, 0.661);
 }
 
 .danger-zone .actions {
@@ -1974,12 +1974,12 @@ body.is-gated .view {
 }
 
 .button-danger {
-  background: rgba(255, 255, 255, 0.661);
-  color: #000;
+  background: rgba(0, 0, 0, 0.661);
+  color: #fff;
 }
 
 .button-danger:hover {
-  background: rgba(255, 255, 255, 0.735);
+  background: rgba(0, 0, 0, 0.735);
 }
 
 /* ---- Header account button -------------------------------------------- */
@@ -2282,8 +2282,8 @@ body.is-gated .account-button {
   height: 24px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
-  color: #000;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
   line-height: 1;
   cursor: pointer;
 }
@@ -2433,7 +2433,7 @@ body.is-gated .account-button {
 }
 
 .diag-result.is-bad {
-  color: rgba(255, 255, 255, 0.661);
+  color: rgba(0, 0, 0, 0.661);
 }
 
 .diag-detail {
@@ -2634,11 +2634,11 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    rgba(255, 255, 255, 0.263),
-    rgba(139, 92, 246, 0.26),
-    rgba(255, 255, 255, 0.34),
-    rgba(139, 92, 246, 0.2),
-    #000;
+    rgba(0, 0, 0, 0.263),
+    rgba(59, 130, 246, 0.26),
+    rgba(0, 0, 0, 0.34),
+    rgba(59, 130, 246, 0.2),
+    #fff;
 }
 
 /* ---- the glass recipe -------------------------------------------------- */
@@ -2715,18 +2715,18 @@ body::before {
 .budget-chip span,
 .icon-button,
 .group-select {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(255, 255, 255, 0.55);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
-  border: 1px solid rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.06);
   color: var(--text);
 }
 
 .area-input:focus,
 .note:focus {
-  background: rgba(0, 0, 0, 0.78);
-  border-color: rgba(139, 92, 246, 0.55);
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(59, 130, 246, 0.55);
 }
 
 :focus-visible {
@@ -2766,12 +2766,12 @@ body::before {
 }
 
 a {
-  text-decoration-color: rgba(139, 92, 246, 0.6);
+  text-decoration-color: rgba(59, 130, 246, 0.6);
 }
 
 .text-button {
   color: var(--forest);
-  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-decoration-color: rgba(0, 0, 0, 0.35);
 }
 
 .text-button:hover {
@@ -2782,65 +2782,65 @@ a {
 .button-primary {
   background: var(--grad-forest);
   color: var(--sand-light);
-  border: 1px solid rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 8px 22px rgba(0, 0, 0, 0.28);
 }
 
 .button-primary:hover {
-  background: rgba(255, 255, 255, 0.556);
+  background: rgba(0, 0, 0, 0.556);
 }
 
 .button-wide.button-primary,
 .cta-area .button-primary {
   background: var(--grad-cta);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 28px rgba(139, 92, 246, 0.28), 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 28px rgba(59, 130, 246, 0.28), 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .button-secondary {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.5);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.35);
   color: var(--forest);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .button-secondary:hover {
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .button-ghost {
-  background: rgba(0, 0, 0, 0.42);
+  background: rgba(255, 255, 255, 0.42);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
-  border: 1px solid rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   color: var(--forest);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .button-ghost:hover {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 /* point colour: things that are chosen */
 .chip.is-on,
 .gallery-pin.is-pinned {
   background: var(--grad-purple);
-  border-color: rgba(0, 0, 0, 0.4);
-  color: #000;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px rgba(139, 92, 246, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px rgba(59, 130, 246, 0.3);
 }
 
 .budget-chip input:checked + span {
   background: var(--grad-forest);
-  border-color: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
   color: var(--sand-light);
 }
 
 .mood:has(input:checked) {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(255, 255, 255, 0.8);
   border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18), var(--glass-shadow);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18), var(--glass-shadow);
 }
 
 .mood:has(input:checked) .mood-label::before {
@@ -2882,7 +2882,7 @@ a {
 }
 
 .stop.is-visited {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .is-visited .stop-status {
@@ -2895,7 +2895,7 @@ a {
 }
 
 .km-current {
-  box-shadow: 0 0 0 7px rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 0 7px rgba(59, 130, 246, 0.25);
 }
 
 .km-pick {
@@ -2917,8 +2917,8 @@ a {
 }
 
 .avatar {
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.8);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .avatar-initial {
@@ -2931,7 +2931,7 @@ a {
   border: 1px solid var(--glass-border);
   border-radius: 24px;
   padding-bottom: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(255, 255, 255, 0.55);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -2969,10 +2969,10 @@ body[data-screen='home'] .view {
 
 .toast {
   bottom: calc(var(--nav-height) + var(--space-5) + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(0, 0, 0, 0.82);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: var(--sand-light);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 }
@@ -2982,16 +2982,16 @@ body[data-screen='home'] .view {
 }
 
 .map-hint {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(0, 0, 0, 0.72);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
 .map-chip {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(255, 255, 255, 0.7);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   backdrop-filter: blur(12px) saturate(160%);
-  border: 1px solid rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.85);
   color: var(--forest);
 }
 
@@ -3016,7 +3016,7 @@ body[data-screen='home'] .view {
     padding: var(--space-3) var(--space-5);
     border: 1px solid var(--glass-border);
     border-radius: 22px;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(255, 255, 255, 0.45);
     -webkit-backdrop-filter: blur(22px) saturate(170%);
     backdrop-filter: blur(22px) saturate(170%);
     box-shadow: var(--glass-shadow);
@@ -3055,7 +3055,7 @@ body[data-screen='home'] .view {
   .replace-option, .member-chip, .diag-result, .discovery, .auth-panel, .area-map-wrap, .kakao-map,
   .place-chip, .weather-badge, .facts, .account, .taste, .profile, .history-item, .visit, .tabs, .nav,
   .area-input, .note, .chip, .budget-chip span, .icon-button, .button-secondary, .button-ghost, .masthead {
-    background-color: #000;
+    background-color: #fff;
   }
 }
 
@@ -3076,7 +3076,7 @@ body[data-screen='home'] .view {
   .replace-option, .member-chip, .diag-result, .discovery, .auth-panel, .area-map-wrap, .kakao-map,
   .place-chip, .weather-badge, .facts, .account, .taste, .profile, .history-item, .visit, .tabs, .nav,
   .area-input, .note, .chip, .budget-chip span, .icon-button, .button-secondary, .button-ghost, .masthead {
-    background: #000;
+    background: #fff;
   }
 
   .toast {
@@ -3118,20 +3118,20 @@ h2 {
    - A floating glass tab bar with icons.
    ========================================================================= */
 :root {
-  --glass: rgba(0, 0, 0, 0.3);
-  --glass-strong: rgba(0, 0, 0, 0.55);
-  --glass-border: rgba(0, 0, 0, 0.62);
+  --glass: rgba(255, 255, 255, 0.3);
+  --glass-strong: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.62);
   --glass-blur: blur(28px) saturate(185%);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 0 rgba(255, 255, 255, 0.18),
     0 6px 22px rgba(0, 0, 0, 0.07);
   --group-radius: 24px;
   --row-x: 16px;
   --row-min: 48px;
-  --separator: rgba(255, 255, 255, 0.13);
-  --label-2: rgba(255, 255, 255, 0.6);
-  --label-3: rgba(255, 255, 255, 0.32);
+  --separator: rgba(0, 0, 0, 0.13);
+  --label-2: rgba(0, 0, 0, 0.6);
+  --label-3: rgba(0, 0, 0, 0.32);
   --tint: var(--purple-deep);
-  --destructive: rgba(255, 255, 255, 0.647);
+  --destructive: rgba(0, 0, 0, 0.647);
 }
 
 /* ---- Titles and headers ------------------------------------------------- */
@@ -3313,11 +3313,11 @@ h2 {
 }
 
 .row-button:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .row-button:active {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.07);
 }
 
 .row-button:disabled {
@@ -3365,7 +3365,7 @@ h2 {
 }
 
 .group-inline:focus-within {
-  box-shadow: var(--glass-shadow), 0 0 0 2px rgba(139, 92, 246, 0.45);
+  box-shadow: var(--glass-shadow), 0 0 0 2px rgba(59, 130, 246, 0.45);
 }
 
 .row-input {
@@ -3407,7 +3407,7 @@ input[type='checkbox'][role='switch'] {
   height: 31px;
   margin: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.127);
+  background: rgba(0, 0, 0, 0.127);
   cursor: pointer;
   transition: background-color 0.2s var(--ease);
 }
@@ -3421,7 +3421,7 @@ input[type='checkbox'][role='switch']::before {
   width: 27px;
   height: 27px;
   border-radius: 50%;
-  background: #000;
+  background: #fff;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
   transition: transform 0.2s var(--ease);
 }
@@ -3454,8 +3454,8 @@ input[type='checkbox'][role='switch']:focus-visible {
   gap: 0;
   padding: 2px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.074);
-  border: 0.5px solid rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.074);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
 }
 
 .budget-chip span,
@@ -3476,7 +3476,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 
 .budget-chip input:checked + span {
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
 
@@ -3504,7 +3504,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 }
 
 .mood:hover {
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .mood-label,
@@ -3539,7 +3539,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 }
 
 .mood:has(input:checked) {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.3);
   border: 0;
   outline: 0;
   box-shadow: none;
@@ -3651,7 +3651,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 
 .danger-zone {
   padding: 14px var(--row-x);
-  background: rgba(255, 255, 255, 0.039);
+  background: rgba(0, 0, 0, 0.039);
 }
 
 .diag-result {
@@ -3721,7 +3721,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 
   .nav a[aria-current='page'] {
     color: var(--tint);
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(255, 255, 255, 0.6);
     box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.9), 0 2px 10px rgba(0, 0, 0, 0.1);
   }
 
@@ -3736,7 +3736,7 @@ input[type='checkbox'][role='switch']:focus-visible {
     padding: 0 4px;
     border-radius: 8px;
     background: var(--purple);
-    color: #000;
+    color: #fff;
     font-size: 0.625rem;
     font-weight: 700;
     line-height: 1;
@@ -3762,14 +3762,14 @@ input[type='checkbox'][role='switch']:focus-visible {
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list,
   .replace-list, .memory-list, .people {
-    background: rgba(0, 0, 0, 0.94);
+    background: rgba(255, 255, 255, 0.94);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .group, .mood-grid, .stops, .discoveries, .activities, .history-list, .group-list, .visit-list,
   .replace-list, .memory-list, .people {
-    background: #000;
+    background: #fff;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -3840,8 +3840,8 @@ input[type='checkbox'][role='switch']:focus-visible {
   gap: 0;
   padding: 2px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.074);
-  border: 0.5px solid rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.074);
+  border: 0.5px solid rgba(255, 255, 255, 0.55);
   box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -3869,7 +3869,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 .tabs .tab[aria-selected='true'] {
   font-weight: 600;
   color: var(--text);
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
 
@@ -3933,7 +3933,7 @@ input[type='checkbox'][role='switch']:focus-visible {
   margin: var(--space-2) 0;
   padding: 10px 14px;
   border-radius: 16px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.35);
   border: 0.5px solid var(--glass-border);
 }
 
@@ -3950,7 +3950,7 @@ input[type='checkbox'][role='switch']:focus-visible {
 
 .vis-place {
   color: var(--forest-2);
-  background: rgba(255, 255, 255, 0.069);
+  background: rgba(0, 0, 0, 0.069);
 }
 
 /* sign-up / new password: "같아요 / 달라요" under the second box */
@@ -4025,10 +4025,10 @@ body[data-screen='home'] .masthead {
   width: min(calc(100% - 24px), 440px);
   padding: 6px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.58);
+  background: rgba(255, 255, 255, 0.58);
   -webkit-backdrop-filter: blur(26px) saturate(190%);
   backdrop-filter: blur(26px) saturate(190%);
-  border: 0.5px solid rgba(0, 0, 0, 0.78);
+  border: 0.5px solid rgba(255, 255, 255, 0.78);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95),
     inset 0 -1px 0 rgba(255, 255, 255, 0.3);
 }
@@ -4039,7 +4039,7 @@ body[data-screen='home'] .masthead {
   position: absolute;
   inset: 1px 1px 50% 1px;
   border-radius: 999px 999px 40px 40px / 999px 999px 24px 24px;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(255, 255, 255, 0.55);
   pointer-events: none;
 }
 
@@ -4078,7 +4078,7 @@ body[data-screen='home'] .masthead {
 
 .nav a[aria-current='page'] {
   color: var(--tint);
-  background: rgba(0, 0, 0, 0.62);
+  background: rgba(255, 255, 255, 0.62);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.95), 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -4097,7 +4097,7 @@ body[data-screen='home'] .masthead {
   padding: 0 4px;
   border-radius: 8px;
   background: var(--purple);
-  color: #000;
+  color: #fff;
   font-size: 0.625rem;
   font-weight: 700;
   line-height: 1;
@@ -4116,10 +4116,10 @@ body[data-screen='home'] .masthead {
   margin: -20px 8px 0;
   padding: 3px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   backdrop-filter: blur(16px) saturate(180%);
-  border: 0.5px solid rgba(0, 0, 0, 0.9);
+  border: 0.5px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 #fff;
   transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
@@ -4184,14 +4184,14 @@ body[data-screen='home'] .view {
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .nav,
   .nav .nav-home {
-    background: rgba(0, 0, 0, 0.96);
+    background: rgba(255, 255, 255, 0.96);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .nav,
   .nav .nav-home {
-    background: #000;
+    background: #fff;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -4207,49 +4207,49 @@ body[data-screen='home'] .view {
    button, whose yellow is required by Kakao's design guide.
    ========================================================================= */
 :root {
-  --black: #fff;
-  --white: #000;
-  --purple: #8b5cf6;
-  --purple-deep: #8b5cf6;
-  --purple-soft: rgba(139, 92, 246, 0.12);
-  --tint: #8b5cf6;
-  --accent: #8b5cf6;
-  --accent-deep: #fff;
-  --forest: #fff;
-  --forest-2: #fff;
-  --forest-3: rgba(255, 255, 255, 0.6);
-  --sand: #000;
-  --sand-light: #000;
-  --bg: #000;
-  --text: #fff;
-  --text-secondary: rgba(255, 255, 255, 0.62);
-  --muted: rgba(255, 255, 255, 0.42);
-  --label-2: rgba(255, 255, 255, 0.55);
-  --label-3: rgba(255, 255, 255, 0.25);
-  --line: rgba(255, 255, 255, 0.1);
-  --separator: rgba(255, 255, 255, 0.1);
-  --surface: rgba(255, 255, 255, 0.035);
-  --destructive: #8b5cf6;
-  --grad-forest: #fff;
-  --grad-cta: #8b5cf6;
-  --grad-purple: #8b5cf6;
-  --grad-title: #fff;
+  --black: #000;
+  --white: #fff;
+  --purple: #3b82f6;
+  --purple-deep: #3b82f6;
+  --purple-soft: rgba(59, 130, 246, 0.12);
+  --tint: #3b82f6;
+  --accent: #3b82f6;
+  --accent-deep: #000;
+  --forest: #000;
+  --forest-2: #000;
+  --forest-3: rgba(0, 0, 0, 0.6);
+  --sand: #fff;
+  --sand-light: #fff;
+  --bg: #fff;
+  --text: #000;
+  --text-secondary: rgba(0, 0, 0, 0.62);
+  --muted: rgba(0, 0, 0, 0.42);
+  --label-2: rgba(0, 0, 0, 0.55);
+  --label-3: rgba(0, 0, 0, 0.25);
+  --line: rgba(0, 0, 0, 0.1);
+  --separator: rgba(0, 0, 0, 0.1);
+  --surface: rgba(0, 0, 0, 0.035);
+  --destructive: #3b82f6;
+  --grad-forest: #000;
+  --grad-cta: #3b82f6;
+  --grad-purple: #3b82f6;
+  --grad-title: #000;
   /* cards and groups: a clear pane on white */
-  --glass: rgba(255, 255, 255, 0.035);
-  --glass-strong: rgba(0, 0, 0, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass: rgba(0, 0, 0, 0.035);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(0, 0, 0, 0.06);
   --glass-blur: blur(28px) saturate(180%);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
   /* floating things (tab bar, toast, home coin): white glass over content */
-  --float-glass: rgba(0, 0, 0, 0.72);
-  --float-border: rgba(255, 255, 255, 0.08);
+  --float-glass: rgba(255, 255, 255, 0.72);
+  --float-border: rgba(0, 0, 0, 0.08);
   --float-shadow: 0 16px 40px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 html,
 body {
-  background: #000;
-  color: #fff;
+  background: #fff;
+  color: #000;
 }
 
 body::before {
@@ -4259,7 +4259,7 @@ body::before {
 .display,
 .title,
 .flow-title {
-  color: #fff;
+  color: #000;
   background: none;
   -webkit-text-fill-color: currentColor;
 }
@@ -4267,32 +4267,32 @@ body::before {
 /* buttons */
 .button-primary,
 .button-primary:hover {
-  background: #fff;
-  color: #000;
-  border-color: #fff;
+  background: #000;
+  color: #fff;
+  border-color: #000;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .button-wide.button-primary,
 .cta-area .button-primary,
 .cta-area .button-primary:hover {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-  color: #000;
-  box-shadow: 0 10px 24px rgba(139, 92, 246, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .button-secondary,
 .button-ghost {
-  color: #fff;
-  background: rgba(0, 0, 0, 0.7);
-  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  color: #000;
+  background: rgba(255, 255, 255, 0.7);
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), inset 0 1px 0 #fff;
 }
 
 .button-danger {
-  background: #fff;
-  color: #000;
+  background: #000;
+  color: #fff;
 }
 
 /* the photo gallery bar: glass buttons on the photo, no dark fade */
@@ -4308,80 +4308,80 @@ body::before {
 }
 
 .nav::before {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.4);
   inset: 1px 1px 55% 1px;
 }
 
 .nav a {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 0, 0, 0.5);
 }
 
 .nav a[aria-current='page'] {
-  color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.1);
-  box-shadow: inset 0 0 0 0.5px rgba(139, 92, 246, 0.2);
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: inset 0 0 0 0.5px rgba(59, 130, 246, 0.2);
 }
 
 .nav .nav-home,
 .nav .nav-home[aria-current='page'] {
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   border: 0.5px solid var(--float-border);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 #fff;
 }
 
 .nav .nav-home[aria-current='page'] {
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18), 0 0 0 2.5px #8b5cf6, inset 0 1px 0 #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18), 0 0 0 2.5px #3b82f6, inset 0 1px 0 #fff;
 }
 
 .toast {
-  background: rgba(255, 255, 255, 0.78);
-  color: #000;
-  border: 0.5px solid rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
 }
 
 /* states */
 .password-match.is-ok,
 .password-rule.is-ok,
 .diag-result.is-ok p:first-child {
-  color: #fff;
+  color: #000;
 }
 
 .password-match.is-bad,
 .diag-result.is-bad p:first-child,
 .area-error {
-  color: #8b5cf6;
+  color: #3b82f6;
 }
 
 /* Kakao requires its own yellow login button (Kakao Login design guide) */
 .kakao-login {
   background: #fee500;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(0, 0, 0, 0.85);
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .nav,
   .nav .nav-home {
-    background: rgba(0, 0, 0, 0.97);
+    background: rgba(255, 255, 255, 0.97);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .nav,
   .nav .nav-home {
-    background: #000;
+    background: #fff;
   }
 }
 
 /* initials avatar: a small glass disc so it shows on white */
 .avatar {
-  background: rgba(255, 255, 255, 0.05);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.05);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
   box-shadow: inset 0 1px 0 #fff, 0 2px 6px rgba(0, 0, 0, 0.06);
-  color: #fff;
+  color: #000;
 }
 
 .account-button[aria-current='page'] .avatar {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #8b5cf6;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b82f6;
 }
 
 /* =========================================================================
@@ -4390,36 +4390,36 @@ body::before {
    ========================================================================= */
 :root {
   color-scheme: dark;
-  --bg: #000;
-  --text: #fff;
-  --text-secondary: rgba(255, 255, 255, 0.68);
-  --muted: rgba(255, 255, 255, 0.45);
-  --label-2: rgba(255, 255, 255, 0.58);
-  --label-3: rgba(255, 255, 255, 0.3);
-  --line: rgba(255, 255, 255, 0.12);
-  --separator: rgba(255, 255, 255, 0.12);
-  --surface: rgba(255, 255, 255, 0.06);
-  --accent-deep: #fff;
-  --forest: #fff;
-  --forest-2: #fff;
-  --forest-3: rgba(255, 255, 255, 0.6);
-  --sand: #000;
-  --sand-light: #000;
-  --grad-forest: #fff;
-  --grad-title: #fff;
-  --glass: rgba(255, 255, 255, 0.07);
-  --glass-strong: rgba(255, 255, 255, 0.14);
-  --glass-border: rgba(255, 255, 255, 0.14);
+  --bg: #fff;
+  --text: #000;
+  --text-secondary: rgba(0, 0, 0, 0.68);
+  --muted: rgba(0, 0, 0, 0.45);
+  --label-2: rgba(0, 0, 0, 0.58);
+  --label-3: rgba(0, 0, 0, 0.3);
+  --line: rgba(0, 0, 0, 0.12);
+  --separator: rgba(0, 0, 0, 0.12);
+  --surface: rgba(0, 0, 0, 0.06);
+  --accent-deep: #000;
+  --forest: #000;
+  --forest-2: #000;
+  --forest-3: rgba(0, 0, 0, 0.6);
+  --sand: #fff;
+  --sand-light: #fff;
+  --grad-forest: #000;
+  --grad-title: #000;
+  --glass: rgba(0, 0, 0, 0.07);
+  --glass-strong: rgba(0, 0, 0, 0.14);
+  --glass-border: rgba(0, 0, 0, 0.14);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 30px rgba(0, 0, 0, 0.45);
-  --float-glass: rgba(255, 255, 255, 0.1);
-  --float-border: rgba(255, 255, 255, 0.18);
+  --float-glass: rgba(0, 0, 0, 0.1);
+  --float-border: rgba(0, 0, 0, 0.18);
   --float-shadow: 0 18px 44px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 html,
 body {
-  background: #000;
-  color: #fff;
+  background: #fff;
+  color: #000;
 }
 
 /* the white light behind everything */
@@ -4431,90 +4431,90 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(90% 55% at 50% -12%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 70%),
-    radial-gradient(60% 40% at 100% 35%, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 70%),
-    radial-gradient(70% 45% at 0% 100%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 70%),
-    #000;
+    radial-gradient(90% 55% at 50% -12%, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0) 70%),
+    radial-gradient(60% 40% at 100% 35%, rgba(0, 0, 0, 0.07), rgba(0, 0, 0, 0) 70%),
+    radial-gradient(70% 45% at 0% 100%, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0) 70%),
+    #fff;
 }
 
 /* primary actions are white glass-on-black; the main call to action stays purple */
 .button-primary,
 .button-primary:hover {
-  background: #fff;
-  color: #000;
-  border-color: #fff;
+  background: #000;
+  color: #fff;
+  border-color: #000;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), inset 0 1px 0 #fff;
 }
 
 .button-wide.button-primary,
 .cta-area .button-primary,
 .cta-area .button-primary:hover {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-  color: #fff;
-  box-shadow: 0 12px 30px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #000;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .button-secondary,
 .button-ghost {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
-  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  color: #000;
+  background: rgba(0, 0, 0, 0.08);
+  border: 0.5px solid rgba(0, 0, 0, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 6px 18px rgba(0, 0, 0, 0.4);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
 }
 
 .button-danger {
-  background: #fff;
-  color: #000;
+  background: #000;
+  color: #fff;
 }
 
 .area-input,
 .note,
 .row-input {
-  color: #fff;
+  color: #000;
 }
 
 .area-input,
 .note {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.16);
 }
 
 .area-input::placeholder,
 .note::placeholder,
 .row-input::placeholder {
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(0, 0, 0, 0.38);
 }
 
 /* ---- what's selected right now: purple ---- */
 .budget-chip input:checked + span,
 .tabs .tab[aria-selected='true'] {
-  background: #8b5cf6;
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: #3b82f6;
+  color: #000;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .budget-options,
 .tabs {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.14);
 }
 
 .mood:has(input:checked) {
-  background: rgba(139, 92, 246, 0.18);
+  background: rgba(59, 130, 246, 0.18);
 }
 
 .mood:has(input:checked) .mood-label {
-  color: #fff;
+  color: #000;
 }
 
 .chip.is-on,
 .chip[aria-pressed='true'] {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-  color: #fff;
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #000;
 }
 
 .nav {
@@ -4524,45 +4524,45 @@ body::before {
 }
 
 .nav::before {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .nav a {
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(0, 0, 0, 0.55);
 }
 
 .nav a[aria-current='page'] {
-  color: #fff;
-  background: #8b5cf6;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  color: #000;
+  background: #3b82f6;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .nav .nav-home,
 .nav .nav-home[aria-current='page'] {
-  background: rgba(255, 255, 255, 0.14);
-  border: 0.5px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.14);
+  border: 0.5px solid rgba(0, 0, 0, 0.3);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .nav .nav-home[aria-current='page'] {
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6), 0 0 0 2.5px #8b5cf6, 0 0 22px rgba(139, 92, 246, 0.55);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6), 0 0 0 2.5px #3b82f6, 0 0 22px rgba(59, 130, 246, 0.55);
 }
 
 .account-button[aria-current='page'] .avatar {
-  box-shadow: 0 0 0 2px #000, 0 0 0 4px #8b5cf6;
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px #3b82f6;
 }
 
 .avatar {
-  background: rgba(255, 255, 255, 0.1);
-  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
+  border: 0.5px solid rgba(0, 0, 0, 0.2);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.4);
-  color: #fff;
+  color: #000;
 }
 
 .toast {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.14);
+  color: #000;
+  border: 0.5px solid rgba(0, 0, 0, 0.22);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
 }
@@ -4570,33 +4570,33 @@ body::before {
 .password-match.is-ok,
 .password-rule.is-ok,
 .diag-result.is-ok p:first-child {
-  color: #fff;
+  color: #000;
 }
 
 /* Kakao requires its own yellow login button (Kakao Login design guide) */
 .kakao-login,
 .kakao-login:hover {
   background: #fee500;
-  color: rgba(0, 0, 0, 0.85);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .nav,
   .nav .nav-home {
-    background: rgba(0, 0, 0, 0.92);
+    background: rgba(255, 255, 255, 0.92);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .nav,
   .nav .nav-home {
-    background: #000;
+    background: #fff;
   }
 }
 
 /* the page colour lives on <html> so the white light layer (body::before) shows */
 html {
-  background: #000;
+  background: #fff;
 }
 
 body {
@@ -4606,17 +4606,17 @@ body {
 /* switches: on = purple, white knob */
 .toggle input[type='checkbox'],
 input[type='checkbox'][role='switch'] {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .toggle input[type='checkbox']::before,
 input[type='checkbox'][role='switch']::before {
-  background: #fff;
+  background: #000;
 }
 
 .toggle input[type='checkbox']:checked,
 input[type='checkbox'][role='switch']:checked {
-  background: #8b5cf6;
+  background: #3b82f6;
 }
 
 /* =========================================================================
@@ -4627,24 +4627,24 @@ input[type='checkbox'][role='switch']:checked {
    - Unselected controls: clear black glass.
    ========================================================================= */
 :root {
-  --page: linear-gradient(155deg, #000 0%, #0a0a0a 40%, #3a3a3a 76%, #9c9c9c 100%);
+  --page: linear-gradient(155deg, #fff 0%, #0a0a0a 40%, #3a3a3a 76%, #9c9c9c 100%);
 
-  --block-bg: rgba(255, 255, 255, 0.07);
+  --block-bg: rgba(0, 0, 0, 0.07);
   --block-filter: blur(30px) saturate(160%) brightness(0.82);
-  --block-border: rgba(255, 255, 255, 0.16);
-  --block-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-    0 14px 36px rgba(0, 0, 0, 0.45);
+  --block-border: rgba(0, 0, 0, 0.16);
+  --block-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.22), inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    0 14px 36px rgba(255, 255, 255, 0.45);
 
-  --off-bg: rgba(0, 0, 0, 0.36);
+  --off-bg: rgba(255, 255, 255, 0.36);
   --off-filter: blur(20px) saturate(160%);
-  --off-border: rgba(255, 255, 255, 0.14);
-  --off-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 4px 14px rgba(0, 0, 0, 0.35);
+  --off-border: rgba(0, 0, 0, 0.14);
+  --off-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.16), 0 4px 14px rgba(255, 255, 255, 0.35);
 
-  --on-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0.34) 42%, rgba(139, 92, 246, 0.46) 100%);
+  --on-bg: linear-gradient(135deg, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.34) 42%, rgba(59, 130, 246, 0.46) 100%);
   --on-filter: blur(20px) saturate(180%);
-  --on-border: rgba(255, 255, 255, 0.62);
-  --on-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -1px 0 rgba(139, 92, 246, 0.25), 0 8px 22px rgba(139, 92, 246, 0.32);
-  --on-text: #000;
+  --on-border: rgba(0, 0, 0, 0.62);
+  --on-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.85), inset 0 -1px 0 rgba(59, 130, 246, 0.25), 0 8px 22px rgba(59, 130, 246, 0.32);
+  --on-text: #fff;
 
   --glass: var(--block-bg);
   --glass-border: var(--block-border);
@@ -4653,7 +4653,7 @@ input[type='checkbox'][role='switch']:checked {
 }
 
 html {
-  background: #000;
+  background: #fff;
 }
 
 body::before {
@@ -4725,7 +4725,7 @@ body::before {
 .area-input,
 .note,
 .member-chip {
-  color: #fff;
+  color: #000;
   background: var(--off-bg);
   -webkit-backdrop-filter: var(--off-filter);
   backdrop-filter: var(--off-filter);
@@ -4736,13 +4736,13 @@ body::before {
 .button-secondary:hover,
 .button-ghost:hover,
 .chip:hover {
-  background: rgba(0, 0, 0, 0.48);
+  background: rgba(255, 255, 255, 0.48);
 }
 
 /* segment and tab options sit inside their block; only the chosen one is a pane */
 .budget-chip span,
 .tabs .tab {
-  color: #fff;
+  color: #000;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -4780,11 +4780,11 @@ body::before {
 
 .mood:has(input:checked) .mood-label,
 .mood:has(input:checked) .mood-hint {
-  color: #000;
+  color: #fff;
 }
 
 .mood:has(input:checked)::before {
-  border-color: #000;
+  border-color: #fff;
 }
 
 .toggle input[type='checkbox'],
@@ -4796,12 +4796,12 @@ input[type='checkbox'][role='switch'] {
 .toggle input[type='checkbox']:checked,
 input[type='checkbox'][role='switch']:checked {
   background: var(--on-bg);
-  box-shadow: inset 0 0 0 0.5px var(--on-border), 0 4px 14px rgba(139, 92, 246, 0.35);
+  box-shadow: inset 0 0 0 0.5px var(--on-border), 0 4px 14px rgba(59, 130, 246, 0.35);
 }
 
 /* the menu bar is a block; its items are plain until chosen */
 .nav a {
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(0, 0, 0, 0.62);
 }
 
 .nav .nav-home,
@@ -4818,8 +4818,8 @@ input[type='checkbox'][role='switch']:checked {
 }
 
 .nav-count:not(:empty) {
-  background: #8b5cf6;
-  color: #fff;
+  background: #3b82f6;
+  color: #000;
 }
 
 .toast {
@@ -4828,66 +4828,66 @@ input[type='checkbox'][role='switch']:checked {
   backdrop-filter: var(--block-filter);
   border: 0.5px solid var(--block-border);
   box-shadow: var(--block-shadow);
-  color: #fff;
+  color: #000;
 }
 
 /* Kakao requires its own yellow login button (Kakao Login design guide) */
 .kakao-login,
 .kakao-login:hover {
   background: #fee500;
-  color: rgba(0, 0, 0, 0.85);
+  color: rgba(255, 255, 255, 0.85);
   border: 0;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   :root {
-    --block-bg: rgba(0, 0, 0, 0.72);
-    --off-bg: rgba(0, 0, 0, 0.78);
+    --block-bg: rgba(255, 255, 255, 0.72);
+    --off-bg: rgba(255, 255, 255, 0.78);
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   :root {
-    --block-bg: rgba(0, 0, 0, 0.85);
-    --off-bg: #000;
-    --on-bg: #8b5cf6;
-    --on-text: #fff;
+    --block-bg: rgba(255, 255, 255, 0.85);
+    --off-bg: #fff;
+    --on-bg: #3b82f6;
+    --on-text: #000;
   }
 }
 
 /* selected glass: brighter, so it reads as light purple + white on the dark page */
 :root {
-  --on-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.62) 38%, rgba(139, 92, 246, 0.62) 100%);
-  --on-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(139, 92, 246, 0.35), 0 8px 24px rgba(139, 92, 246, 0.4);
+  --on-bg: linear-gradient(135deg, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.62) 38%, rgba(59, 130, 246, 0.62) 100%);
+  --on-shadow: inset 0 1px 0 #000, inset 0 -1px 0 rgba(59, 130, 246, 0.35), 0 8px 24px rgba(59, 130, 246, 0.4);
 }
 
 /* =========================================================================
    glisse (React liquid glass components) themed to the app
    ========================================================================= */
 :root[data-theme='dark'] {
-  --lg-foreground: #fff;
-  --lg-muted: rgba(255, 255, 255, 0.6);
-  --lg-glass: rgba(255, 255, 255, 0.08);
-  --lg-glass-active: rgba(255, 255, 255, 0.16);
-  --lg-edge: rgba(255, 255, 255, 0.16);
-  --lg-drop: rgba(0, 0, 0, 0.45);
+  --lg-foreground: #000;
+  --lg-muted: rgba(0, 0, 0, 0.6);
+  --lg-glass: rgba(0, 0, 0, 0.08);
+  --lg-glass-active: rgba(0, 0, 0, 0.16);
+  --lg-edge: rgba(0, 0, 0, 0.16);
+  --lg-drop: rgba(255, 255, 255, 0.45);
   /* selected = clear white → light-purple glass */
-  --lg-selection: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(139, 92, 246, 0.5));
-  --lg-segment-track: rgba(0, 0, 0, 0.36);
-  --lg-segment-thumb: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.6) 40%, rgba(139, 92, 246, 0.62));
-  --lg-segment-label: #fff;
-  --lg-on: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(139, 92, 246, 0.85));
-  --lg-fill: #8b5cf6;
-  --lg-track: rgba(0, 0, 0, 0.45);
-  --lg-ring: #8b5cf6;
+  --lg-selection: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(59, 130, 246, 0.5));
+  --lg-segment-track: rgba(255, 255, 255, 0.36);
+  --lg-segment-thumb: linear-gradient(135deg, rgba(0, 0, 0, 0.86), rgba(0, 0, 0, 0.6) 40%, rgba(59, 130, 246, 0.62));
+  --lg-segment-label: #000;
+  --lg-on: linear-gradient(135deg, rgba(0, 0, 0, 0.7), rgba(59, 130, 246, 0.85));
+  --lg-fill: #3b82f6;
+  --lg-track: rgba(255, 255, 255, 0.45);
+  --lg-ring: #3b82f6;
   --lg-blur: 18px;
 }
 
 /* the chosen segment and tab read dark on their light glass */
 .lg-segmented .lg-tab[data-selected],
 .lg-segmented .lg-tab-copy[data-selected] {
-  color: #000;
+  color: #fff;
   font-weight: 600;
 }
 
@@ -4908,7 +4908,7 @@ body.is-gated .tabbar {
 
 .app-tabbar.lg-tab-bar {
   --lg-tab-width: min(72px, calc((100vw - 40px) / 5));
-  --lg-tab-selected: #000;
+  --lg-tab-selected: #fff;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
@@ -4933,8 +4933,8 @@ body.is-gated .tabbar {
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: #8b5cf6;
-  color: #fff;
+  background: #3b82f6;
+  color: #000;
   font-size: 10px;
   font-weight: 700;
 }
@@ -4955,7 +4955,7 @@ body.is-gated .tabbar {
 }
 
 .mood-grid.lg-glass {
-  --lg-glass: rgba(255, 255, 255, 0.06);
+  --lg-glass: rgba(0, 0, 0, 0.06);
   border-radius: var(--group-radius);
   overflow: hidden;
 }
@@ -4972,10 +4972,10 @@ body.is-gated .tabbar {
   border-radius: 27px;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #000;
+  color: #fff;
   isolation: isolate;
-  background-color: rgba(139, 92, 246, 0.42);
-  box-shadow: 0 10px 28px rgba(139, 92, 246, 0.35);
+  background-color: rgba(59, 130, 246, 0.42);
+  box-shadow: 0 10px 28px rgba(59, 130, 246, 0.35);
 }
 
 .cta-button.lg-button::before {
@@ -4984,7 +4984,7 @@ body.is-gated .tabbar {
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.45) 45%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.45) 45%, rgba(0, 0, 0, 0) 100%);
   pointer-events: none;
 }
 
@@ -5020,12 +5020,12 @@ body.is-gated .tabbar {
 /* tab bar: the chosen tab's label and icon stay dark on its light lens */
 .app-tabbar .lg-tab-tint,
 .app-tabbar .lg-tab-lensed {
-  color: #000;
+  color: #fff;
 }
 
 /* ---- 계정 on glisse ---- */
 .group.lg-glass {
-  --lg-glass: rgba(255, 255, 255, 0.06);
+  --lg-glass: rgba(0, 0, 0, 0.06);
   border-radius: var(--group-radius);
   overflow: hidden;
 }
@@ -5060,10 +5060,10 @@ body.is-gated .tabbar {
 
 /* glisse buttons that are "selected" style (save, main actions) */
 .lg-button.is-selected-glass:not(:disabled) {
-  color: #000;
+  color: #fff;
   font-weight: 700;
   isolation: isolate;
-  background-color: rgba(139, 92, 246, 0.42);
+  background-color: rgba(59, 130, 246, 0.42);
 }
 
 .lg-button.is-selected-glass:not(:disabled)::before {
@@ -5072,7 +5072,7 @@ body.is-gated .tabbar {
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.45) 45%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.45) 45%, rgba(0, 0, 0, 0) 100%);
   pointer-events: none;
 }
 
@@ -5082,14 +5082,14 @@ body.is-gated .tabbar {
 
 /* tab bar lens: lighter, so the label underneath reads clearly */
 :root[data-theme='dark'] .app-tabbar {
-  --lg-selection: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(139, 92, 246, 0.45));
+  --lg-selection: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(59, 130, 246, 0.45));
 }
 
 .app-tabbar.lg-tab-bar,
 .app-tabbar .lg-tab-tint,
 .app-tabbar .lg-tab-lensed {
-  --lg-tab-selected: #fff;
-  color: #fff;
+  --lg-tab-selected: #000;
+  color: #000;
 }
 
 /* 계정: the name-tag section is a header + one group, not a pane around it */
@@ -5109,4 +5109,221 @@ body.is-gated .tabbar {
 
 .nickname-row .lg-button {
   flex: none;
+}
+
+/* =========================================================================
+   Aurora on white
+   Base: white. Accents: #3B82F6 · #60A5FA · #A78BFA · #FBCFE8, mixed like an
+   aurora: soft drifting light behind clear white glass; whatever is selected
+   carries the aurora gradient.
+   ========================================================================= */
+:root {
+  color-scheme: light;
+  --aurora-blue: #3b82f6;
+  --aurora-sky: #60a5fa;
+  --aurora-violet: #a78bfa;
+  --aurora-pink: #fbcfe8;
+  --aurora: linear-gradient(120deg, #3b82f6 0%, #60a5fa 34%, #a78bfa 68%, #fbcfe8 100%);
+  --aurora-soft: linear-gradient(120deg, rgba(59, 130, 246, 0.32), rgba(96, 165, 250, 0.3) 34%, rgba(167, 139, 250, 0.32) 68%, rgba(251, 207, 232, 0.5));
+
+  --bg: #fff;
+  --text: #0a0a0a;
+  --text-secondary: rgba(0, 0, 0, 0.62);
+  --muted: rgba(0, 0, 0, 0.45);
+  --label-2: rgba(0, 0, 0, 0.55);
+  --label-3: rgba(0, 0, 0, 0.28);
+  --line: rgba(0, 0, 0, 0.08);
+  --separator: rgba(0, 0, 0, 0.08);
+  --tint: #3b82f6;
+  --accent: #3b82f6;
+  --purple: #3b82f6;
+  --destructive: #3b82f6;
+
+  --page: #fff;
+
+  --block-bg: rgba(255, 255, 255, 0.55);
+  --block-filter: blur(26px) saturate(170%);
+  --block-border: rgba(255, 255, 255, 0.85);
+  --block-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(59, 130, 246, 0.12);
+
+  --off-bg: rgba(255, 255, 255, 0.5);
+  --off-filter: blur(18px) saturate(170%);
+  --off-border: rgba(0, 0, 0, 0.07);
+  --off-shadow: inset 0 1px 0 #fff, 0 3px 10px rgba(59, 130, 246, 0.1);
+
+  --on-bg: linear-gradient(120deg, rgba(59, 130, 246, 0.88) 0%, rgba(96, 165, 250, 0.85) 34%, rgba(167, 139, 250, 0.85) 68%, rgba(251, 207, 232, 0.9) 100%);
+  --on-filter: blur(18px) saturate(180%);
+  --on-border: rgba(255, 255, 255, 0.7);
+  --on-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 8px 24px rgba(96, 165, 250, 0.38);
+  --on-text: #0a0a0a;
+
+  --glass: var(--block-bg);
+  --glass-border: var(--block-border);
+  --glass-shadow: var(--block-shadow);
+  --glass-blur: var(--block-filter);
+
+  /* glisse, light, with aurora selection */
+  --lg-foreground: #0a0a0a;
+  --lg-muted: rgba(0, 0, 0, 0.5);
+  --lg-glass: rgba(255, 255, 255, 0.55);
+  --lg-glass-active: rgba(255, 255, 255, 0.8);
+  --lg-edge: rgba(0, 0, 0, 0.07);
+  --lg-drop: rgba(59, 130, 246, 0.12);
+  --lg-selection: var(--aurora-soft);
+  --lg-segment-track: rgba(255, 255, 255, 0.45);
+  --lg-segment-thumb: var(--aurora);
+  --lg-segment-label: #0a0a0a;
+  --lg-on: var(--aurora);
+  --lg-fill: #3b82f6;
+  --lg-track: rgba(0, 0, 0, 0.12);
+  --lg-ring: #3b82f6;
+}
+
+html {
+  background: #fff;
+}
+
+body {
+  background: transparent;
+  color: #0a0a0a;
+}
+
+/* the aurora: soft light behind everything, drifting slowly */
+body::before {
+  content: '';
+  display: block;
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 32% at 18% 12%, rgba(96, 165, 250, 0.42), rgba(96, 165, 250, 0) 72%),
+    radial-gradient(38% 30% at 86% 18%, rgba(167, 139, 250, 0.38), rgba(167, 139, 250, 0) 72%),
+    radial-gradient(46% 34% at 78% 84%, rgba(251, 207, 232, 0.65), rgba(251, 207, 232, 0) 72%),
+    radial-gradient(40% 30% at 12% 80%, rgba(59, 130, 246, 0.22), rgba(59, 130, 246, 0) 72%),
+    #fff;
+  filter: saturate(115%);
+  animation: aurora-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2%, -2%, 0) scale(1.04); }
+  100% { transform: translate3d(-2%, 1.5%, 0) scale(1.02); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+}
+
+/* no app title at the top; the account button stays on the right */
+.masthead,
+body[data-screen='home'] .masthead {
+  justify-content: flex-end;
+}
+
+.title,
+.flow-title,
+.display {
+  color: #0a0a0a;
+}
+
+/* selected things and the main action: the aurora */
+.cta-button.lg-button,
+.cta-area .cta-button.lg-button,
+.lg-button.is-selected-glass:not(:disabled) {
+  color: #0a0a0a;
+  background-color: transparent;
+  box-shadow: var(--on-shadow);
+}
+
+.cta-button.lg-button::before,
+.lg-button.is-selected-glass:not(:disabled)::before {
+  background: var(--on-bg);
+}
+
+.mood:has(input:checked) .mood-label,
+.mood:has(input:checked) .mood-hint {
+  color: #0a0a0a;
+}
+
+.mood:has(input:checked)::before {
+  border-color: #0a0a0a;
+}
+
+.app-tabbar.lg-tab-bar {
+  --lg-selection: var(--aurora-soft);
+  --lg-tab-selected: #0a0a0a;
+  box-shadow: 0 14px 36px rgba(59, 130, 246, 0.18);
+}
+
+.app-tabbar .lg-tab-tint,
+.app-tabbar .lg-tab-lensed {
+  color: #0a0a0a;
+}
+
+.app-tabbar .lg-tab-icon img.tab-logo {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.tab-count,
+.nav-count:not(:empty) {
+  background: var(--aurora);
+  color: #fff;
+}
+
+.text-button,
+.text-button-muted,
+a {
+  color: #3b82f6;
+}
+
+.place-chip-dot {
+  background: var(--aurora);
+}
+
+.avatar {
+  background: rgba(255, 255, 255, 0.6);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 0 #fff, 0 4px 12px rgba(59, 130, 246, 0.12);
+  color: #0a0a0a;
+}
+
+.account-button[aria-current='page'] .avatar {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #60a5fa;
+}
+
+.toast {
+  color: #0a0a0a;
+}
+
+.area-error,
+.password-match.is-bad,
+.diag-result.is-bad p:first-child {
+  color: #3b82f6;
+}
+
+.kakao-login,
+.kakao-login:hover {
+  background: #fee500;
+  color: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :root {
+    --block-bg: rgba(255, 255, 255, 0.92);
+    --off-bg: rgba(255, 255, 255, 0.95);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --block-bg: #fff;
+    --off-bg: #fff;
+    --on-bg: #3b82f6;
+    --on-text: #fff;
+  }
 }

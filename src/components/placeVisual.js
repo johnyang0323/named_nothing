@@ -13,29 +13,29 @@ export function photoSlot(place, { gallery = false } = {}) {
   return raw(` data-photo-for="${escapeHtml(place.id)}"${gallery ? ' data-photo-gallery' : ''}`);
 }
 
-// black · white · purple only, drawn light-on-dark (greys are white at low opacity)
+// aurora on white: #3B82F6 · #60A5FA · #A78BFA · #FBCFE8
 const C = {
-  ivory: '#000000',
-  olive: 'rgba(255,255,255,0.78)',
-  oliveDeep: '#FFFFFF',
-  oliveSoft: 'rgba(255,255,255,0.3)',
-  charcoal: '#FFFFFF',
-  gray: 'rgba(255,255,255,0.5)',
-  sand: 'rgba(255,255,255,0.12)',
-  clay: '#8B5CF6',
-  claySoft: 'rgba(139,92,246,0.5)',
-  purple: '#8B5CF6',
-  purpleSoft: 'rgba(139,92,246,0.3)',
-  white: '#000000',
+  ivory: '#FFFFFF',
+  olive: '#60A5FA',
+  oliveDeep: '#3B82F6',
+  oliveSoft: 'rgba(96,165,250,0.4)',
+  charcoal: '#3B82F6',
+  gray: 'rgba(59,130,246,0.45)',
+  sand: 'rgba(167,139,250,0.2)',
+  clay: '#A78BFA',
+  claySoft: '#FBCFE8',
+  purple: '#A78BFA',
+  purpleSoft: 'rgba(251,207,232,0.7)',
+  white: '#FFFFFF',
 };
 
 const BACKGROUNDS = {
-  restful: 'rgba(255,255,255,0.06)',
-  scenic: 'rgba(139,92,246,0.14)',
-  active: 'rgba(255,255,255,0.08)',
-  enriching: 'rgba(139,92,246,0.1)',
-  creative: 'rgba(139,92,246,0.2)',
-  productive: 'rgba(255,255,255,0.05)',
+  restful: 'rgba(96,165,250,0.12)',
+  scenic: 'rgba(167,139,250,0.14)',
+  active: 'rgba(251,207,232,0.35)',
+  enriching: 'rgba(59,130,246,0.08)',
+  creative: 'rgba(251,207,232,0.45)',
+  productive: 'rgba(96,165,250,0.1)',
 };
 
 const W = 400;
@@ -202,7 +202,7 @@ const drawers = {
 export function horizonVisual(seed = 0) {
   const r = rng(seed);
   return raw(`<svg class="visual" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-    <rect width="${W}" height="${H}" fill="#000000"/>
+    <rect width="${W}" height="${H}" fill="#FFFFFF"/>
     <rect width="${W}" height="${H}" fill="${C.purpleSoft}" opacity=".35"/>
     <circle cx="${140 + r(140)}" cy="${110 + r(30)}" r="46" fill="${C.purple}"/>
     <path d="M0 180 Q120 ${150 + r(20)} 240 176 T400 168 V260 H0 Z" fill="${C.oliveSoft}"/>

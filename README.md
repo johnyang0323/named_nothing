@@ -20,13 +20,14 @@ It isn't a productivity tracker, an itinerary planner or a navigation app. There
 
 ## Design
 
-The design follows Apple's Liquid Glass idea and uses black, white and purple only.
+The design uses Apple's Liquid Glass idea on white, with an aurora palette.
 
-- **Background:** one calm black-to-white gradient (no blobs). It is mostly black and lightens toward the lower right.
-- **Blocks:** a single layer of glass. This is white at low opacity whose blur also dims what's behind it, with a bright top edge and a deep shadow. Nothing inside a block is a second pane: entries, notes and results inside a group are flat, divided by hairlines.
-- **Selected controls and the main action:** clear glass running from white to light purple, with dark text. This covers the chosen time budget, mood row, tab, current menu item, an "on" switch, "오늘 시작하기" and other primary buttons.
-- **Unselected controls:** clear black glass (secondary buttons, chips, inputs, place and weather chips, gallery buttons).
-- Text is white, and links are purple. The one exception is the Kakao login button, which has to be Kakao's yellow under Kakao's design guide.
+- **Colors:** the base is white. The accents are `#3B82F6` (blue), `#60A5FA` (sky), `#A78BFA` (violet) and `#FBCFE8` (pink), always blended like an aurora. Text is near-black, and links are blue. The one exception is the Kakao login button, which has to be Kakao's yellow under Kakao's design guide.
+- **Background:** white, with soft aurora light (blurred blue, violet, pink and sky glows) drifting slowly. It stays still for people who ask for reduced motion.
+- **Blocks:** a single layer of clear white glass. Nothing inside a block is a second pane.
+- **Selected controls and the main action:** the aurora gradient as glass. This covers the chosen time budget, mood row, tab, current menu item, an "on" switch, "오늘 시작하기" and other primary buttons.
+- **Unselected controls:** clear white glass.
+- No app title at the top of screens. The account button sits alone on the right.
 - **iOS Settings layout:** large bold titles; small grey section headers above inset grouped blocks. Lists are a single glass block whose rows are divided by hairlines starting at the text. Rows have chevrons, iOS switches and segmented controls (time budget, sharing scope, 친구/단체방). The mood choice is a checkmark list. On every screen size the menu is a floating liquid-glass capsule at the bottom: 발견 · 경로 · [home logo] · 나의 하루 · 함께. The raised app logo in the middle goes home.
 - **Place photos:** user photos come first. These are journal photos the author chose to share as the place's photo (`supabase/place_photos.sql`; nickname only, the note stays private, can be reported). After them come only trustworthy web results: photos from posts whose title names the place, or ones people picked. Otherwise the card keeps its illustration and offers **카카오맵에서 실제 사진 보기**.
 - **Type:** San Francisco for Latin and Apple SD Gothic Neo for Hangul on Apple devices (system fonts). Elsewhere it uses the bundled open font Pretendard, drawn to match them.
