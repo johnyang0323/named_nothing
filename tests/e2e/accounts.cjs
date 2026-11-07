@@ -18,7 +18,7 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
   await pa.goto(APP + '#discover');
   await pa.waitForSelector('.welcome');
   assert(await pa.evaluate(() => document.body.classList.contains('is-gated')), 'gated');
-  assert(!(await pa.isVisible('.nav')), 'nav hidden on gate');
+  assert(!(await pa.isVisible('.app-tabbar')), 'nav hidden on gate');
   assert(await pa.isVisible('.kakao-login') && await pa.isVisible('#auth-email'), 'kakao + email shown');
   ok('signed out: only the welcome/login screen, nav hidden (even for #discover)');
 

@@ -26,6 +26,8 @@ import { buildContext, makeBias, tasteActive, WILDCARD_RATE } from './services/p
 import { getWeather } from './services/weather.js';
 import { installErrorReporting } from './services/errorLog.js';
 import { isNativeApp } from './services/native.js';
+import { renderReact, unmountReact } from './react/root.jsx';
+import { renderTabBar } from './react/TabBar.jsx';
 
 /** Screens reachable by #hash. */
 const APP_SCREENS = { home, discover, explore, route, day: myday, account, together };
@@ -148,8 +150,14 @@ function render() {
   // keep the caret where it was when a text field is redrawn
   const selection = focusKey && typeof active.selectionStart === 'number' ? [active.selectionStart, active.selectionEnd] : null;
 
-  view.innerHTML = String(screen.render(store.getState(), ctx));
-  screen.afterRender?.(store.getState(), ctx);
+  if (screen.Component) {
+    // React screens (glisse components) draw themselves; same state and ctx
+    renderReact(view, screen.Component, { state: store.getState(), ctx });
+  } else {
+    unmountReact(view);
+    view.innerHTML = String(screen.render(store.getState(), ctx));
+    screen.afterRender?.(store.getState(), ctx);
+  }
   hydratePhotos(view, { announce });
   hydrateJournalPhotos(view);
 
@@ -179,10 +187,8 @@ function updateNav() {
     if (link.dataset.nav === currentName) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
-  const count = store.getState().route.length;
-  document.querySelectorAll('[data-route-count]').forEach((el) => {
-    el.textContent = count ? String(count) : '';
-  });
+  const tabbar = document.getElementById('tabbar');
+  if (tabbar) renderTabBar(tabbar, { current: currentName, routeCount: store.getState().route.length });
 }
 
 /**
@@ -221,6 +227,7 @@ function handleRoute() {
 
 // ---- delegated events ------------------------------------------------------
 view.addEventListener('click', (event) => {
+  if (SCREENS[currentName].Component) return; // React screen handles its own events
   const el = event.target.closest('[data-action]');
   if (!el || !view.contains(el) || el.disabled) return;
   const handler = SCREENS[currentName].actions?.[el.dataset.action];
@@ -231,6 +238,7 @@ view.addEventListener('click', (event) => {
 });
 
 const onInput = (event) => {
+  if (SCREENS[currentName].Component) return;
   const el = event.target.closest('[data-input]');
   if (!el) return;
   SCREENS[currentName].inputs?.[el.dataset.input]?.(ctx, el);
@@ -241,7 +249,7 @@ view.addEventListener('change', (event) => event.target.type === 'radio' && onIn
 
 view.addEventListener('submit', (event) => {
   const form = event.target.closest('[data-form]');
-  if (!form) return;
+  if (!form || SCREENS[currentName].Component) return;
   event.preventDefault();
   SCREENS[currentName].forms?.[form.dataset.form]?.(ctx, form);
 });
@@ -291,8 +299,12 @@ if (isBackendConfigured()) {
   // update only the status line, so saving in the background never redraws
   // the screen under someone who is typing
   sync.onStatus(() => {
-    const line = currentName === 'account' && view.querySelector('.account-sync');
-    if (line) line.innerHTML = String(syncLine(sync));
+    if (currentName !== 'account') return;
+    if (SCREENS.account.Component) render(); // React keeps fields and focus as they are
+    else {
+      const line = view.querySelector('.account-sync');
+      if (line) line.innerHTML = String(syncLine(sync));
+    }
   });
   initAuth()
     .catch((error) => toast(error.message || '로그인하지 못했어요.'))

@@ -4861,3 +4861,252 @@ input[type='checkbox'][role='switch']:checked {
   --on-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.62) 38%, rgba(139, 92, 246, 0.62) 100%);
   --on-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(139, 92, 246, 0.35), 0 8px 24px rgba(139, 92, 246, 0.4);
 }
+
+/* =========================================================================
+   glisse (React liquid glass components) themed to the app
+   ========================================================================= */
+:root[data-theme='dark'] {
+  --lg-foreground: #fff;
+  --lg-muted: rgba(255, 255, 255, 0.6);
+  --lg-glass: rgba(255, 255, 255, 0.08);
+  --lg-glass-active: rgba(255, 255, 255, 0.16);
+  --lg-edge: rgba(255, 255, 255, 0.16);
+  --lg-drop: rgba(0, 0, 0, 0.45);
+  /* selected = clear white → light-purple glass */
+  --lg-selection: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(139, 92, 246, 0.5));
+  --lg-segment-track: rgba(0, 0, 0, 0.36);
+  --lg-segment-thumb: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.6) 40%, rgba(139, 92, 246, 0.62));
+  --lg-segment-label: #fff;
+  --lg-on: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(139, 92, 246, 0.85));
+  --lg-fill: #8b5cf6;
+  --lg-track: rgba(0, 0, 0, 0.45);
+  --lg-ring: #8b5cf6;
+  --lg-blur: 18px;
+}
+
+/* the chosen segment and tab read dark on their light glass */
+.lg-segmented .lg-tab[data-selected],
+.lg-segmented .lg-tab-copy[data-selected] {
+  color: #000;
+  font-weight: 600;
+}
+
+/* ---- bottom tab bar (glisse TabBar) ---- */
+.tabbar {
+  position: fixed;
+  z-index: 30;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+}
+
+body.is-gated .tabbar {
+  display: none;
+}
+
+.app-tabbar.lg-tab-bar {
+  --lg-tab-width: min(72px, calc((100vw - 40px) / 5));
+  --lg-tab-selected: #000;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+.app-tabbar .lg-tab-icon img.tab-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.tab-label {
+  position: relative;
+}
+
+.tab-count {
+  position: absolute;
+  top: -26px;
+  left: calc(100% - 2px);
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #8b5cf6;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ---- home on glisse ---- */
+.budget {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.budget-control.lg-segmented {
+  --lg-tab-width: 76px;
+  --lg-tab-height: 34px;
+}
+
+.mood-grid.lg-glass {
+  --lg-glass: rgba(255, 255, 255, 0.06);
+  border-radius: var(--group-radius);
+  overflow: hidden;
+}
+
+.lg-button {
+  font-family: var(--font-sans);
+}
+
+/* the main action: selected glass (white → light purple), dark label */
+.cta-button.lg-button,
+.cta-area .cta-button.lg-button {
+  width: 100%;
+  height: 54px;
+  border-radius: 27px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #000;
+  isolation: isolate;
+  background-color: rgba(139, 92, 246, 0.42);
+  box-shadow: 0 10px 28px rgba(139, 92, 246, 0.35);
+}
+
+.cta-button.lg-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.45) 45%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.area-form .lg-button {
+  height: 44px;
+  flex: none;
+}
+
+.area-map-wrap.lg-glass {
+  border-radius: var(--radius);
+}
+
+.area-map-host {
+  position: absolute;
+  inset: 0;
+}
+
+.area-map-host > .area-map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-chip.lg-button,
+.map-confirm.lg-button {
+  position: absolute;
+  z-index: 2;
+}
+
+.map-confirm.lg-button[hidden] {
+  display: none;
+}
+
+/* tab bar: the chosen tab's label and icon stay dark on its light lens */
+.app-tabbar .lg-tab-tint,
+.app-tabbar .lg-tab-lensed {
+  color: #000;
+}
+
+/* ---- 계정 on glisse ---- */
+.group.lg-glass {
+  --lg-glass: rgba(255, 255, 255, 0.06);
+  border-radius: var(--group-radius);
+  overflow: hidden;
+}
+
+.nickname-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nickname-input.lg-input {
+  flex: 1;
+  max-width: none;
+  height: 48px;
+  border-radius: 24px;
+  font-size: 1.0625rem;
+}
+
+.nickname-input.lg-input input {
+  font-size: 1.0625rem;
+}
+
+.nickname-row .lg-button {
+  height: 48px;
+  border-radius: 24px;
+  padding: 0 20px;
+}
+
+.toggle-row {
+  font-size: 1.0625rem;
+}
+
+/* glisse buttons that are "selected" style (save, main actions) */
+.lg-button.is-selected-glass:not(:disabled) {
+  color: #000;
+  font-weight: 700;
+  isolation: isolate;
+  background-color: rgba(139, 92, 246, 0.42);
+}
+
+.lg-button.is-selected-glass:not(:disabled)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.45) 45%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.danger-zone .lg-button {
+  font-weight: 600;
+}
+
+/* tab bar lens: lighter, so the label underneath reads clearly */
+:root[data-theme='dark'] .app-tabbar {
+  --lg-selection: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(139, 92, 246, 0.45));
+}
+
+.app-tabbar.lg-tab-bar,
+.app-tabbar .lg-tab-tint,
+.app-tabbar .lg-tab-lensed {
+  --lg-tab-selected: #fff;
+  color: #fff;
+}
+
+/* 계정: the name-tag section is a header + one group, not a pane around it */
+.account-screen .my-tag,
+.account-screen .profile-form {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+
+.nickname-input.lg-input {
+  min-width: 0;
+}
+
+.nickname-row .lg-button {
+  flex: none;
+}

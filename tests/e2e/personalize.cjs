@@ -30,9 +30,9 @@ const errors = [];
   assert(badge.includes('비 12°') && badge.includes('실내 위주로'), badge);
   ok('step 2 shows weather from Open-Meteo:', badge);
 
-  assert(await p.isChecked('input[name=budget][value=half]'), 'default 반나절');
-  await p.click('.budget-chip:has-text("2시간")');
-  assert(await p.isChecked('input[name=budget][value="2h"]'), '2h chosen');
+  assert((await p.textContent('.budget-control [role=radio][aria-checked=true]')).includes('반나절'), 'default 반나절');
+  await p.click('.budget-control [role=radio]:has-text("2시간")');
+  await p.waitForFunction(() => document.querySelector('.budget-control [role=radio][aria-checked=true]')?.textContent.includes('2시간'));
   ok('time budget chips: 반나절 by default → 2시간');
 
   // in the rain, first picks should mostly be indoor

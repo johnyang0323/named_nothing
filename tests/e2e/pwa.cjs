@@ -32,7 +32,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await p.goto(BASE + '#route');
   await p.reload();
   assert((await p.locator('.stop').count()) === 1, 'offline route persisted');
-  await p.click('a[data-nav="discover"]');
+  await p.click('.app-tabbar a[href="#discover"]');
   await p.click('[data-action="another"]');
   ok('works offline after install: route kept, recommendations still run');
   await ctx.setOffline(false);

@@ -29,6 +29,8 @@ const APP_VERSION = (process.env.GITHUB_SHA || '').slice(0, 7) || `local-${new D
 
 export default defineConfig({
   base: './',
+  // React components are .jsx files; esbuild compiles them (no extra plugin needed)
+  esbuild: { jsx: 'automatic' },
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },

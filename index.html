@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -20,15 +20,7 @@
       <p class="brand">계획 있는 척.</p>
       <a class="account-button" href="#account" data-nav="account" data-account-button aria-label="계정"><span class="avatar avatar-sm" aria-hidden="true"><span class="avatar-initial">나</span></span></a>
     </header>
-    <nav class="nav" aria-label="주요 메뉴">
-      <ul>
-          <li><a data-nav="discover" href="#discover"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg><span class="nav-label">발견</span></a></li>
-          <li><a data-nav="route" href="#route"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg><span class="nav-label">경로</span><span class="nav-count" data-route-count></span></a></li>
-          <li class="nav-home-item"><a class="nav-home" data-nav="home" href="#home" aria-label="오늘 (홈)"><img src="./favicon.svg" alt="" width="56" height="56"></a></li>
-          <li><a data-nav="day" href="#day"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v11.5H8.5A3.5 3.5 0 0 1 5 16z"/><path d="M5 16a3.5 3.5 0 0 1 3.5-3.5H19M9 8h6"/></svg><span class="nav-label">나의 하루</span></a></li>
-          <li><a data-nav="together" href="#together"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="16.5" cy="8" r="2.6"/><path d="M15.5 13.6A4.6 4.6 0 0 1 21 18"/></svg><span class="nav-label">함께</span></a></li>
-      </ul>
-    </nav>
+    <div id="tabbar" class="tabbar"></div>
     <main id="view" class="view" tabindex="-1"></main>
     <footer class="colophon">
       <p>Not every day needs a plan. Every day can have a story.</p>

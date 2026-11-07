@@ -24,7 +24,7 @@ export function syncLine(sync) {
   return '';
 }
 
-function profileDraft(ui, profile) {
+export function profileDraft(ui, profile) {
   if (!ui.profileDraft || ui.profileDraft.forUser !== profile?.user_id) {
     ui.profileDraft = { forUser: profile?.user_id, nickname: profile?.nickname || '', file: null, previewUrl: null, clear: false, busy: false, error: '' };
   }
@@ -116,7 +116,7 @@ function tasteSection(taste) {
     </section>`;
 }
 
-function loginMethod(user) {
+export function loginMethod(user) {
   const provider = user?.app_metadata?.provider;
   if (provider === 'kakao') return '카카오 계정으로 로그인했어요.';
   return user?.email ? `${user.email} 으로 로그인했어요.` : '';
@@ -192,22 +192,7 @@ export function onEnter(ctx) {
   return null;
 }
 
-export function render(_state, { ui, sync, taste }) {
-  return html`
-    <section class="screen account-screen" aria-labelledby="account-screen-title">
-      <h1 id="account-screen-title" class="title large-title" tabindex="-1">계정</h1>
-      ${profileSection(ui)}
-      ${tasteSection(taste)}
-      ${accountSection(sync, ui)}
-      ${diagnosticsSection(ui)}
-      <section class="block" aria-label="약관">
-        <div class="group legal-links">
-          <a class="row row-button" href="./privacy.html" target="_blank" rel="noopener"><span>개인정보 처리방침</span><span class="row-chevron" aria-hidden="true"></span></a>
-          <a class="row row-button" href="./terms.html" target="_blank" rel="noopener"><span>이용약관</span><span class="row-chevron" aria-hidden="true"></span></a>
-        </div>
-      </section>
-    </section>`;
-}
+export { AccountScreen as Component } from './Account.jsx';
 
 /** Clear everything personal from this device (after sign-out or deletion). */
 function leaveDevice(ctx) {

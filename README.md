@@ -35,10 +35,10 @@ The design follows Apple's Liquid Glass idea and uses black, white and purple on
 
 ## Tech stack
 
-- **Vite 6** with **vanilla JavaScript, HTML and CSS**. There are no frameworks and no runtime dependencies.
-- `localStorage` for persistence.
-- Built-in `node:test` for unit tests.
-- No backend, map API, AI API, accounts, API keys, remote fonts or remote images.
+- **Vite 6**, **React 19** and **[glisse](https://github.com/0kzh/glisse)** (MIT), an implementation of Apple's iOS 26 Liquid Glass for the web. It provides the tab bar, segmented control, switch, buttons, input and glass panes, with refraction in Chromium browsers and a blurred glass fallback in Safari.
+- **Moving to React screen by screen.** `src/main.js` still routes, but a screen module that exports `Component` is drawn with React (`src/react/root.jsx`). The others still return HTML strings. React so far: the bottom tab bar (`src/react/TabBar.jsx`), 오늘 (`src/components/Home.jsx`) and 계정 (`src/components/Account.jsx`). 발견, 둘러보기, 경로, 나의 하루 and 함께 are next. JSX is compiled by Vite's esbuild (`esbuild.jsx = 'automatic'`), so no extra plugin is needed.
+- Supabase (accounts, sync, journal, friends), Kakao Maps, and Capacitor for the Android app.
+- `localStorage` for the local-first day, and built-in `node:test` plus Playwright for tests.
 
 ## Getting started
 

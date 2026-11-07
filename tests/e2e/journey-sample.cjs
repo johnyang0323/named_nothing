@@ -62,7 +62,7 @@ function assert(c, m) { if (!c) throw new Error('ASSERT: ' + m); }
   await page.click('[data-action="toggle-current-visited"]');
   assert((await page.getAttribute('[data-action="toggle-current-visited"]', 'aria-pressed')) === 'true', 'visited from explore');
 
-  await page.click('a[data-nav="route"]');
+  await page.click('.app-tabbar a[href="#route"]');
   await page.waitForURL(/#route/);
   const names = async () => page.locator('.stop-name').allTextContents();
   let order = await names();
@@ -94,7 +94,7 @@ function assert(c, m) { if (!c) throw new Error('ASSERT: ' + m); }
   await page.screenshot({ path: SHOTS + '4-route.png', fullPage: true });
   log('remove + undo + remove ok');
 
-  await page.click('a[data-nav="day"]');
+  await page.click('.app-tabbar a[href="#day"]');
   await page.waitForURL(/#day/);
   await page.click('.chip:has-text("설렜어요")');
   await page.fill('#journal-note', '처음 가본 골목에서 고양이를 만났다.');
