@@ -33,6 +33,9 @@ export function createEmptyDay(date) {
     suggestionOffset: 0,
     recommendationId: null,
     seenIds: [],
+    // cards shown today, in order, and which one is on screen (← / → to move)
+    cardHistory: [],
+    cardPos: 0,
     currentId: null,
     discoveryIds: [],
     route: [],
@@ -69,6 +72,12 @@ export function sanitizeDay(input, date) {
   if (placeExists(input.recommendationId)) day.recommendationId = input.recommendationId;
   if (placeExists(input.currentId)) day.currentId = input.currentId;
   day.seenIds = uniqueValidIds(input.seenIds);
+  day.cardHistory = Array.isArray(input.cardHistory) ? input.cardHistory.filter((id) => typeof id === 'string' && placeExists(id)).slice(-100) : [];
+  day.cardPos = Number.isInteger(input.cardPos) ? Math.min(Math.max(input.cardPos, 0), Math.max(day.cardHistory.length - 1, 0)) : 0;
+  if (day.recommendationId && day.cardHistory[day.cardPos] !== day.recommendationId) {
+    day.cardHistory = [...day.cardHistory, day.recommendationId];
+    day.cardPos = day.cardHistory.length - 1;
+  }
   day.discoveryIds = uniqueValidIds(input.discoveryIds);
 
   if (Array.isArray(input.route)) {
@@ -193,13 +202,32 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
         bias: personalize.bias(state),
         wild,
       });
-      update({ recommendationId: place.id, seenIds: [place.id], recommendationWild: wild });
+      update({ recommendationId: place.id, seenIds: [place.id], recommendationWild: wild, cardHistory: [place.id], cardPos: 0 });
       return place;
     },
 
-    showAnother() {
+    /** ← Back to the card shown before this one. Null at the first card. */
+    showPrevious() {
+      if (state.cardPos <= 0) return null;
+      const pos = state.cardPos - 1;
+      const id = state.cardHistory[pos];
+      if (!placeExists(id)) return null;
+      update({ recommendationId: id, cardPos: pos, recommendationWild: false });
+      return getPlaceById(id);
+    },
+
+    /** Next card: forward through ones already seen (after going back), then a new one. */
+    showAnother({ asSkip = true } = {}) {
+      if (state.cardPos < state.cardHistory.length - 1) {
+        const pos = state.cardPos + 1;
+        const id = state.cardHistory[pos];
+        if (placeExists(id)) {
+          update({ recommendationId: id, cardPos: pos, recommendationWild: false });
+          return getPlaceById(id);
+        }
+      }
       const current = getPlaceById(state.recommendationId);
-      if (current) personalize.signal('skip', current);
+      if (current && asSkip) personalize.signal('skip', current);
       const wild = personalize.wild();
       const place = pickAlternative({
         places: places(),
@@ -215,8 +243,22 @@ export function createStore({ storage = globalThis.localStorage, now = () => new
       // once every option has been seen, start the "seen" cycle again
       const unseenLeft = places().some((p) => p.id !== place.id && !state.seenIds.includes(p.id));
       const seenIds = unseenLeft ? [...new Set([...state.seenIds, place.id])] : [place.id];
-      update({ recommendationId: place.id, seenIds, recommendationWild: wild });
+      const cardHistory = [...state.cardHistory.slice(0, state.cardPos + 1), place.id].slice(-100);
+      update({ recommendationId: place.id, seenIds, recommendationWild: wild, cardHistory, cardPos: cardHistory.length - 1 });
       return place;
+    },
+
+    /** ↓ Keep this card (담아두기) and move on to the next one. */
+    keepRecommendation() {
+      const id = state.recommendationId;
+      if (!placeExists(id)) return null;
+      const kept = getPlaceById(id);
+      if (!routeIds().includes(id)) {
+        signal('add', id);
+        update({ route: [...state.route, { id, visited: false }] });
+      }
+      const next = actions.showAnother({ asSkip: false });
+      return { kept, next };
     },
 
     /** "여기로 가보기": make the recommendation the current destination. */

@@ -125,3 +125,33 @@ test('reset clears the day', () => {
   assert.equal(store.getState().route.length, 0);
   assert.equal(createStore({ storage, now: fixedNow }).getState().route.length, 0);
 });
+
+test('cards: ← previous, → next goes forward through seen ones first, ↓ keeps and moves on', () => {
+  const storage = memoryStorage();
+  const store = createStore({ storage, now: fixedNow });
+  const { actions } = store;
+  const a = actions.startDay();
+  assert.equal(actions.showPrevious(), null, 'nothing before the first card');
+  const b = actions.showAnother();
+  const c = actions.showAnother();
+  assert.deepEqual(store.getState().cardHistory, [a.id, b.id, c.id]);
+
+  assert.equal(actions.showPrevious().id, b.id);
+  assert.equal(actions.showPrevious().id, a.id);
+  assert.equal(store.getState().recommendationId, a.id);
+  assert.equal(actions.showAnother().id, b.id, 'next after going back = the one seen next');
+  assert.equal(actions.showAnother().id, c.id);
+  const d = actions.showAnother();
+  assert.ok(![a.id, b.id, c.id].includes(d.id), 'then a new one');
+
+  const { kept, next } = actions.keepRecommendation();
+  assert.equal(kept.id, d.id);
+  const s = store.getState();
+  assert.ok(s.route.some((stop) => stop.id === d.id), 'kept in the route');
+  assert.equal(s.recommendationId, next.id, 'moved on to the next card');
+  assert.notEqual(next.id, d.id);
+
+  const reloaded = createStore({ storage, now: fixedNow }).getState();
+  assert.deepEqual(reloaded.cardHistory, s.cardHistory, 'history survives a reload');
+  assert.equal(reloaded.cardPos, s.cardPos);
+});

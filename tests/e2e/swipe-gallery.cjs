@@ -62,12 +62,25 @@ const title = (p) => p.textContent('#discover-title');
   const before = await title(p);
   await p.click('.gallery-next');
   assert((await title(p)) === before, 'gallery button not a swipe');
-  // swipe right → explore
+  // swipe right → the previous card again
   const fig2 = await p.locator('.destination-figure').boundingBox();
   await p.mouse.move(fig2.x + fig2.width / 2, fig2.y + 100); await p.mouse.down(); await p.mouse.move(fig2.x + fig2.width / 2 + 260, fig2.y + 100, { steps: 10 }); await p.mouse.up();
-  await p.waitForURL(/#explore/);
-  ok('swipe right on photo → 가보기 (explore)');
+  await p.waitForFunction((t) => document.querySelector('#discover-title')?.textContent === t, pinnedPlace);
+  ok('swipe right on photo → back to the previous card:', pinnedPlace);
+  // at the first card, swiping right again just springs back
+  const fig3 = await p.locator('.destination-figure').boundingBox();
+  await p.mouse.move(fig3.x + fig3.width / 2, fig3.y + 100); await p.mouse.down(); await p.mouse.move(fig3.x + fig3.width / 2 + 260, fig3.y + 100, { steps: 10 }); await p.mouse.up();
+  await p.waitForSelector('#toast:has-text("첫 카드")');
+  assert((await title(p)) === pinnedPlace, 'still the first card');
+  // swipe down on the photo → kept in the envelope, next card shows
+  const kept = await title(p);
+  const fig4 = await p.locator('.destination-figure').boundingBox();
+  await p.mouse.move(fig4.x + fig4.width / 2, fig4.y + 60); await p.mouse.down(); await p.mouse.move(fig4.x + fig4.width / 2, fig4.y + 260, { steps: 10 }); await p.mouse.up();
+  await p.waitForFunction((t) => document.querySelector('#discover-title')?.textContent !== t, kept);
+  await p.waitForSelector('[data-envelope-count]:has-text("1")');
   await p.goto('http://localhost:4175/#route');
+  assert((await p.textContent('.stop-name')).includes(kept), 'kept place is in the route');
+  ok('swipe down → into the envelope (count 1), next card shows; kept place is in 경로:', kept);
   await p.waitForSelector('.stop-visual.has-photo');
   ok('route thumbnail shows a photo');
   await D.c.close();
@@ -101,8 +114,14 @@ const title = (p) => p.textContent('#discover-title');
   await p.evaluate(() => scrollTo(0, 0));
   const sy2 = Math.round((await p.locator('.destination-visual').boundingBox()).y + 60);
   await touch([[80, sy2], [100, sy2], [180, sy2 + 2], [260, sy2 + 4], [340, sy2 + 5]]);
-  await p.waitForURL(/#explore/);
-  ok('touch: swipe right → 가보기');
+  await p.waitForFunction((t) => document.querySelector('#discover-title')?.textContent === t, t0);
+  ok('touch: swipe right → previous card');
+  const before2 = await title(p);
+  const sy3 = Math.round((await p.locator('.destination-visual').boundingBox()).y + 40);
+  await touch([[195, sy3], [195, sy3 + 30], [196, sy3 + 90], [196, sy3 + 160], [197, sy3 + 220]]);
+  await p.waitForFunction((t) => document.querySelector('#discover-title')?.textContent !== t, before2);
+  await p.waitForSelector('[data-envelope-count]:has-text("1")');
+  ok('touch: swipe down → kept in the envelope');
 
   const errs = [...D.errors, ...M.errors];
   console.log('page errors:', errs.length ? errs : 'none');

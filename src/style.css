@@ -5580,3 +5580,163 @@ body[data-screen='home'] .view {
     aspect-ratio: 4 / 3;
   }
 }
+
+/* ---- previous · keep · next, and the envelope ---- */
+.swipe-actions {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.swipe-actions .button:disabled {
+  opacity: 0.4;
+}
+
+.swipe-go.button-wide {
+  width: 100%;
+  min-height: 54px;
+  margin-top: var(--space-3);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.swipe-tip {
+  justify-content: space-between;
+}
+
+.swipe-card .swipe-hint-keep {
+  top: auto;
+  bottom: 18px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  background: var(--aurora);
+  opacity: clamp(0, var(--swipe-down, 0), 1);
+}
+
+.card-enter-prev {
+  animation: card-in-prev 0.35s var(--ease) both;
+}
+
+@keyframes card-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+}
+
+/* the envelope sits in the middle of the button row, right under the card */
+.swipe-actions {
+  align-items: end;
+}
+
+.envelope {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.envelope:focus-visible {
+  outline: 2px solid var(--aurora-blue);
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+
+.envelope-art {
+  position: relative;
+  width: 72px;
+  height: 52px;
+  display: grid;
+  place-items: end center;
+  filter: drop-shadow(0 8px 14px rgba(59, 130, 246, 0.25));
+  transition: transform 0.2s var(--ease);
+}
+
+.envelope:active .envelope-art {
+  transform: scale(0.94);
+}
+
+.envelope-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.envelope-svg {
+  position: relative;
+  z-index: 2;
+  width: 62px;
+  height: 42px;
+}
+
+.envelope-back {
+  fill: rgba(255, 255, 255, 0.95);
+  stroke: rgba(96, 165, 250, 0.6);
+  stroke-width: 1.2;
+}
+
+.envelope-front {
+  fill: rgba(167, 139, 250, 0.32);
+  stroke: rgba(96, 165, 250, 0.6);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+/* kept places peek out of the envelope */
+.envelope-cards {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: 52px;
+  height: 40px;
+}
+
+.envelope-card {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 40px;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--aurora);
+  border: 1.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+}
+
+.envelope-card-1 { transform: translate(-50%, 0) rotate(-2deg); }
+.envelope-card-2 { transform: translate(-62%, -6px) rotate(-9deg); opacity: 0.9; }
+.envelope-card-3 { transform: translate(-36%, -10px) rotate(8deg); opacity: 0.8; }
+
+.envelope-count {
+  position: absolute;
+  z-index: 3;
+  top: 6px;
+  right: 2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--aurora);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.envelope:not(.has-items) .envelope-count {
+  display: none;
+}
+
+@media (min-width: 860px) {
+}
+

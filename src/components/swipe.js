@@ -1,36 +1,42 @@
 /**
- * Swipe a card left or right (Tinder-style), with buttons kept as the
- * accessible equivalent.
+ * Swipe a card (Tinder-style), with buttons kept as the accessible equivalent.
  *
- * - Horizontal drags move the card; vertical drags still scroll the page
- *   (touch-action: pan-y + axis lock after a few pixels).
+ * - Left / right drags move the card sideways; with `allowDown`, a drag
+ *   downward pulls it down (to keep it). Otherwise vertical drags scroll.
  * - Touch and pen can start anywhere on the card; a mouse only on the
  *   photo, so text stays selectable on desktop.
  * - Buttons, links and form fields never start a swipe.
- * - Past ~28% of the card width, or a quick flick, the card flies out and
- *   onCommit('right' | 'left') runs; otherwise it springs back.
- * - The card exposes --swipe (-1…1) so CSS can fade in the hints.
+ * - Past ~28% of the card width (or ~22% of its height going down), or a
+ *   quick flick, the swipe commits: onCommit('left' | 'right' | 'down').
+ *   `canCommit(direction)` can refuse (the card springs back and
+ *   onRefused(direction) runs). Sideways commits fly the card out first;
+ *   a downward commit hands the card to onCommit to animate itself.
+ * - The card exposes --swipe (-1…1, sideways) and --swipe-down (0…1).
  */
 const AXIS_LOCK_PX = 8;
 const COMMIT_RATIO = 0.28;
+const DOWN_RATIO = 0.22;
 const FLICK_SPEED = 0.6; // px per ms
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-export function attachSwipe(card, { onCommit, mouseArea = null }) {
+export function attachSwipe(card, { onCommit, mouseArea = null, allowDown = false, canCommit = () => true, onRefused = () => {} }) {
   let start = null;
   let axis = null;
   let dx = 0;
+  let dy = 0;
   let pointerId = null;
   let dragged = false;
 
-  card.style.touchAction = 'pan-y';
+  card.style.touchAction = allowDown ? 'none' : 'pan-y';
 
-  const setOffset = (x, animate) => {
+  const setOffset = (x, y, animate) => {
     card.style.transition = animate ? 'transform 0.25s ease' : 'none';
-    card.style.transform = x ? `translateX(${x}px) rotate(${x / 40}deg)` : '';
+    card.style.transform = x || y ? `translate(${x}px, ${y}px) rotate(${x / 40}deg)` : '';
     const ratio = Math.max(-1, Math.min(1, x / (card.offsetWidth * COMMIT_RATIO || 1)));
+    const down = Math.max(0, Math.min(1, y / (card.offsetHeight * DOWN_RATIO || 1)));
     card.style.setProperty('--swipe', String(ratio));
+    card.style.setProperty('--swipe-down', String(down));
   };
 
   const reset = () => {
@@ -47,6 +53,7 @@ export function attachSwipe(card, { onCommit, mouseArea = null }) {
     start = { x: event.clientX, y: event.clientY, t: performance.now() };
     axis = null;
     dx = 0;
+    dy = 0;
     dragged = false;
     pointerId = event.pointerId;
   });
@@ -58,7 +65,7 @@ export function attachSwipe(card, { onCommit, mouseArea = null }) {
     if (!axis) {
       if (Math.abs(mx) < AXIS_LOCK_PX && Math.abs(my) < AXIS_LOCK_PX) return;
       axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
-      if (axis === 'y') {
+      if (axis === 'y' && !(allowDown && my > 0)) {
         reset();
         return;
       }
@@ -70,34 +77,47 @@ export function attachSwipe(card, { onCommit, mouseArea = null }) {
       card.classList.add('is-dragging');
     }
     dragged = true;
-    dx = mx;
-    setOffset(dx, false);
+    if (axis === 'x') {
+      dx = mx;
+      setOffset(dx, 0, false);
+    } else {
+      dy = Math.max(0, my);
+      setOffset(0, dy, false);
+    }
     event.preventDefault();
   });
 
   const finish = (event) => {
     if (!start || event.pointerId !== pointerId) return;
-    if (axis !== 'x') {
+    if (!axis) {
       reset();
       return;
     }
     const elapsed = Math.max(1, performance.now() - start.t);
-    const speed = Math.abs(dx) / elapsed;
-    const width = card.offsetWidth || 1;
-    const commit = event.type !== 'pointercancel' && (Math.abs(dx) > width * COMMIT_RATIO || (speed > FLICK_SPEED && Math.abs(dx) > 40));
+    const sideways = axis === 'x';
+    const distance = sideways ? Math.abs(dx) : dy;
+    const size = sideways ? card.offsetWidth || 1 : card.offsetHeight || 1;
+    const speed = distance / elapsed;
+    const commit =
+      event.type !== 'pointercancel' && (distance > size * (sideways ? COMMIT_RATIO : DOWN_RATIO) || (speed > FLICK_SPEED && distance > 40));
     reset();
+    const direction = sideways ? (dx > 0 ? 'right' : 'left') : 'down';
     if (!commit) {
-      setOffset(0, true);
+      setOffset(0, 0, true);
       return;
     }
-    const direction = dx > 0 ? 'right' : 'left';
-    if (reducedMotion()) {
-      setOffset(0, false);
-      onCommit(direction);
+    if (!canCommit(direction)) {
+      setOffset(0, 0, true);
+      onRefused(direction);
       return;
     }
-    setOffset(Math.sign(dx) * width * 1.3, true);
-    setTimeout(() => onCommit(direction), 200);
+    if (direction === 'down' || reducedMotion()) {
+      if (direction !== 'down') setOffset(0, 0, false);
+      onCommit(direction, card);
+      return;
+    }
+    setOffset(Math.sign(dx) * card.offsetWidth * 1.3, 0, true);
+    setTimeout(() => onCommit(direction, card), 200);
   };
   card.addEventListener('pointerup', finish);
   card.addEventListener('pointercancel', finish);
