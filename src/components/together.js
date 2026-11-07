@@ -34,6 +34,8 @@ import {
   blockUser,
   friendsFeed,
   listGroups,
+  myEntries,
+  shareEntryToGroup,
   createGroup,
   joinGroup,
   groupMembers,
@@ -420,6 +422,51 @@ function groupList(t) {
     </form>`;
 }
 
+const VIS_NAME = { private: '나만 보기', friends: '친구에게' };
+
+function matches(entry, query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [entry.place_name, entry.note, entry.area_label, entry.date].some((v) => String(v || '').toLowerCase().includes(q));
+}
+
+function pickPanel(t, group) {
+  const header = html`<div class="pick-head">
+      <h3 class="pick-title" id="pick-title">내 기록에서 고르기</h3>
+      <button type="button" class="text-button" data-action="group-pick-close" data-focus-key="group-pick-close">닫기</button>
+    </div>`;
+  if (t.pickLoading) return html`<div class="pick-panel" role="region" aria-labelledby="pick-title">${header}<p class="empty-body">기록을 불러오는 중…</p></div>`;
+  const all = t.myEntries || [];
+  if (!all.length) {
+    return html`<div class="pick-panel" role="region" aria-labelledby="pick-title">${header}
+      <p class="empty-body">아직 남긴 기록이 없어요. 나의 하루에서 다녀온 곳에 소감이나 사진을 남겨보세요.</p>
+      <button type="button" class="button button-secondary button-small" data-action="go-myday">나의 하루로 가기</button>
+    </div>`;
+  }
+  const shown = all.filter((e) => matches(e, t.pickQuery || ''));
+  const where = (e) => (e.visibility === 'group' ? (t.groups.find((g) => g.id === e.group_id)?.name ? `단체방 · ${t.groups.find((g) => g.id === e.group_id).name}` : '다른 단체방') : VIS_NAME[e.visibility] || '나만 보기');
+  return html`<div class="pick-panel" role="region" aria-labelledby="pick-title">${header}
+    <input class="area-input pick-search" type="search" placeholder="장소, 소감, 날짜로 찾기" aria-label="내 기록 찾기" value="${t.pickQuery || ''}" data-input="pick-query" data-focus-key="pick-query">
+    ${shown.length
+      ? html`<ul class="pick-list">
+          ${shown.map((e) => {
+            const here = e.visibility === 'group' && e.group_id === group.id;
+            return html`<li class="pick-item${here ? ' is-here' : ''}">
+              <div class="pick-main">
+                <p class="pick-meta">${e.date}${e.area_label ? ` · ${e.area_label}` : ''} · ${here ? '이 방에 올라가 있음' : where(e)}${e.photo_paths?.length ? ` · 사진 ${e.photo_paths.length}장` : ''}</p>
+                <p class="pick-name">${e.place_name || '기록'}</p>
+                ${e.note ? html`<p class="pick-note">${e.note.length > 60 ? `${e.note.slice(0, 60)}…` : e.note}</p>` : ''}
+              </div>
+              ${here
+                ? html`<span class="pick-done" aria-label="올라가 있음">✓</span>`
+                : html`<button type="button" class="button button-secondary button-small" data-action="group-pick" data-id="${e.id}" data-where="${where(e)}" data-moving="${e.visibility === 'private' ? '' : '1'}">올리기</button>`}
+            </li>`;
+          })}
+        </ul>`
+      : html`<p class="empty-body">‘${t.pickQuery}’에 맞는 기록이 없어요.</p>`}
+  </div>`;
+}
+
 function groupView(t, ui) {
   const group = t.groups.find((g) => g.id === t.openGroupId);
   if (!group) return groupList(t);
@@ -444,7 +491,9 @@ function groupView(t, ui) {
 
     <section class="block" aria-labelledby="group-feed-title">
       <h2 class="section-label" id="group-feed-title">함께 쓰는 기록장</h2>
-      <p class="fine-print">나의 하루에서 다녀온 곳에 소감을 쓰고 공개 범위를 "단체방에 · ${group.name}"으로 고르면 여기에 올라와요.</p>
+      ${t.picking
+        ? pickPanel(t, group)
+        : html`<button type="button" class="button button-primary pick-open" data-action="group-pick-open" data-focus-key="group-pick-open">내 기록 찾아서 올리기</button>`}
       ${t.groupFeed.length
         ? html`<div class="entries">${t.groupFeed.map((e) => entryCard(e, { me, author: t.profiles.get(e.user_id), comments: commentsOf(t, e), reactions: reactionsOf(t, e), profiles: t.profiles, groupName: group.name, canModerate: owner, showOwnerActions: e.user_id === me, ui }))}</div>`
         : html`<p class="empty-body">아직 올라온 기록이 없어요. 첫 기록을 남겨보세요.</p>`}
@@ -615,12 +664,43 @@ export const actions = {
     attempt(ctx, () => blockUser(data.id), '차단했어요.');
   },
   'group-open': (ctx, data) => {
-    Object.assign(state(ctx.ui), { openGroupId: data.id, loading: true });
+    Object.assign(state(ctx.ui), { openGroupId: data.id, loading: true, picking: false });
     ctx.rerender();
     reload(ctx);
   },
+  'group-pick-open': async (ctx) => {
+    const t = state(ctx.ui);
+    Object.assign(t, { picking: true, pickLoading: true, pickQuery: '' });
+    ctx.rerender();
+    try {
+      t.myEntries = await myEntries();
+    } catch (error) {
+      t.picking = false;
+      ctx.toast(error instanceof SocialError ? error.message : '기록을 불러오지 못했어요.');
+    }
+    t.pickLoading = false;
+    ctx.rerender();
+  },
+  'group-pick-close': ({ ui, rerender }) => {
+    state(ui).picking = false;
+    rerender();
+  },
+  'group-pick': async (ctx, data) => {
+    const t = state(ctx.ui);
+    const group = t.groups.find((g) => g.id === t.openGroupId);
+    if (!group) return;
+    if (data.moving && !window.confirm(`지금 ‘${data.where}’에 공개된 기록이에요. 기록 하나는 한 곳에만 보여서, ‘${group.name}’ 방으로 옮겨져요. 올릴까요?`)) return;
+    const saved = await attempt(ctx, () => shareEntryToGroup(data.id, group.id), `‘${group.name}’ 방에 올렸어요.`);
+    if (saved) {
+      t.myEntries = (t.myEntries || []).map((e) => (e.id === saved.id ? saved : e));
+      t.picking = false;
+      ctx.rerender();
+    }
+  },
+  'go-myday': ({ navigate }) => navigate('day'),
   'group-back': ({ ui, rerender }) => {
     state(ui).openGroupId = null;
+    state(ui).picking = false;
     rerender();
   },
   'group-copy-invite': async ({ toast }, data) => {
@@ -659,6 +739,10 @@ export const inputs = {
   'outing-member': ({ ui, rerender }, el) => {
     const n = state(ui).newOuting;
     n.members = el.checked ? [...new Set([...n.members, el.value])] : n.members.filter((id) => id !== el.value);
+    rerender();
+  },
+  'pick-query': ({ ui, rerender }, el) => {
+    state(ui).pickQuery = el.value;
     rerender();
   },
   'group-code': ({ ui }, el) => {

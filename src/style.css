@@ -6167,3 +6167,84 @@ body[data-screen='home'] .view {
 [data-form='outing-create'] .send-friends {
   margin-bottom: var(--space-3);
 }
+
+/* ───────── 단체방: 내 기록 찾아서 올리기 ───────── */
+.pick-open {
+  width: 100%;
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.pick-panel {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 var(--space-4);
+  padding: var(--space-3);
+  border-radius: 22px;
+  background: var(--pane, rgba(255, 255, 255, 0.6));
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.25), 0 8px 24px rgba(59, 130, 246, 0.08);
+}
+
+.pick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pick-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.pick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.pick-item.is-here {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.14));
+}
+
+.pick-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-main p {
+  margin: 0;
+}
+
+.pick-meta {
+  font-size: 0.8rem;
+  color: var(--muted, #64748b);
+}
+
+.pick-name {
+  font-weight: 700;
+}
+
+.pick-note {
+  font-size: 0.9rem;
+  color: var(--muted, #64748b);
+  overflow-wrap: anywhere;
+}
+
+.pick-done {
+  color: #7c3aed;
+  font-weight: 700;
+  padding: 0 var(--space-2);
+}

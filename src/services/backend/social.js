@@ -301,6 +301,23 @@ export async function friendsFeed(limit = 50) {
 
 // ─────────────────────────── groups ───────────────────────────
 
+/**
+ * Post one of my entries to a group room. An entry has a single audience,
+ * so this moves it there (from 나만 보기, 친구에게 or another room).
+ */
+export async function shareEntryToGroup(entryId, groupId) {
+  const { supabase, user } = await client();
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .update({ visibility: 'group', group_id: groupId, updated_at: new Date().toISOString() })
+    .eq('id', entryId)
+    .eq('user_id', user.id)
+    .select(ENTRY_FIELDS)
+    .single();
+  if (error || !data) throw new SocialError('기록을 올리지 못했어요.');
+  return data;
+}
+
 export async function listGroups() {
   const { supabase } = await client();
   const { data, error } = await supabase.from('groups').select('id, name, invite_code, owner_id, created_at').order('created_at', { ascending: false });

@@ -193,6 +193,24 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await until(() => S.reports.some((r) => r.target_type === 'entry'), 5000, 'report stored');
   ok('moderation: group owner deletes a member’s comment; member reports an entry');
 
+  // A finds an older private entry and posts it to the room from inside the room
+  await A.page.click('[data-action="group-pick-open"]');
+  await A.page.waitForSelector('.pick-item');
+  await A.page.fill('.pick-search', '나만 아는');
+  await A.page.waitForFunction(() => document.querySelectorAll('.pick-item').length === 1);
+  assert((await A.page.textContent('.pick-item')).includes('나만 보기'), 'shows where it is shared now');
+  await A.page.click('.pick-item [data-action="group-pick"]');
+  await until(() => [...S.entries.values()].some((e) => e.note === '나만 아는 기록' && e.visibility === 'group' && e.group_id === group.id), 8000, 'picked entry posted');
+  await A.page.waitForSelector('#group-feed-title ~ .entries .entry:has-text("나만 아는 기록")');
+  await A.page.click('[data-action="group-pick-open"]');
+  await A.page.waitForSelector('.pick-item.is-here:has-text("나만 아는 기록")');
+  await A.page.click('[data-action="group-pick-close"]');
+  await C.page.reload();
+  await C.page.click('[data-action="together-tab"][data-tab="groups"]');
+  await C.page.click(`[data-action="group-open"][data-id="${group.id}"]`);
+  await C.page.waitForSelector('.entry:has-text("나만 아는 기록")');
+  ok('group: A searches their own entries inside the room and posts one; C sees it');
+
   // ── B blocks A ──
   await B.page.goto(APP + '#together');
   await B.page.reload();
