@@ -48,6 +48,7 @@ const SUITES = [
   'social.cjs',
   'place-photos.cjs',
   'social-plus.cjs',
+  'legacy-share.cjs',
 ];
 
 const TYPES = {

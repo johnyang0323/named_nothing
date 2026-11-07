@@ -14,11 +14,35 @@ export const NICKNAME_MAX = 20;
 export const NOTE_MAX = 1000;
 export const COMMENT_MAX = 300;
 export const PHOTOS_MAX = 4;
-export const VISIBILITY = [
-  { id: 'private', label: '나만 보기' },
-  { id: 'friends', label: '친구에게' },
-  { id: 'group', label: '단체방에' },
-];
+export const GROUPS_PER_ENTRY = 10;
+
+/**
+ * Who an entry is shown to: { friends, groups: [ids] }. Nothing = 나만 보기.
+ * Reads the multi_share.sql columns when present, else the older single
+ * audience (visibility / group_id).
+ */
+export function audienceOf(entry) {
+  if (!entry) return { friends: false, groups: [] };
+  if (Array.isArray(entry.group_ids) || typeof entry.share_friends === 'boolean') {
+    return { friends: entry.share_friends === true, groups: [...(entry.group_ids || [])] };
+  }
+  return { friends: entry.visibility === 'friends', groups: entry.visibility === 'group' && entry.group_id ? [entry.group_id] : [] };
+}
+
+export const isShared = (entry) => {
+  const a = audienceOf(entry);
+  return a.friends || a.groups.length > 0;
+};
+
+/** Older single-audience columns for an audience (what pre-multi_share databases store). */
+function legacyAudience(friends, groups) {
+  if (friends) return { visibility: 'friends', group_id: null };
+  if (groups.length) return { visibility: 'group', group_id: groups[0] };
+  return { visibility: 'private', group_id: null };
+}
+
+/** multi_share.sql not run yet (unknown column / operator). */
+const noMultiShare = (error) => /share_friends|group_ids/.test(`${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`) || error?.code === 'PGRST204' || error?.code === '42703';
 
 async function client() {
   const supabase = await getSupabase();
@@ -150,12 +174,13 @@ export async function myEntries({ date = null, limit = 200 } = {}) {
  * Create or update an entry. New photos are resized (location data
  * removed) and uploaded; photos taken out of the entry are deleted.
  */
-export async function saveEntry({ entry = null, date, place, areaLabel = null, note = '', keepPaths = [], newFiles = [], visibility = 'private', groupId = null, sharePlacePhotos = false }) {
+export async function saveEntry({ entry = null, date, place, areaLabel = null, note = '', keepPaths = [], newFiles = [], shareFriends = false, groupIds = [], sharePlacePhotos = false }) {
   const text = String(note || '').trim();
   if (text.length > NOTE_MAX) throw new SocialError(`소감은 ${NOTE_MAX}자까지 쓸 수 있어요.`);
   if (keepPaths.length + newFiles.length > PHOTOS_MAX) throw new SocialError(`사진은 ${PHOTOS_MAX}장까지 올릴 수 있어요.`);
   if (!text && !keepPaths.length && !newFiles.length) throw new SocialError('소감이나 사진을 하나는 남겨주세요.');
-  if (visibility === 'group' && !groupId) throw new SocialError('올릴 단체방을 골라주세요.');
+  const groups = [...new Set(groupIds.filter(Boolean))];
+  if (groups.length > GROUPS_PER_ENTRY) throw new SocialError(`단체방은 ${GROUPS_PER_ENTRY}곳까지 고를 수 있어요.`);
   const { supabase, user } = await client();
 
   const uploaded = [];
@@ -178,8 +203,9 @@ export async function saveEntry({ entry = null, date, place, areaLabel = null, n
     area_label: areaLabel ? String(areaLabel).slice(0, 40) : null,
     note: text,
     photo_paths: [...keepPaths, ...uploaded],
-    visibility,
-    group_id: visibility === 'group' ? groupId : null,
+    share_friends: Boolean(shareFriends),
+    group_ids: groups,
+    ...legacyAudience(Boolean(shareFriends), groups),
     updated_at: new Date().toISOString(),
   };
   // Only send the column when it matters, so saving works before place_photos.sql.
@@ -191,6 +217,14 @@ export async function saveEntry({ entry = null, date, place, areaLabel = null, n
       : supabase.from('journal_entries').insert({ ...values, user_id: user.id }).select(ENTRY_FIELDS).single();
   let { data, error } = await write(row);
   let sharingUnavailable = false;
+  let multiUnavailable = false;
+  if (error && noMultiShare(error)) {
+    // multi_share.sql not run: keep one audience (friends first, else the first room)
+    delete row.share_friends;
+    delete row.group_ids;
+    multiUnavailable = (shareFriends ? 1 : 0) + groups.length > 1;
+    ({ data, error } = await write(row));
+  }
   if (error && 'share_place_photos' in row && missingColumn(error)) {
     delete row.share_place_photos;
     sharingUnavailable = share;
@@ -202,7 +236,7 @@ export async function saveEntry({ entry = null, date, place, areaLabel = null, n
   }
   const removed = (entry?.photo_paths || []).filter((p) => !keepPaths.includes(p));
   if (removed.length) supabase.storage.from('journal').remove(removed).catch(() => {});
-  return sharingUnavailable ? { ...data, sharingUnavailable } : data;
+  return sharingUnavailable || multiUnavailable ? { ...data, sharingUnavailable, multiUnavailable } : data;
 }
 
 /**
@@ -285,13 +319,15 @@ export async function unblock(userId) {
   fail('차단을 풀지 못했어요.')(error);
 }
 
-/** Entries my friends shared with friends (the database filters what I may see). */
-export async function friendsFeed(limit = 50) {
+/**
+ * Everything other people shared with me — with friends or in any of my
+ * rooms. The database only returns entries I may read.
+ */
+export async function sharedFeed(limit = 60) {
   const { supabase, user } = await client();
   const { data, error } = await supabase
     .from('journal_entries')
     .select(ENTRY_FIELDS)
-    .eq('visibility', 'friends')
     .neq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -302,20 +338,38 @@ export async function friendsFeed(limit = 50) {
 // ─────────────────────────── groups ───────────────────────────
 
 /**
- * Post one of my entries to a group room. An entry has a single audience,
- * so this moves it there (from 나만 보기, 친구에게 or another room).
+ * Also show one of my entries in a room; it stays wherever else it was
+ * shared. (Before multi_share.sql an entry has one audience, so it moves.)
  */
-export async function shareEntryToGroup(entryId, groupId) {
+export async function shareEntryToGroup(entry, groupId) {
   const { supabase, user } = await client();
-  const { data, error } = await supabase
-    .from('journal_entries')
-    .update({ visibility: 'group', group_id: groupId, updated_at: new Date().toISOString() })
-    .eq('id', entryId)
-    .eq('user_id', user.id)
-    .select(ENTRY_FIELDS)
-    .single();
+  const a = audienceOf(entry);
+  if (a.groups.includes(groupId)) return entry;
+  if (a.groups.length >= GROUPS_PER_ENTRY) throw new SocialError(`기록 하나는 단체방 ${GROUPS_PER_ENTRY}곳까지 올릴 수 있어요.`);
+  const update = (values) =>
+    supabase.from('journal_entries').update({ ...values, updated_at: new Date().toISOString() }).eq('id', entry.id).eq('user_id', user.id).select(ENTRY_FIELDS).single();
+  const groups = [...a.groups, groupId];
+  let { data, error } = await update({ share_friends: a.friends, group_ids: groups, ...legacyAudience(a.friends, groups) });
+  if (error && noMultiShare(error)) ({ data, error } = await update({ visibility: 'group', group_id: groupId }));
   if (error || !data) throw new SocialError('기록을 올리지 못했어요.');
   return data;
+}
+
+/** Does this database show an entry in several places? (multi_share.sql run) */
+export const supportsMultiShare = (entry) => Array.isArray(entry?.group_ids);
+
+/** Room owner: take someone's entry out of the room (it stays elsewhere). */
+export async function removeEntryFromGroup(entry, groupId) {
+  const { supabase } = await client();
+  const { error } = await supabase.rpc('remove_entry_from_group', { p_entry: entry.id, p_group: groupId });
+  if (!error) return;
+  if (/remove_entry_from_group/.test(error.message || '') || error.code === 'PGRST202' || error.code === '42883') {
+    // older database: the owner could only delete it
+    const { error: e2 } = await supabase.from('journal_entries').delete().eq('id', entry.id);
+    fail('기록을 내리지 못했어요.')(e2);
+    return;
+  }
+  throw new SocialError('기록을 내리지 못했어요.');
 }
 
 export async function listGroups() {
@@ -353,13 +407,9 @@ export async function groupMembers(groupId) {
 
 export async function groupEntries(groupId, limit = 100) {
   const { supabase } = await client();
-  const { data, error } = await supabase
-    .from('journal_entries')
-    .select(ENTRY_FIELDS)
-    .eq('group_id', groupId)
-    .eq('visibility', 'group')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  const query = (narrow) => narrow(supabase.from('journal_entries').select(ENTRY_FIELDS)).order('created_at', { ascending: false }).limit(limit);
+  let { data, error } = await query((q) => q.contains('group_ids', [groupId]));
+  if (error && noMultiShare(error)) ({ data, error } = await query((q) => q.eq('group_id', groupId).eq('visibility', 'group')));
   if (error) throw new SocialError('방의 기록을 불러오지 못했어요.');
   return data;
 }

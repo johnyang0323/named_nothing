@@ -3,7 +3,7 @@
  * comments, reports, deleting an entry. After a change the current
  * screen's reload() refreshes its data.
  */
-import { addComment, deleteComment, deleteEntry, report, toggleReaction, SocialError } from '../services/backend/social.js';
+import { addComment, deleteComment, deleteEntry, report, toggleReaction, removeEntryFromGroup, SocialError } from '../services/backend/social.js';
 
 const confirmText = {
   entry: '이 기록을 신고할까요? 운영자가 확인하고 조치해요.',
@@ -30,6 +30,16 @@ export const journalActions = {
   'comment-delete': (ctx, data) => {
     if (!window.confirm('이 댓글을 지울까요?')) return;
     attempt(ctx, () => deleteComment(data.id), '댓글을 지웠어요.');
+  },
+  'comment-toggle': ({ ui, rerender }, data) => {
+    ui.openComments = { ...(ui.openComments || {}), [data.entry]: !ui.openComments?.[data.entry] };
+    rerender();
+    if (ui.openComments[data.entry]) document.getElementById(`comment-${data.entry}`)?.focus();
+  },
+  'entry-unpost': (ctx, data) => {
+    const entry = ctx.ui.entryIndex?.get(data.id);
+    if (!entry || !window.confirm('이 기록을 이 방에서 내릴까요? 다른 곳에 공개된 것은 그대로예요.')) return;
+    attempt(ctx, () => removeEntryFromGroup(entry, data.group), '방에서 내렸어요.');
   },
   react: (ctx, data) => attempt(ctx, () => toggleReaction(data.entry, data.emoji, data.mine === '1')),
   'entry-delete': (ctx, data) => {

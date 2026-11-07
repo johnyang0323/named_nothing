@@ -34,6 +34,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await signUp(A, 'a@test.com', 'password-a1');
   await nickname(A, '에이');
   await A.goto(APP + '#together');
+  await A.click('.tabs [data-tab="friends"]');
   await A.waitForSelector('[data-action="copy-invite"]');
   await A.click('[data-action="copy-invite"]');
   await until(() => S.invites.size === 1, 5000, 'invite token made');
@@ -65,7 +66,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await A.click('[data-action="editor-open"]');
   await A.fill('#entry-note', '창가 자리가 좋았어');
   await A.setInputFiles('[data-input="entry-files"]', { name: 'a.png', mimeType: 'image/png', buffer: IMG });
-  await A.click('.budget-chip:has-text("친구에게")');
+  await A.click('.audience-chip:has-text("친구")');
   await A.click('[data-form="entry-save"] button[type=submit]');
   await until(() => [...S.entries.values()].some((e) => e.note === '창가 자리가 좋았어'), 8000, 'entry saved');
 
@@ -92,7 +93,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert(S.cards.length === 1 && S.cards[0].note === '여기 같이 갈래?', 'card stored');
 
   await A.goto(APP + '#together');
-  await A.click('[data-action="together-tab"][data-tab="inbox"]');
+  await A.click('.bell');
   await A.waitForSelector(`.shared-card:has-text("${sent}")`);
   await A.waitForSelector('.shared-card-note:has-text("여기 같이 갈래?")');
   await A.waitForSelector(`.note-text:has-text("비님이 장소 카드를 보냈어요: ${sent}")`);
@@ -105,7 +106,8 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 
   // ── 함께 하루: a shared envelope with B, filled while swiping, voted on ──
   await A.goto(APP + '#together');
-  await A.click('[data-action="together-tab"][data-tab="outing"]');
+  await A.click('.tabs [data-tab="meet"]');
+  await A.click('[data-action="meet-form"][data-form-name="outing"]');
   await A.fill('#outing-title', '토요일 나들이');
   await A.click('[data-form="outing-create"] .send-friend:has-text("비")');
   await A.click('[data-form="outing-create"] button[type=submit]');
@@ -122,7 +124,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await until(() => S.titems.length === 2, 5000, 'two places in the shared envelope');
 
   await B.goto(APP + '#together');
-  await B.click('[data-action="together-tab"][data-tab="inbox"]');
+  await B.click('.bell');
   await B.waitForSelector('.note-text:has-text("에이님이 함께 하루에 초대했어요: 토요일 나들이")');
   await B.click('.note-item:has-text("함께 하루에 초대했어요") [data-action="outing-open"]');
   await B.waitForSelector('.group-title:has-text("토요일 나들이")');

@@ -170,7 +170,7 @@ function render() {
       : null;
     const el = target && !target.disabled ? target : sibling || fallback || target;
     el?.focus({ preventScroll: true });
-    if (selection && el === target && typeof el.setSelectionRange === 'function') {
+    if (selection && el && el === target && typeof el.setSelectionRange === 'function') {
       try {
         el.setSelectionRange(...selection);
       } catch {

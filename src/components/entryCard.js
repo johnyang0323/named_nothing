@@ -5,9 +5,16 @@
  */
 import { html } from '../utils/dom.js';
 import { CATEGORY_LABELS } from '../data/places.js';
-import { photoUrls, avatarSrc, fullTag, COMMENT_MAX, REACTIONS } from '../services/backend/social.js';
+import { photoUrls, avatarSrc, fullTag, COMMENT_MAX, REACTIONS, audienceOf } from '../services/backend/social.js';
 
-const VIS_LABEL = { private: '나만 보기', friends: '친구 공개', group: '단체방' };
+/** Where an entry is shown, as chips: 나만 보기, or 친구 + room names. */
+export function audienceChips(entry, groupNames = new Map(), mine = true) {
+  const a = audienceOf(entry);
+  // on someone else's entry, only name the places I am part of
+  if (!mine) a.groups = a.groups.filter((g) => groupNames.has(g));
+  if (!a.friends && !a.groups.length) return mine ? html`<span class="vis-badge vis-private">나만 보기</span>` : '';
+  return html`${a.friends ? html`<span class="vis-badge vis-friends">친구</span>` : ''}${a.groups.map((g) => html`<span class="vis-badge vis-group">${groupNames.get(g) || '단체방'}</span>`)}`;
+}
 
 export function avatar(profile, size = 'sm') {
   // fallbackSrc: e.g. my Kakao profile photo until I upload my own
@@ -27,16 +34,19 @@ function when(entry) {
  * @param opts.author    profile of the author (for shared entries)
  * @param opts.comments  comment rows for this entry (shared entries only)
  * @param opts.profiles  Map user_id → profile, for comment authors
- * @param opts.groupName name of the group it was posted to
- * @param opts.canModerate  group owner: may delete others' entries/comments
+ * @param opts.groupNames Map group id → name (for the audience chips)
+ * @param opts.roomId    the room this card is shown in (owner can take it out)
+ * @param opts.canModerate  room owner: may take others' entries out / delete comments
  * @param opts.showOwnerActions  show edit/delete (my own entries)
  * @param opts.ui        screen ui state (comment drafts)
  * @param opts.reactions reaction rows for this entry ({ user_id, emoji })
  */
-export function entryCard(entry, { me, author = null, comments = [], profiles = new Map(), groupName = '', canModerate = false, showOwnerActions = false, ui = {}, reactions = [] } = {}) {
+export function entryCard(entry, { me, author = null, comments = [], profiles = new Map(), groupNames = new Map(), roomId = null, canModerate = false, showOwnerActions = false, ui = {}, reactions = [], showPlace = true } = {}) {
   const mine = entry.user_id === me;
-  const shared = entry.visibility !== 'private';
+  const a = audienceOf(entry);
+  const shared = a.friends || a.groups.length > 0;
   const draft = ui.commentDrafts?.[entry.id] || '';
+  const open = Boolean(ui.openComments?.[entry.id]);
   return html`
     <article class="entry" data-entry-id="${entry.id}">
       ${author && !mine
@@ -44,10 +54,11 @@ export function entryCard(entry, { me, author = null, comments = [], profiles = 
         : ''}
       <p class="kicker">
         ${when(entry)} · ${CATEGORY_LABELS[entry.place_category] || '어딘가'}${entry.area_label ? ` · ${entry.area_label}` : ''}
-        <span class="vis-badge vis-${entry.visibility}">${entry.visibility === 'group' && groupName ? groupName : VIS_LABEL[entry.visibility]}</span>
+      </p>
+      <p class="entry-audience" aria-label="공개 범위">${audienceChips(entry, groupNames, mine)}
         ${entry.share_place_photos ? html`<span class="vis-badge vis-place" title="이 장소를 보는 다른 사용자에게 사진이 보여요">장소 사진</span>` : ''}
       </p>
-      <h3 class="entry-place">${entry.place_name}</h3>
+      ${showPlace ? html`<h3 class="entry-place">${entry.place_name}</h3>` : ''}
       ${entry.photo_paths?.length
         ? html`<div class="entry-photos entry-photos-${Math.min(entry.photo_paths.length, 4)}">
             ${entry.photo_paths.map((p) => html`<span class="entry-photo"><img data-journal-photo="${p}" alt="${entry.place_name}에서 남긴 사진" loading="lazy"></span>`)}
@@ -60,13 +71,18 @@ export function entryCard(entry, { me, author = null, comments = [], profiles = 
           ? html`<button type="button" class="text-button" data-action="entry-edit" data-id="${entry.id}" data-focus-key="entry-edit-${entry.id}">고치기</button>
               <button type="button" class="text-button text-button-muted" data-action="entry-delete" data-id="${entry.id}">지우기</button>`
           : ''}
-        ${!mine && canModerate ? html`<button type="button" class="text-button text-button-muted" data-action="entry-delete" data-id="${entry.id}">방장 권한으로 지우기</button>` : ''}
+        ${!mine && canModerate && roomId ? html`<button type="button" class="text-button text-button-muted" data-action="entry-unpost" data-id="${entry.id}" data-group="${roomId}">이 방에서 내리기</button>` : ''}
         ${!mine ? html`<button type="button" class="text-button text-button-muted" data-action="report" data-type="entry" data-id="${entry.id}">신고</button>` : ''}
       </div>
 
-      ${shared ? reactionBar(entry, reactions, me, profiles) : ''}
+      ${shared ? reactionBar(entry, reactions, me, profiles, mine) : ''}
 
       ${shared
+        ? html`<button type="button" class="comment-toggle" data-action="comment-toggle" data-entry="${entry.id}" aria-expanded="${open}" data-focus-key="comment-toggle-${entry.id}">
+            💬 ${comments.length ? `댓글 ${comments.length}개` : '댓글 달기'}${open ? ' · 접기' : ''}
+          </button>`
+        : ''}
+      ${shared && open
         ? html`<section class="comments" aria-label="${entry.place_name} 댓글">
             ${comments.map((c) => {
               const who = profiles.get(c.user_id);
@@ -88,9 +104,18 @@ export function entryCard(entry, { me, author = null, comments = [], profiles = 
     </article>`;
 }
 
-/** ❤️ 👍 😂 😮 🥹 — tap to react, tap again to take it back. */
-function reactionBar(entry, reactions, me, profiles) {
+/** ❤️ 👍 😂 😮 🥹 — tap to react, tap again to take it back. On my own entry: just what I got. */
+function reactionBar(entry, reactions, me, profiles, mine = false) {
   const forEntry = reactions.filter((r) => r.entry_id === entry.id);
+  if (mine) {
+    if (!forEntry.length) return '';
+    return html`<p class="reactions reactions-received" aria-label="받은 반응">
+      ${REACTIONS.filter((emoji) => forEntry.some((r) => r.emoji === emoji)).map((emoji) => {
+        const who = forEntry.filter((r) => r.emoji === emoji);
+        return html`<span class="reaction reaction-static" title="${who.map((r) => profiles.get(r.user_id)?.nickname).filter(Boolean).join(', ')}">${emoji}<span class="reaction-count">${who.length}</span></span>`;
+      })}
+    </p>`;
+  }
   return html`<div class="reactions" role="group" aria-label="반응">
     ${REACTIONS.map((emoji) => {
       const who = forEntry.filter((r) => r.emoji === emoji);

@@ -32,7 +32,9 @@ import {
   listFriends,
   removeFriend,
   blockUser,
-  friendsFeed,
+  sharedFeed,
+  audienceOf,
+  supportsMultiShare,
   listGroups,
   myEntries,
   shareEntryToGroup,
@@ -54,14 +56,17 @@ import { clearUnread, refreshUnread } from '../services/backend/inbox.js';
 import { CATEGORY_LABELS } from '../data/places.js';
 
 function state(ui) {
-  if (!ui.together) ui.together = { tab: 'friends', loading: true, friends: [], feed: [], groups: [], openGroupId: null, members: [], groupFeed: [], comments: [], reactions: [], requests: { incoming: [], outgoing: [] }, notes: [], cards: [], outings: [], openOutingId: null, outingItems: [], newOuting: { title: '', members: [] }, profiles: new Map(), addText: '', groupName: '', joinCode: '' };
+  if (!ui.together) ui.together = { tab: 'feed', prevTab: 'feed', loading: true, friends: [], feed: [], groups: [], openGroupId: null, members: [], groupFeed: [], comments: [], reactions: [], requests: { incoming: [], outgoing: [] }, notes: [], cards: [], outings: [], openOutingId: null, outingItems: [], newOuting: { title: '', members: [] }, profiles: new Map(), addText: '', groupName: '', joinCode: '' };
   return ui.together;
 }
 
 export function onEnter(ctx) {
   if (!isBackendConfigured() || !getUser()) return null;
   const invite = pendingInvite();
-  if (invite?.group) state(ctx.ui).tab = 'groups';
+  const t = state(ctx.ui);
+  // 알림 is a side page: coming back to 함께 shows the tabs again
+  if (t.tab === 'inbox') t.tab = t.prevTab || 'feed';
+  if (invite?.group) t.tab = 'meet';
   reload(ctx);
   return null;
 }
@@ -72,7 +77,7 @@ export async function reload(ctx) {
     if (!getMyProfile()) await loadMyProfile();
     const [friends, feed, groups, requests, notes, cards] = await Promise.all([
       listFriends(),
-      friendsFeed(),
+      sharedFeed(),
       listGroups(),
       listRequests().catch(() => ({ incoming: [], outgoing: [] })),
       listNotifications().catch(() => []),
@@ -229,8 +234,12 @@ function cardItem(c) {
 function outingList(t) {
   const n = t.newOuting;
   return html`
-    <section class="block" aria-labelledby="outings-title">
-      <h2 class="section-label" id="outings-title">함께 하루</h2>
+    <section class="block meet-section" aria-labelledby="outings-title">
+      <div class="meet-head">
+        <h2 class="meet-title" id="outings-title">함께 하루</h2>
+        <button type="button" class="button button-secondary button-small" data-action="meet-form" data-form-name="outing" aria-expanded="${t.openForm === 'outing'}" data-focus-key="new-outing">${t.openForm === 'outing' ? '닫기' : '＋ 시작'}</button>
+      </div>
+      <p class="meet-desc">하루 나들이 갈 곳을 친구들과 같이 고르는 봉투예요. 각자 카드를 넘기며 담고, 👍로 정해요.</p>
       ${t.outings.length
         ? html`<ul class="group-list">
             ${t.outings.map(
@@ -240,10 +249,14 @@ function outingList(t) {
               </button></li>`,
             )}
           </ul>`
-        : html`<p class="empty-body">친구와 같이 나가는 날, 함께 쓰는 봉투를 만들어요. 각자 카드를 넘기며 담고, 👍로 갈 곳을 정해요.</p>`}
-    </section>
+        : ''}
+    ${t.openForm === 'outing' ? outingForm(t, n) : ''}
+    </section>`;
+}
 
-    <form class="block" data-form="outing-create" novalidate>
+function outingForm(t, n) {
+  return html`
+    <form class="meet-form" data-form="outing-create" novalidate>
       <label class="section-label" for="outing-title">새 함께 하루</label>
       <input id="outing-title" class="area-input" type="text" maxlength="30" placeholder="예: 토요일 망원동 나들이" value="${n.title}" data-input="outing-title" data-focus-key="outing-title" autocomplete="off">
       ${t.friends.length
@@ -267,7 +280,7 @@ function outingView(t) {
   const owner = o.owner_id === me;
   const name = (id) => (id === me ? '나' : o.members.find((m) => m.user_id === id)?.profile?.nickname || '멤버');
   return html`
-    <button type="button" class="text-button flow-back" data-action="outing-back" data-focus-key="outing-back">← 함께 하루 목록</button>
+    <button type="button" class="text-button flow-back" data-action="outing-back" data-focus-key="outing-back">← 모임</button>
     <section class="block group-head" aria-labelledby="outing-title-h">
       <h2 class="group-title" id="outing-title-h">${o.title}</h2>
       <ul class="member-chips" aria-label="함께하는 사람">
@@ -379,20 +392,20 @@ function friendsTab(t, ui) {
           </ul>`
         : html`<p class="empty-body">아직 친구가 없어요. 내 이름표나 초대 링크를 보내보세요.</p>`}
     </section>
-    ${requestsOutgoing(t)}
-
-    <section class="block" aria-labelledby="feed-title">
-      <h2 class="section-label" id="feed-title">친구들이 나눈 기록</h2>
-      ${t.feed.length
-        ? html`<div class="entries">${t.feed.map((e) => entryCard(e, { me: getUser()?.id, author: t.profiles.get(e.user_id), comments: commentsOf(t, e), reactions: reactionsOf(t, e), profiles: t.profiles, ui }))}</div>`
-        : html`<p class="empty-body">친구가 "친구에게" 공개한 기록이 여기에 모여요.</p>`}
-    </section>`;
+    ${requestsOutgoing(t)}`;
 }
 
 function groupList(t) {
   return html`
-    <section class="block" aria-labelledby="groups-title">
-      <h2 class="section-label" id="groups-title">내 단체방</h2>
+    <section class="block meet-section" aria-labelledby="groups-title">
+      <div class="meet-head">
+        <h2 class="meet-title" id="groups-title">단체방</h2>
+        <span class="meet-head-actions">
+          <button type="button" class="button button-ghost button-small" data-action="meet-form" data-form-name="join" aria-expanded="${t.openForm === 'join'}" data-focus-key="join-group">코드로 들어가기</button>
+          <button type="button" class="button button-secondary button-small" data-action="meet-form" data-form-name="group" aria-expanded="${t.openForm === 'group'}" data-focus-key="new-group">＋ 만들기</button>
+        </span>
+      </div>
+      <p class="meet-desc">계속 함께 쓰는 기록장이에요. 다녀온 곳의 사진과 소감을 모아요.</p>
       ${t.groups.length
         ? html`<ul class="group-list">
             ${t.groups.map(
@@ -402,18 +415,26 @@ function groupList(t) {
               </button></li>`,
             )}
           </ul>`
-        : html`<p class="empty-body">아직 들어간 단체방이 없어요. 새로 만들거나 초대 코드로 들어가 보세요.</p>`}
-    </section>
+        : ''}
+      ${t.openForm === 'group' ? groupCreateForm(t) : ''}
+      ${t.openForm === 'join' ? groupJoinForm(t) : ''}
+    </section>`;
+}
 
-    <form class="block" data-form="group-create" novalidate>
-      <label class="section-label" for="group-name">새 단체방 만들기</label>
+function groupCreateForm(t) {
+  return html`
+    <form class="meet-form" data-form="group-create" novalidate>
+      <label class="section-label" for="group-name">새 단체방 이름</label>
       <div class="area-form">
         <input id="group-name" class="area-input" type="text" maxlength="30" placeholder="예: 주말 산책 모임" value="${t.groupName}" data-input="group-name" data-focus-key="group-name">
         <button type="submit" class="button button-primary button-small">만들기</button>
       </div>
-    </form>
+    </form>`;
+}
 
-    <form class="block" data-form="group-join" novalidate>
+function groupJoinForm(t) {
+  return html`
+    <form class="meet-form" data-form="group-join" novalidate>
       <label class="section-label" for="group-code">초대 코드로 들어가기</label>
       <div class="area-form">
         <input id="group-code" class="area-input" type="text" maxlength="8" placeholder="8자리 코드" autocomplete="off" value="${t.joinCode}" data-input="group-code" data-focus-key="group-code">
@@ -422,7 +443,13 @@ function groupList(t) {
     </form>`;
 }
 
-const VIS_NAME = { private: '나만 보기', friends: '친구에게' };
+const groupNames = (t) => new Map(t.groups.map((g) => [g.id, g.name]));
+
+function whereText(t, e) {
+  const a = audienceOf(e);
+  const names = [...(a.friends ? ['친구'] : []), ...a.groups.map((g) => groupNames(t).get(g) || '다른 단체방')];
+  return names.length ? names.join(', ') : '나만 보기';
+}
 
 function matches(entry, query) {
   const q = query.trim().toLowerCase();
@@ -444,22 +471,22 @@ function pickPanel(t, group) {
     </div>`;
   }
   const shown = all.filter((e) => matches(e, t.pickQuery || ''));
-  const where = (e) => (e.visibility === 'group' ? (t.groups.find((g) => g.id === e.group_id)?.name ? `단체방 · ${t.groups.find((g) => g.id === e.group_id).name}` : '다른 단체방') : VIS_NAME[e.visibility] || '나만 보기');
   return html`<div class="pick-panel" role="region" aria-labelledby="pick-title">${header}
     <input class="area-input pick-search" type="search" placeholder="장소, 소감, 날짜로 찾기" aria-label="내 기록 찾기" value="${t.pickQuery || ''}" data-input="pick-query" data-focus-key="pick-query">
     ${shown.length
       ? html`<ul class="pick-list">
           ${shown.map((e) => {
-            const here = e.visibility === 'group' && e.group_id === group.id;
+            const here = audienceOf(e).groups.includes(group.id);
+            const where = whereText(t, e);
             return html`<li class="pick-item${here ? ' is-here' : ''}">
               <div class="pick-main">
-                <p class="pick-meta">${e.date}${e.area_label ? ` · ${e.area_label}` : ''} · ${here ? '이 방에 올라가 있음' : where(e)}${e.photo_paths?.length ? ` · 사진 ${e.photo_paths.length}장` : ''}</p>
+                <p class="pick-meta">${e.date}${e.area_label ? ` · ${e.area_label}` : ''} · ${here ? '이 방에 올라가 있음' : where}${e.photo_paths?.length ? ` · 사진 ${e.photo_paths.length}장` : ''}</p>
                 <p class="pick-name">${e.place_name || '기록'}</p>
                 ${e.note ? html`<p class="pick-note">${e.note.length > 60 ? `${e.note.slice(0, 60)}…` : e.note}</p>` : ''}
               </div>
               ${here
                 ? html`<span class="pick-done" aria-label="올라가 있음">✓</span>`
-                : html`<button type="button" class="button button-secondary button-small" data-action="group-pick" data-id="${e.id}" data-where="${where(e)}" data-moving="${e.visibility === 'private' ? '' : '1'}">올리기</button>`}
+                : html`<button type="button" class="button button-secondary button-small" data-action="group-pick" data-id="${e.id}">올리기</button>`}
             </li>`;
           })}
         </ul>`
@@ -473,38 +500,79 @@ function groupView(t, ui) {
   const me = getUser()?.id;
   const owner = group.owner_id === me;
   return html`
-    <button type="button" class="text-button flow-back" data-action="group-back" data-focus-key="group-back">← 단체방 목록</button>
+    <button type="button" class="text-button flow-back" data-action="group-back" data-focus-key="group-back">← 모임</button>
     <section class="block group-head" aria-labelledby="group-title">
       <h2 class="group-title" id="group-title">${group.name}</h2>
-      <p class="fine-print">초대 코드 <strong class="tag-text">${group.invite_code}</strong></p>
-      <div class="actions actions-compact">
+      <button type="button" class="member-stack" data-action="group-manage" aria-expanded="${Boolean(t.manageOpen)}" data-focus-key="group-manage">
+        <span class="member-stack-faces" aria-hidden="true">${t.members.slice(0, 5).map((m) => avatar(m.profile))}</span>
+        <span>멤버 ${t.members.length}명 · 방 관리</span>
+      </button>
+      ${t.manageOpen
+        ? html`<div class="group-manage">
+            <p class="fine-print">초대 코드 <strong class="tag-text">${group.invite_code}</strong></p>
+            <ul class="member-chips" aria-label="멤버">
+              ${t.members.map(
+                (m) => html`<li class="member-chip">${avatar(m.profile)}<span>${m.user_id === me ? '나' : m.profile?.nickname || '멤버'}${m.user_id === group.owner_id ? ' · 방장' : ''}</span>
+                  ${owner && m.user_id !== me ? html`<button type="button" class="text-button text-button-muted" data-action="member-remove" data-id="${m.user_id}" data-name="${m.profile?.nickname || '멤버'}" aria-label="${m.profile?.nickname || '멤버'} 내보내기">내보내기</button>` : ''}
+                </li>`,
+              )}
+            </ul>
+            <div class="actions actions-compact">
+              ${owner
+                ? html`<button type="button" class="text-button text-button-muted" data-action="group-delete" data-id="${group.id}">단체방 지우기</button>`
+                : html`<button type="button" class="text-button text-button-muted" data-action="group-leave" data-id="${group.id}">방 나가기</button>
+                    <button type="button" class="text-button text-button-muted" data-action="report" data-type="group" data-id="${group.id}">단체방 신고</button>`}
+            </div>
+          </div>`
+        : ''}
+      <div class="group-cta">
+        <button type="button" class="button button-primary button-small" data-action="group-pick-open" data-focus-key="group-pick-open" ${t.picking ? 'disabled' : ''}>내 기록 올리기</button>
         <button type="button" class="button button-secondary button-small" data-action="group-copy-invite" data-code="${group.invite_code}">초대 링크 복사</button>
       </div>
-      <ul class="member-chips" aria-label="멤버">
-        ${t.members.map(
-          (m) => html`<li class="member-chip">${avatar(m.profile)}<span>${m.profile?.nickname || '멤버'}${m.user_id === group.owner_id ? ' · 방장' : ''}</span>
-            ${owner && m.user_id !== me ? html`<button type="button" class="text-button text-button-muted" data-action="member-remove" data-id="${m.user_id}" data-name="${m.profile?.nickname || '멤버'}" aria-label="${m.profile?.nickname || '멤버'} 내보내기">내보내기</button>` : ''}
-          </li>`,
-        )}
-      </ul>
     </section>
+
+    ${t.picking ? pickPanel(t, group) : ''}
 
     <section class="block" aria-labelledby="group-feed-title">
-      <h2 class="section-label" id="group-feed-title">함께 쓰는 기록장</h2>
-      ${t.picking
-        ? pickPanel(t, group)
-        : html`<button type="button" class="button button-primary pick-open" data-action="group-pick-open" data-focus-key="group-pick-open">내 기록 찾아서 올리기</button>`}
+      <h2 class="section-label" id="group-feed-title">함께 쓰는 기록장 ${t.groupFeed.length ? `${t.groupFeed.length}` : ''}</h2>
       ${t.groupFeed.length
-        ? html`<div class="entries">${t.groupFeed.map((e) => entryCard(e, { me, author: t.profiles.get(e.user_id), comments: commentsOf(t, e), reactions: reactionsOf(t, e), profiles: t.profiles, groupName: group.name, canModerate: owner, showOwnerActions: e.user_id === me, ui }))}</div>`
-        : html`<p class="empty-body">아직 올라온 기록이 없어요. 첫 기록을 남겨보세요.</p>`}
-    </section>
-
-    <section class="block">
-      ${owner
-        ? html`<button type="button" class="text-button text-button-muted" data-action="group-delete" data-id="${group.id}">단체방 지우기</button>`
-        : html`<button type="button" class="text-button text-button-muted" data-action="group-leave" data-id="${group.id}">방 나가기</button>
-            <button type="button" class="text-button text-button-muted" data-action="report" data-type="group" data-id="${group.id}">단체방 신고</button>`}
+        ? html`<div class="entries">${t.groupFeed.map((e) => entryCard(e, { me, author: t.profiles.get(e.user_id), comments: commentsOf(t, e), reactions: reactionsOf(t, e), profiles: t.profiles, groupNames: groupNames(t), roomId: group.id, canModerate: owner, showOwnerActions: false, ui }))}</div>`
+        : html`<p class="empty-body">아직 올라온 기록이 없어요. "내 기록 올리기"로 첫 기록을 올려보세요.</p>`}
     </section>`;
+}
+
+function feedTab(t, ui) {
+  const me = getUser()?.id;
+  const nudges = [];
+  if (t.requests.incoming.length) nudges.push(html`<button type="button" class="feed-nudge" data-action="together-tab" data-tab="friends">👋 받은 친구 요청 ${t.requests.incoming.length}개 · 보기</button>`);
+  if (t.cards.length) nudges.push(html`<button type="button" class="feed-nudge" data-action="together-tab" data-tab="inbox">✉︎ 받은 장소 카드 ${t.cards.length}장 · 보기</button>`);
+  const lonely = !t.friends.length && !t.groups.length;
+  return html`
+    ${nudges.length ? html`<div class="feed-nudges">${nudges}</div>` : ''}
+    <section class="block feed" aria-labelledby="feed-title">
+      <h2 class="section-label" id="feed-title">친구와 모임의 새 기록</h2>
+      ${t.feed.length
+        ? html`<div class="entries">${t.feed.map((e) => entryCard(e, { me, author: t.profiles.get(e.user_id), comments: commentsOf(t, e), reactions: reactionsOf(t, e), profiles: t.profiles, groupNames: groupNames(t), ui }))}</div>`
+        : lonely
+          ? html`<div class="feed-empty">
+              <p class="empty-body">아직 함께할 사람이 없어요. 친구를 추가하거나 단체방을 만들면, 서로 나눈 기록이 여기에 모여요.</p>
+              <div class="actions actions-compact">
+                <button type="button" class="button button-primary button-small" data-action="together-tab" data-tab="friends">친구 추가하기</button>
+                <button type="button" class="button button-secondary button-small" data-action="together-tab" data-tab="meet">모임 만들기</button>
+              </div>
+            </div>`
+          : html`<p class="empty-body">아직 새 기록이 없어요. 친구나 모임에 공개된 기록이 여기에 모여요.</p>`}
+    </section>`;
+}
+
+function meetTab(t, ui) {
+  if (t.openGroupId) return groupView(t, ui);
+  if (t.openOutingId) return outingView(t);
+  return html`${groupList(t)}${outingList(t)}`;
+}
+
+function unreadCount(t) {
+  return t.notes.filter((x) => !x.read_at).length;
 }
 
 export function render(_state, { ui }) {
@@ -514,20 +582,30 @@ export function render(_state, { ui }) {
   const t = state(ui);
   return html`
     <section class="screen together" aria-labelledby="together-title">
-      <p class="eyebrow">아는 사람끼리만 나누는 하루</p>
-      <h1 id="together-title" class="title" tabindex="-1">함께</h1>
-      ${inviteBanner()}
-      <div class="tabs" role="tablist" aria-label="함께">
-        <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="friends" data-focus-key="tab-friends" aria-selected="${t.tab === 'friends'}">친구</button>
-        <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="groups" data-focus-key="tab-groups" aria-selected="${t.tab === 'groups'}">단체방</button>
-        <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="outing" data-focus-key="tab-outing" aria-selected="${t.tab === 'outing'}">함께 하루</button>
-        <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="inbox" data-focus-key="tab-inbox" aria-selected="${t.tab === 'inbox'}">
-          알림${(() => {
-            const n = t.notes.filter((x) => !x.read_at).length + t.requests.incoming.length;
-            return n && t.tab !== 'inbox' ? html` <span class="tab-badge">${n > 9 ? '9+' : n}</span>` : '';
-          })()}
-        </button>
+      <div class="together-top">
+        <div>
+          <p class="eyebrow">아는 사람끼리만 나누는 하루</p>
+          <h1 id="together-title" class="title" tabindex="-1">함께</h1>
+        </div>
+        ${(() => {
+          const n = unreadCount(t);
+          return html`<button type="button" class="bell ${t.tab === 'inbox' ? 'is-on' : ''}" data-action="together-tab" data-tab="inbox" data-focus-key="tab-inbox" aria-label="알림${n ? ` ${n}개 새로 옴` : ''}">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.4 15.4A1 1 0 0 0 5.3 17h13.4a1 1 0 0 0 .9-1.6L18 12.6V9a6 6 0 0 0-6-6Zm-2 15a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            ${n && t.tab !== 'inbox' ? html`<span class="tab-badge bell-badge">${n > 9 ? '9+' : n}</span>` : ''}
+          </button>`;
+        })()}
       </div>
+      ${inviteBanner()}
+      ${t.tab === 'inbox'
+        ? html`<button type="button" class="text-button flow-back" data-action="together-tab" data-tab="${t.prevTab || 'feed'}" data-focus-key="inbox-back">← 돌아가기</button>
+            <h2 class="inbox-title">알림</h2>`
+        : html`<div class="tabs" role="tablist" aria-label="함께">
+            <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="feed" data-focus-key="tab-feed" aria-selected="${t.tab === 'feed'}">소식</button>
+            <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="meet" data-focus-key="tab-meet" aria-selected="${t.tab === 'meet'}">모임</button>
+            <button type="button" role="tab" class="tab" data-action="together-tab" data-tab="friends" data-focus-key="tab-friends" aria-selected="${t.tab === 'friends'}">
+              친구${t.requests.incoming.length ? html` <span class="tab-badge">${t.requests.incoming.length}</span>` : ''}
+            </button>
+          </div>`}
       ${t.error ? html`<p class="area-error" role="alert">${t.error}</p>` : ''}
       ${t.loading
         ? html`<p class="empty-body">불러오는 중…</p>`
@@ -535,13 +613,9 @@ export function render(_state, { ui }) {
           ? friendsTab(t, ui)
           : t.tab === 'inbox'
             ? inboxTab(t)
-            : t.tab === 'outing'
-              ? t.openOutingId
-                ? outingView(t)
-                : outingList(t)
-            : t.openGroupId
-              ? groupView(t, ui)
-              : groupList(t)}
+            : t.tab === 'meet'
+              ? meetTab(t, ui)
+              : feedTab(t, ui)}
     </section>`;
 }
 
@@ -561,6 +635,9 @@ export const actions = {
   ...journalActions,
   'together-tab': ({ ui, rerender }, data) => {
     const t = state(ui);
+    if (data.tab === 'inbox' && t.tab !== 'inbox') t.prevTab = t.tab;
+    // tapping 모임 again goes back to the list
+    if (data.tab === 'meet' && t.tab === 'meet') Object.assign(t, { openGroupId: null, openOutingId: null });
     t.tab = data.tab;
     if (t.tab === 'inbox') markRead(t);
     rerender();
@@ -581,7 +658,7 @@ export const actions = {
   },
   'card-remove': (ctx, data) => attempt(ctx, () => removeCard(data.id), '카드를 지웠어요.'),
   'outing-open': (ctx, data) => {
-    Object.assign(state(ctx.ui), { tab: 'outing', openOutingId: data.id, loading: true });
+    Object.assign(state(ctx.ui), { tab: 'meet', openOutingId: data.id, openGroupId: null, loading: true });
     ctx.rerender();
     reload(ctx);
   },
@@ -646,7 +723,7 @@ export const actions = {
     } else if (invite.group) {
       const g = await attempt(ctx, () => joinGroup(invite.group), (g) => `‘${g.name}’ 방에 들어왔어요.`);
       if (g) {
-        Object.assign(state(ctx.ui), { tab: 'groups', openGroupId: g.id });
+        Object.assign(state(ctx.ui), { tab: 'meet', openGroupId: g.id, openOutingId: null });
         await reload(ctx);
       }
     }
@@ -664,7 +741,7 @@ export const actions = {
     attempt(ctx, () => blockUser(data.id), '차단했어요.');
   },
   'group-open': (ctx, data) => {
-    Object.assign(state(ctx.ui), { openGroupId: data.id, loading: true, picking: false });
+    Object.assign(state(ctx.ui), { openGroupId: data.id, openOutingId: null, loading: true, picking: false, manageOpen: false });
     ctx.rerender();
     reload(ctx);
   },
@@ -689,8 +766,12 @@ export const actions = {
     const t = state(ctx.ui);
     const group = t.groups.find((g) => g.id === t.openGroupId);
     if (!group) return;
-    if (data.moving && !window.confirm(`지금 ‘${data.where}’에 공개된 기록이에요. 기록 하나는 한 곳에만 보여서, ‘${group.name}’ 방으로 옮겨져요. 올릴까요?`)) return;
-    const saved = await attempt(ctx, () => shareEntryToGroup(data.id, group.id), `‘${group.name}’ 방에 올렸어요.`);
+    const entry = (t.myEntries || []).find((e) => e.id === data.id);
+    if (!entry) return;
+    const a = audienceOf(entry);
+    // older database (multi_share.sql not run): an entry lives in one place, so it moves
+    if (!supportsMultiShare(entry) && (a.friends || a.groups.length) && !window.confirm(`지금 ‘${whereText(t, entry)}’에 공개된 기록이에요. ‘${group.name}’ 방으로 옮길까요?`)) return;
+    const saved = await attempt(ctx, () => shareEntryToGroup(entry, group.id), `‘${group.name}’ 방에도 올렸어요.`);
     if (saved) {
       t.myEntries = (t.myEntries || []).map((e) => (e.id === saved.id ? saved : e));
       t.picking = false;
@@ -698,6 +779,17 @@ export const actions = {
     }
   },
   'go-myday': ({ navigate }) => navigate('day'),
+  'meet-form': ({ ui, rerender }, data) => {
+    const t = state(ui);
+    t.openForm = t.openForm === data.formName ? null : data.formName;
+    rerender();
+    const focus = { group: 'group-name', join: 'group-code', outing: 'outing-title' }[t.openForm];
+    if (focus) document.getElementById(focus)?.focus();
+  },
+  'group-manage': ({ ui, rerender }) => {
+    state(ui).manageOpen = !state(ui).manageOpen;
+    rerender();
+  },
   'group-back': ({ ui, rerender }) => {
     state(ui).openGroupId = null;
     state(ui).picking = false;
@@ -785,7 +877,7 @@ export const forms = {
     n.busy = false;
     if (day) {
       t.newOuting = { title: '', members: [] };
-      t.openOutingId = day.id;
+      Object.assign(t, { openOutingId: day.id, openForm: null });
       await reload(ctx);
     } else ctx.rerender();
   },
@@ -793,7 +885,7 @@ export const forms = {
     const t = state(ctx.ui);
     const g = await attempt(ctx, () => createGroup(t.groupName), (g) => `‘${g.name}’ 방을 만들었어요. 초대 링크를 보내보세요.`);
     if (g) {
-      Object.assign(t, { groupName: '', openGroupId: g.id });
+      Object.assign(t, { groupName: '', openGroupId: g.id, openForm: null });
       await reload(ctx);
     }
   },
@@ -801,7 +893,7 @@ export const forms = {
     const t = state(ctx.ui);
     const g = await attempt(ctx, () => joinGroup(t.joinCode), (g) => `‘${g.name}’ 방에 들어왔어요.`);
     if (g) {
-      Object.assign(t, { joinCode: '', openGroupId: g.id });
+      Object.assign(t, { joinCode: '', openGroupId: g.id, openForm: null });
       await reload(ctx);
     }
   },

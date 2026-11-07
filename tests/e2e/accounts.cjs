@@ -91,6 +91,7 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
     throw error;
   }
   assert(backend.db.has('user-1|2026-11-01'), 'earlier local day uploaded on first login');
+  await pa.click('[data-action="day-toggle"][data-date="2026-11-01"]');
   await pa.waitForSelector('text=느티나무 아래에서 쉬었다');
   ok('typing a note while My Day loads keeps every character and the focus; saved, synced; earlier local day uploaded and listed in 지난 날들');
 

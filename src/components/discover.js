@@ -271,7 +271,7 @@ export const actions = {
   },
   'together-show': (ctx) => {
     const id = ctx.ui.activeTogether?.id;
-    if (ctx.ui.together && id) Object.assign(ctx.ui.together, { tab: 'outing', openOutingId: id });
+    if (ctx.ui.together && id) Object.assign(ctx.ui.together, { tab: 'meet', openOutingId: id, openGroupId: null });
     ctx.navigate('together');
   },
   'send-open': (ctx) => openSend(ctx),

@@ -12,17 +12,18 @@ import { categoryLabel, moodLabel } from './common.js';
 import { isBackendConfigured } from '../services/backend/config.js';
 import { getUser } from '../services/backend/auth.js';
 import { places as samplePlaces } from '../data/places.js';
-import { myEntries, saveEntry, listGroups, commentsFor, reactionsFor, profilesFor, VISIBILITY, PHOTOS_MAX, NOTE_MAX, SocialError } from '../services/backend/social.js';
+import { myEntries, saveEntry, listGroups, commentsFor, reactionsFor, profilesFor, audienceOf, isShared, GROUPS_PER_ENTRY, PHOTOS_MAX, NOTE_MAX, SocialError } from '../services/backend/social.js';
 import { entryCard, hydrateJournalPhotos } from './entryCard.js';
 import { journalActions, journalInputs, journalForms } from './journalActions.js';
 
 const journalOn = () => isBackendConfigured() && Boolean(getUser());
 
 /** Options for an entry card on this screen (my own entries). */
-const cardOptions = (ui, entry, groupNames) => ({
+const cardOptions = (ui, entry, groupNames, extra = {}) => ({
   me: getUser()?.id,
   showOwnerActions: true,
-  groupName: groupNames.get(entry.group_id) || '',
+  groupNames,
+  ...extra,
   comments: (ui.myComments || []).filter((c) => c.entry_id === entry.id),
   reactions: (ui.myReactions || []).filter((r) => r.entry_id === entry.id),
   profiles: ui.commentProfiles || new Map(),
@@ -77,24 +78,22 @@ function editorForm(ui) {
           </label>`
         : ''}
 
-      <fieldset class="visibility">
-        <legend class="note-label">누구에게 보일까요?</legend>
-        <div class="budget-options">
-          ${VISIBILITY.map(
-            (v) => html`<label class="budget-chip">
-              <input type="radio" name="entry-visibility" value="${v.id}" data-input="entry-visibility" data-focus-key="vis-${v.id}" ${e.visibility === v.id ? 'checked' : ''}>
-              <span>${v.label}</span>
+      <fieldset class="audience">
+        <legend class="note-label">누구에게 보일까요? <span class="optional">여러 곳을 함께 골라도 돼요</span></legend>
+        <div class="budget-options audience-options">
+          <label class="budget-chip audience-chip">
+            <input type="checkbox" value="friends" data-input="entry-audience" data-focus-key="aud-friends" ${e.shareFriends ? 'checked' : ''}>
+            <span>친구</span>
+          </label>
+          ${groups.map(
+            (g) => html`<label class="budget-chip audience-chip">
+              <input type="checkbox" value="${g.id}" data-input="entry-audience" data-focus-key="aud-${g.id}" ${e.groupIds.includes(g.id) ? 'checked' : ''}>
+              <span>${g.name}</span>
             </label>`,
           )}
         </div>
-        ${e.visibility === 'group'
-          ? groups.length
-            ? html`<label class="visually-hidden" for="entry-group">단체방</label>
-                <select id="entry-group" class="area-input group-select" data-input="entry-group" data-focus-key="entry-group">
-                  ${groups.map((g) => html`<option value="${g.id}" ${e.groupId === g.id ? 'selected' : ''}>${g.name}</option>`)}
-                </select>`
-            : html`<p class="fine-print">아직 들어간 단체방이 없어요. <a href="#together">함께</a>에서 만들거나 초대 코드로 들어가세요.</p>`
-          : ''}
+        <p class="fine-print audience-summary" data-audience-summary>${audienceSummary(e, groups)}</p>
+        ${groups.length ? '' : html`<p class="fine-print">단체방은 <a href="#together">함께 → 모임</a>에서 만들거나 초대 코드로 들어갈 수 있어요.</p>`}
       </fieldset>
 
       ${e.error ? html`<p class="area-error" role="alert">${e.error}</p>` : ''}
@@ -103,6 +102,11 @@ function editorForm(ui) {
         <button type="button" class="text-button" data-action="editor-cancel" ${e.busy ? 'disabled' : ''}>취소</button>
       </div>
     </form>`;
+}
+
+function audienceSummary(e, groups) {
+  const names = [...(e.shareFriends ? ['친구'] : []), ...groups.filter((g) => e.groupIds.includes(g.id)).map((g) => g.name)];
+  return names.length ? `${names.join(', ')}에 보여요.` : '아무것도 고르지 않으면 나만 볼 수 있어요.';
 }
 
 /** Only real (Kakao) places have a card other people can see the photo on. */
@@ -118,9 +122,10 @@ function openEditor(ui, { placeId, entry = null }) {
     note: entry?.note || '',
     keepPaths: [...(entry?.photo_paths || [])],
     files: [],
-    visibility: entry?.visibility || 'private', // 기본: 나만 보기
+    // 기본: 나만 보기 (아무것도 안 고름)
+    shareFriends: audienceOf(entry).friends,
+    groupIds: audienceOf(entry).groups,
     sharePlace: entry?.share_place_photos === true, // 기본: 꺼짐
-    groupId: entry?.group_id || ui.myGroups?.[0]?.id || null,
     busy: false,
     error: '',
   };
@@ -148,10 +153,10 @@ function visitsSection(state, ui) {
         <div class="visit-head"><span class="memory-name">${place.name}</span><span class="memory-meta">${categoryLabel(place)}</span></div>
         ${entries
           .filter((e) => !(editing && ui.editor.entryId === e.id))
-          .map((e) => entryCard(e, cardOptions(ui, e, groupNames)))}
+          .map((e) => entryCard(e, cardOptions(ui, e, groupNames, { showPlace: false })))}
         ${editing ? editorForm(ui) : ''}
         ${journalOn() && !editing && !entries.length
-          ? html`<button type="button" class="button button-ghost button-small" data-action="editor-open" data-id="${stop.id}" data-focus-key="editor-open-${stop.id}">소감 남기기</button>`
+          ? html`<button type="button" class="button button-secondary button-small visit-add" data-action="editor-open" data-id="${stop.id}" data-focus-key="editor-open-${stop.id}">＋ 사진·소감 남기기</button>`
           : ''}
       </li>`;
     })}
@@ -176,13 +181,23 @@ function historySection(state, ui) {
           const visited = dayPlaceNames(day, route.filter((s) => s?.visited).map((s) => s.id));
           const entries = entriesOn(ui, day.date);
           const date = new Date(`${day.date}T12:00:00`);
+          const open = Boolean(ui.openDays?.[day.date]);
+          const summary = entries.length ? `기록 ${entries.length}개` : visited.length ? `${visited.length}곳 다녀옴` : route.length ? `${route.length}곳 담음` : '조용히 지나간 날';
           return html`
-            <li class="history-item">
-              <p class="kicker">${Number.isNaN(date.getTime()) ? day.date : formatKoreanDate(date)}${day.area?.label ? ` · ${day.area.label}` : ''}${day.journal?.feeling ? ` · ${day.journal.feeling}` : ''}</p>
-              ${day.journal?.note ? html`<p class="history-note">${day.journal.note}</p>` : ''}
-              ${entries.length
-                ? html`<div class="entries">${entries.map((e) => entryCard(e, cardOptions(ui, e, groupNames)))}</div>`
-                : html`<p class="history-meta">${visited.length ? `다녀온 곳: ${visited.join(', ')}` : route.length ? `${route.length}곳을 담아두었던 날` : '조용히 지나간 날'}</p>`}
+            <li class="history-item ${open ? 'is-open' : ''}">
+              <button type="button" class="history-toggle" data-action="day-toggle" data-date="${day.date}" aria-expanded="${open}" data-focus-key="day-${day.date}">
+                <span class="history-date">${Number.isNaN(date.getTime()) ? day.date : formatKoreanDate(date)}</span>
+                <span class="history-sum">${[day.area?.label, day.journal?.feeling, summary].filter(Boolean).join(' · ')}</span>
+                <span class="history-chevron" aria-hidden="true">${open ? '▴' : '▾'}</span>
+              </button>
+              ${open
+                ? html`<div class="history-body">
+                    ${day.journal?.note ? html`<p class="history-note">“${day.journal.note}”</p>` : ''}
+                    ${entries.length
+                      ? html`<div class="entries">${entries.map((e) => entryCard(e, cardOptions(ui, e, groupNames)))}</div>`
+                      : html`<p class="history-meta">${visited.length ? `다녀온 곳: ${visited.join(', ')}` : route.length ? `${route.length}곳을 담아두었던 날` : '조용히 지나간 날'}</p>`}
+                  </div>`
+                : ''}
             </li>`;
         })}
       </ol>
@@ -233,7 +248,7 @@ async function loadJournal(ctx) {
   try {
     const [entries, groups] = await Promise.all([myEntries(), listGroups().catch(() => [])]);
     // comments on my shared entries, and who wrote them
-    const sharedIds = entries.filter((e) => e.visibility !== 'private').map((e) => e.id);
+    const sharedIds = entries.filter(isShared).map((e) => e.id);
     const [comments, reactions] = await Promise.all([commentsFor(sharedIds), reactionsFor(sharedIds)]);
     const profiles = await profilesFor([...comments.map((c) => c.user_id), ...reactions.map((r) => r.user_id)]);
     ctx.ui.myReactions = reactions;
@@ -288,7 +303,7 @@ export function render(state, { ui }) {
         : ''}
 
       <form class="block journal" data-form="journal" novalidate>
-        <h2 class="section-label">오늘 한 줄 <span class="optional">(선택)</span></h2>
+        <h2 class="section-label">하루 마무리 <span class="optional">(선택)</span></h2>
         <fieldset class="feelings">
           <legend class="visually-hidden">오늘의 기분</legend>
           ${FEELINGS.map(
@@ -308,8 +323,7 @@ export function render(state, { ui }) {
 
       <div data-history-slot>${historySection(state, ui)}</div>
 
-      <section class="block reset" aria-labelledby="reset-title">
-        <h2 class="section-label" id="reset-title">새로 시작하기</h2>
+      <section class="reset" aria-label="새로 시작하기">
         ${ui.confirmReset
           ? html`<p>오늘 담은 곳과 한 줄 기록을 ${getUser() ? '이 기기와 계정에서' : '이 기기에서'} 모두 지울까요? 남긴 소감과 사진은 그대로 있어요.</p>
               <div class="actions">
@@ -348,6 +362,10 @@ export const actions = {
     store.actions.resetDay();
     toast('오늘을 새로 시작해요.');
     navigate('home');
+  },
+  'day-toggle': ({ ui, rerender }, data) => {
+    ui.openDays = { ...(ui.openDays || {}), [data.date]: !ui.openDays?.[data.date] };
+    rerender();
   },
   'editor-open': ({ ui, rerender }, data) => {
     openEditor(ui, { placeId: data.id });
@@ -399,14 +417,16 @@ export const inputs = {
     picked.slice(0, Math.max(0, room)).forEach((file) => e.files.push({ file, url: URL.createObjectURL(file) }));
     rerender();
   },
-  'entry-visibility': ({ ui, rerender }, el) => {
-    if (!ui.editor) return;
-    ui.editor.visibility = el.value;
-    if (el.value === 'group' && !ui.editor.groupId) ui.editor.groupId = ui.myGroups?.[0]?.id || null;
-    rerender();
-  },
-  'entry-group': ({ ui }, el) => {
-    if (ui.editor) ui.editor.groupId = el.value;
+  'entry-audience': ({ ui, toast }, el) => {
+    const e = ui.editor;
+    if (!e) return;
+    if (el.value === 'friends') e.shareFriends = el.checked;
+    else if (el.checked && e.groupIds.length >= GROUPS_PER_ENTRY) {
+      el.checked = false;
+      toast(`단체방은 ${GROUPS_PER_ENTRY}곳까지 고를 수 있어요.`);
+    } else e.groupIds = el.checked ? [...new Set([...e.groupIds, el.value])] : e.groupIds.filter((g) => g !== el.value);
+    const summary = document.querySelector('[data-audience-summary]');
+    if (summary) summary.textContent = audienceSummary(e, ui.myGroups || []);
   },
   'entry-share-place': ({ ui }, el) => {
     if (ui.editor) ui.editor.sharePlace = el.checked;
@@ -437,14 +457,15 @@ export const forms = {
         note: e.note,
         keepPaths: e.keepPaths,
         newFiles: e.files.map((f) => f.file),
-        visibility: e.visibility,
-        groupId: e.groupId,
+        shareFriends: e.shareFriends,
+        groupIds: e.groupIds,
         sharePlacePhotos: e.sharePlace && canSharePlace(e.placeId),
       });
       closeEditor(ctx.ui);
       refreshCommunityPhotos();
       if (saved?.sharingUnavailable) ctx.toast('소감은 남겼어요. 장소 사진 공유는 아직 준비 중이에요.');
-      else ctx.toast(e.visibility === 'private' ? '소감을 남겼어요.' : e.visibility === 'friends' ? '소감을 친구들과 나눴어요.' : '단체방에 소감을 올렸어요.');
+      else if (saved?.multiUnavailable) ctx.toast('한 곳에만 공개했어요. 여러 곳에 함께 공개하려면 multi_share.sql을 실행해 주세요.');
+      else ctx.toast(e.shareFriends || e.groupIds.length ? `소감을 나눴어요 · ${audienceSummary(e, ctx.ui.myGroups || []).replace('에 보여요.', '')}` : '소감을 남겼어요.');
       await reload(ctx);
     } catch (error) {
       e.busy = false;

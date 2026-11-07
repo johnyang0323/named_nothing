@@ -5,7 +5,7 @@ const FAKE_KAKAO = fs.readFileSync(__dirname + '/fake-kakao.js', 'utf8');
 const PNG = fs.readFileSync(ROOT + '/public/icons/icon-512.png');
 const SB = 'https://test.supabase.co';
 
-function createBackend({ photos, photoFunction = null, confirmEmail = false, mailDown = false } = {}) {
+function createBackend({ photos, photoFunction = null, confirmEmail = false, mailDown = false, noMultiShare = false } = {}) {
   const resent = [];
   const db = new Map();
   const votes = new Map(); // place|url|user -> vote
@@ -34,6 +34,7 @@ function createBackend({ photos, photoFunction = null, confirmEmail = false, mai
     tmembers: [], // { day_id, user_id }
     titems: [], // { id, day_id, place_id, place, added_by, created_at }
     tvotes: [], // { item_id, user_id }
+    noMultiShare, // multi_share.sql not run yet
   };
   const accounts = new Map(); // email -> { password, id }
   const log = [];
@@ -198,6 +199,7 @@ function parseFilters(url) {
       if (op === 'neq') return cell !== val;
       if (op === 'in') return val.replace(/^\(|\)$/g, '').split(',').map((x) => x.replace(/^"|"$/g, '')).includes(cell);
       if (op === 'is') return val === 'null' ? row[k] == null : cell === val;
+      if (op === 'cs') return val.replace(/^\{|\}$/g, '').split(',').filter(Boolean).every((x) => (row[k] || []).includes(x.replace(/^"|"$/g, '')));
       return true;
     });
   }
@@ -229,9 +231,40 @@ const notify = (S, user, actor, kind, entry = null, data = {}) => {
 };
 const inDay = (S, d, u) => S.tmembers.some((m) => m.day_id === d && m.user_id === u);
 const sharesDay = (S, a, b) => S.tmembers.some((x) => x.user_id === a && inDay(S, x.day_id, b));
-const canRead = (S, e, me) =>
-  e.user_id === me ||
-  (!blocked(S, e.user_id, me) && ((e.visibility === 'friends' && isFriend(S, me, e.user_id)) || (e.visibility === 'group' && e.group_id && isMember(S, e.group_id, me))));
+// multi_share.sql: share_friends + group_ids (old visibility/group_id kept in step)
+const audience = (e) => ({ friends: e.share_friends ?? e.visibility === 'friends', groups: e.group_ids ?? (e.visibility === 'group' && e.group_id ? [e.group_id] : []) });
+const canRead = (S, e, me) => {
+  if (e.user_id === me) return true;
+  if (blocked(S, e.user_id, me)) return false;
+  const a = audience(e);
+  return (a.friends && isFriend(S, me, e.user_id)) || a.groups.some((g) => isMember(S, g, me));
+};
+/** Mirrors the journal_entries_audience trigger. Returns an error string or null. */
+function normalizeEntry(S, row, old = null) {
+  if (S.noMultiShare) {
+    if ('share_friends' in row || 'group_ids' in row) return 'PGRST204';
+    if (row.visibility === 'group' && !(row.group_id && isMember(S, row.group_id, row.user_id ?? old?.user_id))) return 'rls';
+    return null;
+  }
+  const legacyChange = old
+    ? row.share_friends === undefined && row.group_ids === undefined && (row.visibility !== undefined || row.group_id)
+    : row.share_friends === undefined && row.group_ids === undefined;
+  if (legacyChange) {
+    const vis = row.visibility ?? old?.visibility ?? 'private';
+    const gid = row.group_id !== undefined ? row.group_id : old?.group_id;
+    row.share_friends = vis === 'friends';
+    row.group_ids = vis === 'group' && gid ? [gid] : [];
+  }
+  const merged = { ...(old || {}), ...row };
+  const groups = [...new Set(merged.group_ids || [])].filter((g) => S.groups.has(g));
+  for (const g of groups) if (!(old?.group_ids || []).includes(g) && !isMember(S, g, merged.user_id)) return 'rls';
+  row.group_ids = groups;
+  row.share_friends = Boolean(merged.share_friends);
+  row.visibility = groups.length && !row.share_friends ? 'group' : row.share_friends ? 'friends' : 'private';
+  row.group_id = groups[0] || null;
+  return null;
+}
+const ownsRoomOf = (S, e, me) => audience(e).groups.some((g) => S.groups.get(g)?.owner_id === me);
 
 function purgeSocialUser(S, id) {
   S.profiles.delete(id);
@@ -240,7 +273,7 @@ function purgeSocialUser(S, id) {
   [...S.groups.values()].filter((g) => g.owner_id === id).forEach((g) => {
     S.groups.delete(g.id);
     S.members = S.members.filter((m) => m.group_id !== g.id);
-    S.entries.forEach((e) => { if (e.group_id === g.id) e.group_id = null; });
+    S.entries.forEach((e) => { if (e.group_ids) normalizeEntry(S, Object.assign(e, { group_ids: e.group_ids.filter((x) => x !== g.id) }), e); else if (e.group_id === g.id) e.group_id = null; });
   });
   S.members = S.members.filter((m) => m.user_id !== id);
   [...S.entries.values()].filter((e) => e.user_id === id).forEach((e) => S.entries.delete(e.id));
@@ -311,6 +344,7 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
   if (!path.startsWith('/rest/v1/')) return null;
   const table = path.slice('/rest/v1/'.length);
   const where = parseFilters(url);
+  if (S.noMultiShare && table === 'journal_entries' && (url.searchParams.has('group_ids') || url.searchParams.has('share_friends'))) return json({ code: '42703', message: 'column journal_entries.group_ids does not exist' }, 400);
   const profileOf = (id) => S.profiles.get(id) || null;
 
   // ── RPCs ──
@@ -415,6 +449,16 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
         });
         return json(d);
       }
+      case 'remove_entry_from_group': {
+        if (S.noMultiShare) return json({ code: 'PGRST202', message: 'Could not find the function public.remove_entry_from_group' }, 404);
+        if (S.groups.get(b.p_group)?.owner_id !== me) return err('not the owner');
+        const e = S.entries.get(b.p_entry);
+        if (e) {
+          e.group_ids = (e.group_ids || []).filter((g) => g !== b.p_group);
+          normalizeEntry(S, e, { ...e, group_ids: [...e.group_ids, b.p_group] });
+        }
+        return json(null);
+      }
       case 'friend_traces': {
         const rows = (b.p_place_ids || []).map((pid) => {
           const es = [...S.entries.values()].filter((e) => e.place_id === pid && e.user_id !== me && isFriend(S, me, e.user_id) && canRead(S, e, me));
@@ -460,8 +504,10 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
       if (table === 'reports') { S.reports.push({ ...r, reporter_id: me }); continue; }
       if (table === 'journal_entries') {
         if (r.user_id !== me) return err('rls', 403);
-        if (r.visibility === 'group' && !(r.group_id && isMember(S, r.group_id, me))) return err('rls', 403);
-        const row = { id: uid(), created_at: new Date().toISOString(), photo_paths: [], ...r };
+        const bad = normalizeEntry(S, r);
+        if (bad === 'PGRST204') return json({ code: 'PGRST204', message: "Could not find the 'group_ids' column of 'journal_entries' in the schema cache" }, 400);
+        if (bad) return err('rls', 403);
+        const row = { id: uid(), created_at: new Date(Date.now() + S.entries.size).toISOString(), photo_paths: [], ...r };
         S.entries.set(row.id, row);
         out.push(row);
       } else if (table === 'comments') {
@@ -512,21 +558,26 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
   if (method === 'PATCH' && table === 'journal_entries') {
     const patch = body();
     const targets = [...S.entries.values()].filter(where).filter((e) => e.user_id === me);
-    if (patch.visibility === 'group' && !(patch.group_id && isMember(S, patch.group_id, me))) return err('rls', 403);
-    targets.forEach((e) => Object.assign(e, patch));
+    for (const e of targets) {
+      const row = { ...patch };
+      const bad = normalizeEntry(S, row, e);
+      if (bad === 'PGRST204') return json({ code: 'PGRST204', message: "Could not find the 'group_ids' column of 'journal_entries' in the schema cache" }, 400);
+      if (bad) return err('rls', 403);
+      Object.assign(e, row);
+    }
     return reply(targets);
   }
 
   if (method === 'DELETE') {
     if (table === 'journal_entries') {
-      [...S.entries.values()].filter(where).filter((e) => e.user_id === me || (e.group_id && S.groups.get(e.group_id)?.owner_id === me)).forEach((e) => {
+      [...S.entries.values()].filter(where).filter((e) => e.user_id === me || (S.noMultiShare && e.group_id && S.groups.get(e.group_id)?.owner_id === me)).forEach((e) => {
         S.entries.delete(e.id);
         [...S.comments.values()].filter((c) => c.entry_id === e.id).forEach((c) => S.comments.delete(c.id));
       });
     } else if (table === 'comments') {
       [...S.comments.values()].filter(where).filter((c) => {
         const e = S.entries.get(c.entry_id);
-        return c.user_id === me || e?.user_id === me || (e?.group_id && S.groups.get(e.group_id)?.owner_id === me);
+        return c.user_id === me || e?.user_id === me || (e && ownsRoomOf(S, e, me));
       }).forEach((c) => S.comments.delete(c.id));
     } else if (table === 'group_members') {
       S.members = S.members.filter((m) => !(where(m) && (m.user_id === me || S.groups.get(m.group_id)?.owner_id === me)));
@@ -534,7 +585,7 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
       [...S.groups.values()].filter(where).filter((g) => g.owner_id === me).forEach((g) => {
         S.groups.delete(g.id);
         S.members = S.members.filter((m) => m.group_id !== g.id);
-        S.entries.forEach((e) => { if (e.group_id === g.id) e.group_id = null; });
+        S.entries.forEach((e) => { if (e.group_ids) normalizeEntry(S, Object.assign(e, { group_ids: e.group_ids.filter((x) => x !== g.id) }), e); else if (e.group_id === g.id) e.group_id = null; });
       });
     } else if (table === 'blocks') {
       S.blocks = S.blocks.filter((x) => !(where(x) && x.blocker_id === me));
@@ -576,7 +627,7 @@ async function wire(ctx, backend, { kakao = true, errors, weather = { weather_co
   await ctx.route('https://k.kakaocdn.net/**', (r) => r.fulfill({ contentType: 'image/png', body: PNG }));
   if (errors) {
     ctx.on('page', (p) => {
-      p.on('pageerror', (e) => errors.push(String(e)));
+      p.on('pageerror', (e) => errors.push(String(e) + (process.env.E2E_STACK ? '\n' + e.stack : '')));
       p.on('console', (m) => m.type() === 'error' && !/40[01369]/.test(m.text()) && errors.push(m.text()));
     });
   }
