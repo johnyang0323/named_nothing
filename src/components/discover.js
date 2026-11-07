@@ -57,8 +57,8 @@ export function render(state, { ui, taste, context }) {
               다음 <span aria-hidden="true">›</span>
             </button>
           </div>
-          <button type="button" class="button button-primary button-wide swipe-go" data-action="go" data-focus-key="go">
-            ${inRoute ? '여기서 둘러보기' : '여기로 가보기'}
+          <button type="button" class="button button-primary button-wide swipe-go" data-action="go-kept" data-focus-key="go-kept">
+            보관한 곳으로 가보기${state.route.length || !inRoute ? html` <span class="go-count">${state.route.length + (inRoute ? 0 : 1)}</span>` : ''}
           </button>
           ${hasLearnedSwipe()
             ? ''
@@ -145,8 +145,16 @@ function previous(ctx) {
   else ctx.toast('첫 카드예요. 오른쪽으로 밀면 이전 카드를 볼 수 있어요.');
 }
 
+/** "보관한 곳으로 가보기": this card goes into the envelope too, then open 경로. */
+function goKept(ctx) {
+  const id = ctx.store.getState().recommendationId;
+  if (id) ctx.store.actions.addToRoute(id);
+  ctx.navigate('route');
+}
+
 export const actions = {
   previous: (ctx) => previous(ctx),
+  'go-kept': (ctx) => goKept(ctx),
   keep: (ctx) => keep(ctx),
   go: ({ store, navigate }) => {
     store.actions.acceptRecommendation();

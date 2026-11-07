@@ -1,4 +1,5 @@
 const { chromium, devices } = require('playwright');
+const { goHere } = require('./helpers.cjs');
 const { launch, OUT, ROOT } = require('./env.cjs');
 const BASE = 'http://localhost:4180/named_nothing/';
 const ok = (...a) => console.log('✔', ...a);
@@ -27,7 +28,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   ok('service worker active, scope', scope);
 
   await p.click('text=오늘 시작하기');
-  await p.click('[data-action="go"]');
+  await goHere(p);
   await ctx.setOffline(true);
   await p.goto(BASE + '#route');
   await p.reload();

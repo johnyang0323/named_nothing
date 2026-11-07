@@ -5740,3 +5740,16 @@ body[data-screen='home'] .view {
 @media (min-width: 860px) {
 }
 
+
+.swipe-go .go-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  font-weight: 800;
+}

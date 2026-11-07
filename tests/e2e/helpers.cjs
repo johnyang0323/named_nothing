@@ -425,6 +425,20 @@ async function signUp(page, email = 'me@test.com', password = 'correct-horse') {
   await page.waitForFunction(() => !document.body.classList.contains('is-gated'));
 }
 
+/**
+ * From a recommendation card, go explore that place: "보관한 곳으로 가보기"
+ * (keeps the card, opens 경로), then "여기서 둘러보기" on that stop.
+ */
+async function goHere(page) {
+  const name = (await page.textContent('#discover-title')).trim();
+  await page.click('[data-action="go-kept"]');
+  await page.waitForSelector('.stop');
+  const button = page.locator(`.stop:has(.stop-name:text-is("${name}")) [data-action="explore-from"]`);
+  if (await button.count()) await button.first().click();
+  else await page.evaluate(() => { window.location.hash = '#explore'; });
+  await page.waitForSelector('#explore-title');
+}
+
 async function setArea(page, name = '망원동') {
   await page.fill('#area-query', name);
   await page.press('#area-query', 'Enter');
@@ -441,4 +455,4 @@ async function until(check, ms = 8000, label = 'condition') {
   throw new Error(`ASSERT: timed out waiting for ${label}`);
 }
 
-module.exports = { createBackend, wire, signUp, setArea, until, SB };
+module.exports = { createBackend, wire, signUp, setArea, goHere, until, SB };

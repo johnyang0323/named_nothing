@@ -1,6 +1,6 @@
 const { chromium, devices } = require('playwright');
 const { launch, OUT, ROOT } = require('./env.cjs');
-const { createBackend, wire, signUp, setArea, until } = require('./helpers.cjs');
+const { createBackend, wire, signUp, setArea, until, goHere } = require('./helpers.cjs');
 const APP = 'http://localhost:4175/';
 const ok = (...a) => console.log('✔', ...a);
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
@@ -69,7 +69,7 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
   await pa.waitForSelector('#discover-title');
   assert((await pa.textContent('.facts')).includes('고른 위치에서'), 'walking from label');
   const placeName = await pa.textContent('#discover-title');
-  await pa.click('[data-action="go"]');
+  await goHere(pa);
   await pa.waitForSelector('#explore-title');
   await pa.goto(APP + '#day');
   // type key by key while 지난 날들 / sync status load in the background:

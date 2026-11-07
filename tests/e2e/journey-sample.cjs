@@ -1,4 +1,5 @@
 const { chromium, devices } = require('playwright');
+const { goHere } = require('./helpers.cjs');
 const { launch, OUT, ROOT } = require('./env.cjs');
 const SHOTS = OUT + '/';
 const URL = 'http://localhost:4173/';
@@ -43,7 +44,7 @@ function assert(c, m) { if (!c) throw new Error('ASSERT: ' + m); }
   }
   log('다른 곳 보기 x5, all distinct');
   const chosen = await page.textContent('#discover-title');
-  await page.click('[data-action="go"]');
+  await goHere(page);
   await page.waitForURL(/#explore/);
   assert((await page.textContent('#explore-title')) === chosen, 'explore current');
   assert((await page.locator('.discovery').count()) === 3, '3 discoveries');
@@ -124,7 +125,7 @@ function assert(c, m) { if (!c) throw new Error('ASSERT: ' + m); }
   // reset flow
   await page.goto(URL + '#home');
   await page.click('text=오늘 시작하기');
-  await page.click('[data-action="go"]');
+  await goHere(page);
   await page.goto(URL + '#day');
   await page.click('[data-action="reset"]');
   await page.click('[data-action="reset-confirm"]');
@@ -158,7 +159,7 @@ function assert(c, m) { if (!c) throw new Error('ASSERT: ' + m); }
   await dp.screenshot({ path: SHOTS + '6-desktop-home.png' });
   await dp.click('text=오늘 시작하기');
   await dp.screenshot({ path: SHOTS + '7-desktop-discover.png' });
-  await dp.click('[data-action="go"]');
+  await goHere(dp);
   await dp.screenshot({ path: SHOTS + '8-desktop-explore.png', fullPage: true });
 
   // reduced motion context loads fine

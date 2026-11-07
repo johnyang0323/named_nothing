@@ -3,7 +3,7 @@
 const { devices } = require('playwright');
 const fs = require('fs');
 const { launch, ROOT } = require('./env.cjs');
-const { createBackend, wire, signUp, setArea, until } = require('./helpers.cjs');
+const { createBackend, wire, signUp, setArea, until, goHere } = require('./helpers.cjs');
 const APP = 'http://localhost:4175/';
 const IMG = fs.readFileSync(ROOT + '/public/icons/icon-512.png');
 const ok = (...a) => console.log('✔', ...a);
@@ -50,7 +50,7 @@ const photos = [
   assert(link && link.startsWith('https://place.map.kakao.com/'), 'link to the place on Kakao Map: ' + link);
   ok(`search: only the photo from a post about "${place}" is shown, the unrelated one is not; "카카오맵에서 실제 사진 보기" → ${link}`);
 
-  await A.click('[data-action="go"]');
+  await goHere(A);
   await A.waitForSelector('#explore-title');
   await A.click('[data-action="toggle-current-visited"]');
   await A.goto(APP + '#day');

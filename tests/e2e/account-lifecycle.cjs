@@ -1,6 +1,6 @@
 const { chromium, devices } = require('playwright');
 const { launch } = require('./env.cjs');
-const { createBackend, wire, signUp, setArea, until } = require('./helpers.cjs');
+const { createBackend, wire, signUp, setArea, until, goHere } = require('./helpers.cjs');
 const APP = 'http://localhost:4175/';
 const ok = (...a) => console.log('✔', ...a);
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
@@ -118,7 +118,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await setArea(p);
   await p.click('[data-action="start"]');
   await p.waitForSelector('#discover-title');
-  await p.click('[data-action="go"]');
+  await goHere(p);
   await p.goto(APP + '#day');
   await p.click('#journal-note');
   await p.keyboard.type('지울 기록');

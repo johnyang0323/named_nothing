@@ -1,4 +1,5 @@
 const { chromium, devices } = require('playwright');
+const { goHere } = require('./helpers.cjs');
 const { launch, OUT, ROOT } = require('./env.cjs');
 const fs = require('fs');
 const URL = 'http://localhost:4174/';
@@ -55,7 +56,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await page.screenshot({ path: OUT + '/k2-discover.png', fullPage: true });
   ok('discover uses real place:', await page.textContent('#discover-title'));
 
-  await page.click('[data-action="go"]');
+  await goHere(page);
   await page.waitForURL(/#explore/);
   await page.waitForSelector('[data-kakao-map][data-fake-map]');
   assert((await page.locator('.km-num').count()) === 3, '3 numbered markers');
@@ -94,7 +95,7 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await p2.press('#area-query', 'Enter');
   await p2.waitForSelector('.home-mood');
   await p2.click('text=오늘 시작하기');
-  await p2.click('[data-action="go"]');
+  await goHere(p2);
   allow = false;
   await p2.reload(); // fresh page, SDK now blocked
   await p2.waitForSelector('[data-schematic]:not([hidden])', { timeout: 5000 });
