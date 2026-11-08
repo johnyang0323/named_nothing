@@ -28,8 +28,7 @@ import { getPlaceById } from './placeRepository.js';
 import { escapeHtml } from '../utils/dom.js';
 import { placePhotos, report } from './backend/social.js';
 
-// v2: TourAPI + Naver search (older Daum-only results are searched again)
-const CACHE_KEY = 'plannish-photos-v2';
+const CACHE_KEY = 'plannish-photos';
 const TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const SCORES_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_ENTRIES = 300;
@@ -71,7 +70,7 @@ function cleanPhoto(photo) {
     link: isHttpUrl(photo.link) ? photo.link : null,
     relevant: photo.relevant === true,
     score: Number.isFinite(photo.score) ? photo.score : 0,
-    source: ['tour', 'naver', 'kakao', 'google'].includes(photo.source) ? photo.source : '',
+    source: ['kakao', 'google'].includes(photo.source) ? photo.source : '',
     ...(typeof photo.author === 'string' && photo.author ? { author: photo.author.slice(0, 60) } : {}),
   };
 }
@@ -227,7 +226,7 @@ function webPhotos(place) {
         ? Promise.resolve(fromCache(cached))
         : rescore(place, cached).catch(() => fromCache(cached));
   } else {
-    request = invokePhotoFunction({ query: photoQuery(place), name: place.name, ...(place.coords ? { lat: place.coords.lat, lng: place.coords.lng } : {}) })
+    request = invokePhotoFunction({ query: photoQuery(place), name: place.name })
       .then(async ({ data, error }) => {
         if (error) return null;
         const scores = await fetchScores(place.id).catch(() => null);
@@ -349,7 +348,6 @@ export function rejectPhoto(id, photo) {
 
 function creditNote(photo, place) {
   if (photo.community) return '다녀온 사람이 직접 찍어 공유한 사진이에요.';
-  if (photo.source === 'tour') return '한국관광공사 관광정보의 사진이에요.';
   if (photo.source === 'google') return `구글 지도에 올라온 사진이에요${photo.author ? ` (${photo.author})` : ''}.`;
   if (photo.score >= 1) return '다른 사람들이 이 장소의 사진으로 고른 사진이에요.';
   if (photo.relevant) return `‘${place.name}’을(를) 다룬 글에 실린 사진이에요.`;
@@ -553,7 +551,7 @@ export function clearPhotoMisses() {
  */
 export async function checkPhotoService() {
   if (!isBackendConfigured()) return { ok: false, message: 'Supabase가 연결되지 않은 빌드예요.' };
-  const { data, error, name: fnName } = await invokePhotoFunction({ query: '남산서울타워 서울 용산구', name: '남산서울타워', lat: 37.5512, lng: 126.9882 });
+  const { data, error, name: fnName } = await invokePhotoFunction({ query: '남산서울타워 서울 용산구', name: '남산서울타워' });
   const tried = PHOTO_FUNCTIONS.map((n) => `${SUPABASE_URL}/functions/v1/${n}`).join(' , ');
 
   if (error) {
@@ -592,14 +590,7 @@ export async function checkPhotoService() {
         detail: `지금 설정: ${(body?.allowedOrigins || []).join(', ') || '(없음)'}`,
       };
     }
-    if (status === 500 && /no search key/.test(body?.error || '')) return { ok: false, message: '사진 함수에 검색 키가 하나도 없어요. Secrets에 NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET(네이버 검색), TOUR_API_KEY(한국관광공사)를 추가해 주세요.', detail };
-    if (status === 500 && /KAKAO_REST_API_KEY/.test(body?.error || '')) return { ok: false, message: '사진 함수가 예전 버전이에요. 최신 코드로 다시 배포하고, Secrets에 네이버 검색 키(NAVER_CLIENT_ID, NAVER_CLIENT_SECRET)를 추가해 주세요.', detail };
-    if (status === 502 && body?.provider === 'naver') {
-      if (body?.status === 401) return { ok: false, message: '네이버가 검색 키를 거절했어요. NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET을 다시 확인해 주세요.', detail };
-      if (body?.status === 403) return { ok: false, message: '네이버 애플리케이션에 "검색" API 사용 권한이 없어요. Naver Developers → 내 애플리케이션 → API 설정에서 검색을 추가해 주세요.', detail };
-      if (body?.status === 429) return { ok: false, message: '네이버 검색 하루 사용량을 넘었어요. 내일 다시 동작해요.', detail };
-      return { ok: false, message: '네이버 이미지 검색이 실패했어요.', detail };
-    }
+    if (status === 500 && /KAKAO_REST_API_KEY/.test(body?.error || '')) return { ok: false, message: 'Secrets에 KAKAO_REST_API_KEY가 없어요. 카카오 REST API 키를 추가해 주세요.', detail };
     if (status === 502) {
       if (body?.status === 401) return { ok: false, message: '카카오가 REST API 키를 거절했어요. KAKAO_REST_API_KEY에 JavaScript 키가 아니라 REST API 키를 넣었는지 확인해 주세요.', detail };
       if (body?.status === 403) return { ok: false, message: '카카오가 검색 권한을 거절했어요. 카카오 앱 설정에서 다음(Daum) 검색 API 사용 권한을 확인해 주세요.', detail };
@@ -622,9 +613,7 @@ export async function checkPhotoService() {
   const thumbOk = fullOk || (photo.thumb ? await tryLoadImage(photo.thumb) : false);
   clearPhotoMisses();
   if (!thumbOk) return { ok: false, message: '사진 주소는 받았지만 이 브라우저에서 이미지가 열리지 않아요(이미지 사이트가 외부 표시를 막는 경우).', detail: photo.url };
-  const tourNote = { ok: '한국관광공사 사진 연결됨', 'no match': '한국관광공사 연결됨', 'no photo': '한국관광공사 연결됨', off: '한국관광공사 키 없음(TOUR_API_KEY)', error: '한국관광공사 키 오류 — TOUR_API_KEY와 활용신청 승인을 확인해 주세요', skipped: '' }[data?.tour] ?? '';
-  const searchNote = data?.search === 'naver' ? '네이버 검색' : data?.search === 'kakao' ? '다음 검색(네이버 키를 넣으면 바뀌어요)' : '';
-  return { ok: true, message: fullOk ? '사진 기능이 정상이에요.' : '사진 기능이 동작해요(원본 대신 작은 미리보기 이미지로 표시돼요).', detail: [`함수: ${fnName}`, `사진 출처: ${photo.site}`, searchNote, tourNote].filter(Boolean).join(' · ') };
+  return { ok: true, message: fullOk ? '사진 기능이 정상이에요.' : '사진 기능이 동작해요(원본 대신 작은 미리보기 이미지로 표시돼요).', detail: `함수: ${fnName} · 사진 출처: ${photo.site}` };
 }
 
 /**
