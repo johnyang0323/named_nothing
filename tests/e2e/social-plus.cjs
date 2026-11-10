@@ -149,6 +149,11 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   assert(S.requests.length === 1 && !S.friendships.some((f) => f.user_id === backend.accounts.get('c@test.com').id), 'request, not friends');
   ok('older ?friend= links send a friend request instead of adding directly');
 
+  await A.goto(APP + '#account');
+  await A.click('[data-action="check-setup"]');
+  await A.waitForSelector('.diag-result:has-text("서버 설정이 모두 끝났어요")');
+  ok('계정 → 서버 설정 점검: every SQL file found');
+
   console.log('errors:', errors.length ? errors : 'none');
   await browser.close();
   if (errors.length) process.exit(1);

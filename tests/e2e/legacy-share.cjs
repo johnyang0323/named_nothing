@@ -56,6 +56,13 @@ const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
   await A.waitForSelector('#group-feed-title ~ .entries .entry:has-text("오래된 서버에서도")');
   ok('…and posting it to a room from inside the room moves it there; the room lists it');
 
+  // 계정 → 서버 설정 점검 names the one SQL file that wasn't run
+  await A.goto(APP + '#account');
+  await A.click('[data-action="check-setup"]');
+  await A.waitForSelector('.diag-result.is-bad:has-text("아직 실행하지 않은 SQL이 1개")');
+  assert((await A.textContent('.diag-result')).includes('multi_share.sql'), 'names multi_share.sql');
+  ok('계정 → 서버 설정 점검: "multi_share.sql" is listed as not run yet');
+
   console.log('errors:', errors.length ? errors : 'none');
   await browser.close();
   if (errors.length) process.exit(1);

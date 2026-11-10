@@ -98,6 +98,12 @@ function emailForms(a) {
         ${passwordField(a, { autocomplete: signin ? 'current-password' : 'new-password', placeholder: '비밀번호' })}
         ${signin ? '' : ruleHint(a)}
         ${signin ? '' : confirmField(a)}
+        ${signin
+          ? ''
+          : html`<label class="row toggle age-check">
+              <input type="checkbox" data-input="auth-age" data-focus-key="auth-age" ${a.age ? 'checked' : ''}>
+              <span>만 14세 이상이에요</span>
+            </label>`}
         ${submit(a, signin ? '로그인' : '가입하고 시작하기')}
       </div>
       <div class="auth-links">
@@ -128,7 +134,7 @@ export function renderAuthPanel(ui) {
         : ''}
       ${a.error ? html`<p class="area-error" role="alert">${a.error}</p>` : ''}
       <p class="legal-note">
-        가입하거나 로그인하면 <a href="./terms.html" target="_blank" rel="noopener">이용약관</a>과
+        만 14세 이상만 가입할 수 있어요. 가입하거나 로그인하면 <a href="./terms.html" target="_blank" rel="noopener">이용약관</a>과
         <a href="./privacy.html" target="_blank" rel="noopener">개인정보 처리방침</a>에 동의하는 것으로 봐요.
       </p>
     </div>`;
@@ -170,6 +176,9 @@ export const authActions = {
 };
 
 export const authInputs = {
+  'auth-age': (ctx, el) => {
+    authUi(ctx.ui).age = el.checked;
+  },
   'auth-email': ({ ui }, el) => {
     authUi(ui).email = el.value;
   },
@@ -211,6 +220,7 @@ export const authForms = {
       if (a.mode === 'signin') {
         await signInWithEmail(a.email, a.password);
       } else {
+        if (!a.age) throw new Error('만 14세 이상만 가입할 수 있어요. 해당되면 "만 14세 이상이에요"에 체크해 주세요.');
         const { needsConfirmation } = await signUpWithEmail(a.email, a.password, a.password2);
         if (needsConfirmation) {
           a.password = '';

@@ -191,11 +191,15 @@ function AccountBlock({ ctx }) {
 function Diagnostics({ ctx }) {
   const { ui } = ctx;
   if (!isBackendConfigured()) return null;
-  const results = [ui.photoCheck, ui.deleteCheck].filter((r) => r && r !== 'running');
+  const results = [ui.setupCheck, ui.photoCheck, ui.deleteCheck].filter((r) => r && r !== 'running');
   return (
     <section className="block diagnostics" aria-labelledby="diag-title">
       <h2 className="group-header" id="diag-title">연결 점검</h2>
       <Glass className="group">
+        <button type="button" className="row row-button" data-action="check-setup" data-focus-key="check-setup" disabled={ui.setupCheck === 'running'} onClick={() => actions['check-setup'](ctx)}>
+          <span>{ui.setupCheck === 'running' ? '점검하는 중…' : '서버 설정 점검 (SQL)'}</span>
+          <Chevron />
+        </button>
         <button type="button" className="row row-button" data-action="check-photos" data-focus-key="check-photos" disabled={ui.photoCheck === 'running'} onClick={() => actions['check-photos'](ctx)}>
           <span>{ui.photoCheck === 'running' ? '점검하는 중…' : '사진 기능 점검'}</span>
           <Chevron />

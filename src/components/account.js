@@ -8,6 +8,7 @@ import { isBackendConfigured } from '../services/backend/config.js';
 import { getUser, signOut, deleteAccount, avatarUrl } from '../services/backend/auth.js';
 import { getMyProfile, loadMyProfile, saveProfile, fullTag, avatarSrc, NICKNAME_MAX, SocialError, forgetMyProfile } from '../services/backend/social.js';
 import { checkPhotoService, checkDeleteFunction } from '../services/photos.js';
+import { checkSetup } from '../services/backend/setupCheck.js';
 import { tasteSummary, MIN_EVENTS } from '../services/personalize.js';
 import { inviteLink, copyText } from './share.js';
 
@@ -278,6 +279,13 @@ export const actions = {
     rerender();
     ui.deleteCheck = await checkDeleteFunction();
     announce(ui.deleteCheck.message);
+    if (getScreen() === 'account') rerender();
+  },
+  'check-setup': async ({ ui, rerender, announce, getScreen }) => {
+    ui.setupCheck = 'running';
+    rerender();
+    ui.setupCheck = await checkSetup();
+    announce(ui.setupCheck.message);
     if (getScreen() === 'account') rerender();
   },
   'check-photos': async ({ ui, rerender, announce, getScreen }) => {

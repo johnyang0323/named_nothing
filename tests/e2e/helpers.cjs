@@ -154,6 +154,8 @@ function createBackend({ photos, photoFunction = null, confirmEmail = false, mai
     }
     const handled = handleSocial(route, req, url, path, userId, json, cors, social);
     if (handled) return handled;
+    // 서버 설정 점검 reads zero rows from these
+    if ((path === '/rest/v1/client_errors' || path === '/rest/v1/photo_votes') && req.method() === 'GET') return json([]);
     if (path === '/rest/v1/client_errors' && req.method() === 'POST') {
       [].concat(req.postDataJSON()).forEach((r) => errorsLog.push(r));
       return route.fulfill({ status: 201, headers: cors, body: '' });
@@ -344,7 +346,7 @@ function handleSocial(route, req, url, path, me, json, cors, S) {
   if (!path.startsWith('/rest/v1/')) return null;
   const table = path.slice('/rest/v1/'.length);
   const where = parseFilters(url);
-  if (S.noMultiShare && table === 'journal_entries' && (url.searchParams.has('group_ids') || url.searchParams.has('share_friends'))) return json({ code: '42703', message: 'column journal_entries.group_ids does not exist' }, 400);
+  if (S.noMultiShare && table === 'journal_entries' && (url.searchParams.has('group_ids') || url.searchParams.has('share_friends') || /group_ids/.test(url.searchParams.get('select') || ''))) return json({ code: '42703', message: 'column journal_entries.group_ids does not exist' }, 400);
   const profileOf = (id) => S.profiles.get(id) || null;
 
   // ── RPCs ──
@@ -640,6 +642,7 @@ async function signUp(page, email = 'me@test.com', password = 'correct-horse') {
   await page.fill('#auth-email', email);
   await page.fill('#auth-password', password);
   await page.fill('#auth-password2', password);
+  await page.check('[data-input="auth-age"]');
   await page.click('[data-form="email-auth"] button[type=submit]');
   await page.waitForSelector('body:not(.is-gated) #home-title, body:not(.is-gated) h1');
   await page.waitForFunction(() => !document.body.classList.contains('is-gated'));
