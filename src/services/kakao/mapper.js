@@ -93,36 +93,16 @@ export function toPlace(doc, search, center, walkingFrom = WALKING_FROM.name) {
   if (!template) return null;
 
   const coords = { lat, lng };
-  return makePlace({
+  const seed = hashString(String(doc.id));
+  const meters = Number.isFinite(Number(doc.distance)) && doc.distance !== '' ? Number(doc.distance) : metersBetween(center, coords);
+  const kakaoKind = (doc.category_name || '').split('>').pop().trim();
+  const address = doc.road_address_name || doc.address_name || '';
+  const activities = [pick(template.activities, seed), pick(template.activities, seed, 1)];
+
+  return {
     id: `k-${doc.id}`,
     name: doc.place_name,
     category: search.category,
-    kind: (doc.category_name || '').split('>').pop().trim(),
-    address: doc.road_address_name || doc.address_name || '',
-    coords,
-    meters: Number.isFinite(Number(doc.distance)) && doc.distance !== '' ? Number(doc.distance) : metersBetween(center, coords),
-    placeUrl: typeof doc.place_url === 'string' && doc.place_url.startsWith('http') ? doc.place_url : null,
-    source: 'kakao',
-  }, center, walkingFrom);
-}
-
-/** Real place sources: Kakao in Korea, Google abroad. id prefix k- / g-. */
-export const REAL_SOURCES = { kakao: 'k-', google: 'g-' };
-export const isRealPlace = (place) => Boolean(place && REAL_SOURCES[place.source]);
-
-/** Build an app place from provider-neutral facts (shared by the Kakao and Google mappers). */
-export function makePlace({ id, name, category, kind = '', address = '', coords, meters, placeUrl = null, source }, center, walkingFrom = WALKING_FROM.name) {
-  const template = CATEGORY_TEMPLATES[category];
-  if (!template || !id || !name || !coords) return null;
-  const seed = hashString(String(id));
-  const kakaoKind = kind;
-  const activities = [pick(template.activities, seed), pick(template.activities, seed, 1)];
-  meters = Number.isFinite(meters) ? meters : metersBetween(center, coords);
-
-  return {
-    id,
-    name,
-    category,
     experienceType: template.experienceType,
     description: [kakaoKind, address].filter(Boolean).join(' · '),
     whyVisit: pick(template.whyVisit, seed),
@@ -133,12 +113,12 @@ export function makePlace({ id, name, category, kind = '', address = '', coords,
     walkingFrom,
     image: null,
     tags: [kakaoKind].filter(Boolean),
-    area: source,
+    area: 'kakao',
     position: toSchematicPosition(coords, center),
     coords,
     address,
-    placeUrl,
-    source,
+    placeUrl: typeof doc.place_url === 'string' && doc.place_url.startsWith('http') ? doc.place_url : null,
+    source: 'kakao',
   };
 }
 
@@ -171,8 +151,7 @@ const isStr = (v) => typeof v === 'string';
 /** Rebuild a stored place from whitelisted, type-checked fields. */
 export function sanitizePlace(p) {
   if (!p || typeof p !== 'object') return null;
-  const source = p.source === 'google' ? 'google' : 'kakao';
-  if (!isStr(p.id) || !p.id.startsWith(REAL_SOURCES[source]) || !isStr(p.name) || !p.name) return null;
+  if (!isStr(p.id) || !p.id.startsWith('k-') || !isStr(p.name) || !p.name) return null;
   if (!CATEGORY_LABELS[p.category] || !EXPERIENCE_TYPES.includes(p.experienceType)) return null;
   if (!p.coords || !isNum(p.coords.lat) || !isNum(p.coords.lng)) return null;
   if (!p.position || !isNum(p.position.x) || !isNum(p.position.y)) return null;
@@ -193,12 +172,12 @@ export function sanitizePlace(p) {
     walkingFrom: Object.values(WALKING_FROM).includes(p.walkingFrom) ? p.walkingFrom : WALKING_FROM.name,
     image: null,
     tags: strList(p.tags),
-    area: source,
+    area: 'kakao',
     position: { x: p.position.x, y: p.position.y },
     coords: { lat: p.coords.lat, lng: p.coords.lng },
     address: isStr(p.address) ? p.address : '',
     placeUrl: isStr(p.placeUrl) && /^https?:\/\//.test(p.placeUrl) ? p.placeUrl : null,
-    source,
+    source: 'kakao',
   };
 }
 

@@ -1,7 +1,8 @@
 /** Home's rules and actions, shared by the React screen and other screens. */
 import { smallSuggestions } from '../data/places.js';
 import { formatKoreanDate, hashString } from '../utils/date.js';
-import { isMapsConfigured as isKakaoConfigured, searchArea, searchAreaAt } from '../services/geo.js';
+import { isKakaoConfigured } from '../services/kakao/config.js';
+import { searchArea, searchAreaAt } from '../services/kakao/areaSearch.js';
 import { getCurrentPosition } from '../services/geolocation.js';
 
 /** With real places available, nothing is recommended until a starting point is set. */

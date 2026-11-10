@@ -8,11 +8,11 @@ import { useEffect, useRef } from 'react';
 import { Button, Glass, SegmentedControl } from 'glisse';
 import { moods } from '../data/places.js';
 import { canUseLocation } from '../services/geolocation.js';
-import { mountPicker, canGoAbroad, inKorea } from '../services/geo.js';
+import { mountAreaPicker } from '../services/kakao/picker.js';
 import { TIME_BUDGETS } from '../services/personalize.js';
 import { currentStep, todaysSuggestion, stepEyebrow, goToStep, start, searchByName, searchByLocation, searchByPick } from './homeLogic.js';
 
-function AreaMap({ ctx, focus, region }) {
+function AreaMap({ ctx, focus }) {
   const host = useRef(null);
   useEffect(() => {
     // the Kakao map owns this box's content; React leaves it alone
@@ -21,14 +21,14 @@ function AreaMap({ ctx, focus, region }) {
     slot.dataset.areaMap = '';
     slot.textContent = '지도를 불러오는 중…';
     host.current.replaceChildren(slot);
-    mountPicker(slot, {
+    mountAreaPicker(slot, {
       focus,
       onPick: (point) => {
         ctx.ui.pick = point;
         ctx.rerender();
         ctx.announce('지도에 위치를 표시했어요. ‘이 위치에서 시작하기’를 누르면 그 근처로 추천해 드려요.');
       },
-    }, region);
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return <div ref={host} className="area-map-host" />;
 }
@@ -37,9 +37,6 @@ function PlaceStep({ state, ctx }) {
   const { ui } = ctx;
   const loading = ui.areaStatus === 'loading';
   const error = ui.areaStatus && ui.areaStatus.error;
-  const abroadOk = canGoAbroad();
-  const focus = ui.pick || state.area?.center || null;
-  const region = abroadOk ? ui.mapRegion || (focus && !inKorea(focus) ? 'abroad' : 'korea') : 'korea';
   return (
     <section className="screen home home-flow home-place" aria-labelledby="home-title">
       <p className="eyebrow">{stepEyebrow('place')}</p>
@@ -60,7 +57,7 @@ function PlaceStep({ state, ctx }) {
           className="area-input"
           type="text"
           inputMode="search"
-          placeholder={abroadOk ? '동네·역 이름 (예: 망원동, 시부야)' : '동네·역 이름 (예: 망원동)'}
+          placeholder="동네·역 이름 (예: 망원동)"
           autoComplete="off"
           maxLength={40}
           defaultValue={ui.areaQuery || ''}
@@ -73,22 +70,7 @@ function PlaceStep({ state, ctx }) {
       </form>
 
       <Glass className="area-map-wrap">
-        <AreaMap key={region} ctx={ctx} focus={focus && (region === 'abroad') !== inKorea(focus) ? focus : null} region={region} />
-        {abroadOk ? (
-          <Button
-            className="map-chip map-chip-region"
-            data-action="map-region"
-            data-focus-key="map-region"
-            aria-label={region === 'abroad' ? '국내 지도로 바꾸기' : '해외 지도로 바꾸기'}
-            onClick={() => {
-              ui.mapRegion = region === 'abroad' ? 'korea' : 'abroad';
-              ui.pick = null;
-              ctx.rerender();
-            }}
-          >
-            {region === 'abroad' ? '🇰🇷 국내' : '🌏 해외'}
-          </Button>
-        ) : null}
+        <AreaMap ctx={ctx} focus={ui.pick || state.area?.center || null} />
         {canUseLocation() ? (
           <Button className="map-chip map-chip-gps" data-action="use-location" data-focus-key="use-location" disabled={loading} onClick={() => searchByLocation(ctx)}>
             ◎ 현재 위치

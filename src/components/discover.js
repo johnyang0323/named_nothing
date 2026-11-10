@@ -127,7 +127,7 @@ export function render(state, { ui, taste, context }) {
 
         <div class="destination-details">
           ${place.placeUrl
-            ? html`<a class="kakao-photos-link" href="${place.placeUrl}" target="_blank" rel="noopener noreferrer">${place.source === 'google' ? '구글 지도에서 실제 사진 보기' : '카카오맵에서 실제 사진 보기'}<span aria-hidden="true"> ↗</span></a>`
+            ? html`<a class="kakao-photos-link" href="${place.placeUrl}" target="_blank" rel="noopener noreferrer">카카오맵에서 실제 사진 보기<span aria-hidden="true"> ↗</span></a>`
             : ''}
           <h2 class="section-label">왜 가볼 만할까</h2>
           <p class="why">${place.whyVisit}</p>

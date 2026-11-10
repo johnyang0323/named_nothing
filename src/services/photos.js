@@ -70,8 +70,6 @@ function cleanPhoto(photo) {
     link: isHttpUrl(photo.link) ? photo.link : null,
     relevant: photo.relevant === true,
     score: Number.isFinite(photo.score) ? photo.score : 0,
-    source: ['kakao', 'google'].includes(photo.source) ? photo.source : '',
-    ...(typeof photo.author === 'string' && photo.author ? { author: photo.author.slice(0, 60) } : {}),
   };
 }
 
@@ -175,18 +173,7 @@ async function invokePhotoFunction(body) {
   return last;
 }
 
-export const photosEnabled = (place) => (place?.source === 'kakao' && isBackendConfigured()) || place?.source === 'google';
-
-/**
- * Places abroad: photos straight from Google (Places API), credited to the
- * person who took them. Not cached on the device (Google's terms).
- */
-async function googlePhotos(place) {
-  const { googlePlacePhotos } = await import('./google/areaSearch.js');
-  const list = await googlePlacePhotos(place.id);
-  const photos = list.map((p) => ({ url: p.url, thumb: p.thumb, site: 'Google', link: p.authorUrl || place.placeUrl || null, relevant: true, score: 0, source: 'google', author: p.author || '' }));
-  return { photos, chosen: 0 };
-}
+export const photosEnabled = (place) => place?.source === 'kakao' && isBackendConfigured();
 
 export function photoQuery(place) {
   const district = (place.address || '').split(' ').slice(0, 2).join(' ');
@@ -213,11 +200,6 @@ async function rescore(place, entry) {
  */
 function webPhotos(place) {
   if (inflight.has(place.id)) return inflight.get(place.id);
-  if (place.source === 'google') {
-    const request = googlePhotos(place).catch(() => null).finally(() => inflight.delete(place.id));
-    inflight.set(place.id, request);
-    return request;
-  }
   const cached = readCache()[place.id];
   let request;
   if (cached && Date.now() - cached.at < TTL_MS) {
@@ -348,7 +330,6 @@ export function rejectPhoto(id, photo) {
 
 function creditNote(photo, place) {
   if (photo.community) return '다녀온 사람이 직접 찍어 공유한 사진이에요.';
-  if (photo.source === 'google') return `구글 지도에 올라온 사진이에요${photo.author ? ` (${photo.author})` : ''}.`;
   if (photo.score >= 1) return '다른 사람들이 이 장소의 사진으로 고른 사진이에요.';
   if (photo.relevant) return `‘${place.name}’을(를) 다룬 글에 실린 사진이에요.`;
   return '검색 결과라 실제 장소와 다를 수 있어요.';

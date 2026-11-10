@@ -61,7 +61,7 @@ const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String
   await pa.waitForSelector('.home-mood');
   await pa.click('label.mood:has-text("걸어보기")');
   assert(label === '망원1동 (지도에서 고른 곳)', label);
-  const center = await pa.evaluate(() => JSON.parse(Object.entries(localStorage).find(([k]) => k.startsWith('plannish-day:2026-11-0') && !k.endsWith('11-01'))?.[1] || 'null')?.area?.center);
+  const center = await pa.evaluate(() => JSON.parse(Object.entries(localStorage).find(([k]) => k.startsWith('plannish-day:') && !k.endsWith('2026-11-01'))?.[1] || 'null')?.area?.center);
   assert(center.lat === 37.556 && center.lng === 126.923, 'coarse ' + JSON.stringify(center));
   ok('map tap → pin → "이 위치에서 시작하기" → step 2 automatically;', label, '| chip → step 1 → back keeps the same map;', '| stored ~100m:', JSON.stringify(center), '| map not rebuilt on re-render');
 

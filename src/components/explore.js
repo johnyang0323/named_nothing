@@ -3,11 +3,12 @@ import { explainNext, describeProximity, schematicDistance } from '../services/r
 import { html, raw } from '../utils/dom.js';
 import { categoryLabel, emptyState, directionsLink } from './common.js';
 import { placeVisual, photoSlot } from './placeVisual.js';
-import { isMapsConfigured, mountPlaceMap } from '../services/geo.js';
+import { isKakaoConfigured } from '../services/kakao/config.js';
+import { mountKakaoMap } from '../services/kakao/map.js';
 import { needsLocation } from './home.js';
 import { metersBetween, walkMinutes } from '../services/kakao/mapper.js';
 
-const useRealMap = (place) => Boolean(place.coords) && isMapsConfigured();
+const useRealMap = (place) => Boolean(place.coords) && isKakaoConfigured();
 
 /** Real walking hint when both places have coordinates, otherwise the schematic wording. */
 function distanceHint(from, to) {
@@ -29,7 +30,7 @@ function kakaoMapFigure(current, routePlaces) {
       <div class="kakao-map" data-kakao-map role="img" aria-label="${current.name} 주변 지도">지도를 불러오는 중…</div>
       <figcaption>
         ${legend(others)}
-        <span class="map-note">지도: ${current.source === 'google' ? '구글 지도' : '카카오맵'}. 길찾기가 아니라 주변을 가늠하는 용도예요.</span>
+        <span class="map-note">지도: 카카오맵. 길찾기가 아니라 주변을 가늠하는 용도예요.</span>
       </figcaption>
     </figure>`;
 }
@@ -171,7 +172,7 @@ export function afterRender(state) {
   const container = document.querySelector('[data-kakao-map]');
   const current = getPlaceById(state.currentId);
   if (!container || !current) return;
-  mountPlaceMap(container, {
+  mountKakaoMap(container, {
     current,
     discoveries: state.discoveryIds.map(getPlaceById).filter(Boolean),
     routePlaces: state.route.map((s) => getPlaceById(s.id)).filter(Boolean),
